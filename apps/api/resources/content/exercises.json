@@ -40,7 +40,7 @@
     "summary": "Run nginx in the background, publish a port, read its logs, then stop and remove it.",
     "steps": [
       {
-        "text": "Start nginx detached (-d), name it \"web\", and map port 8080 on your machine to port 80 in the container.",
+        "text": "Start nginx detached (-d), name it \"web\", and map port 8080 on your machine to port 80 in the container. The \":alpine\" part is the tag. Leave it out and you get \"latest\", which changes whenever nginx ships a new version, so the same command can give you a different server next month. Always name a tag.",
         "code": "docker run -d --name web -p 8080:80 nginx:alpine",
         "label": "terminal"
       },
@@ -336,7 +336,7 @@
   {
     "id": "dockerignore",
     "title": "Keep files out with .dockerignore",
-    "minutes": 4,
+    "minutes": 5,
     "summary": "COPY . . copies everything, secrets included. Use .dockerignore to decide what reaches the build.",
     "steps": [
       {
@@ -375,9 +375,19 @@
         "text": "Build and list again. .env and debug.log are gone. The build output line \"transferring context\" also shows how much was sent to Docker.",
         "code": "docker build -t node-app .\ndocker run --rm node-app ls -a",
         "label": "terminal"
+      },
+      {
+        "text": ".dockerignore cannot help with a secret written in the Dockerfile itself. Add an ENV line with a pretend key, just above CMD.",
+        "code": "FROM node:24-alpine\nWORKDIR /app\nCOPY package.json ./\nRUN npm install\nCOPY . .\nENV API_KEY=do-not-ship-me\nCMD [\"node\", \"server.js\"]",
+        "label": "Dockerfile"
+      },
+      {
+        "text": "Build it and read the image history. The key is right there, and anyone who pulls the image can read it the same way. Pass secrets in when the container starts, never in the Dockerfile. Delete the ENV line again before you go on.",
+        "code": "docker build -t node-app .\ndocker history node-app",
+        "label": "terminal"
       }
     ],
-    "expected": "The second listing has no .env and no debug.log.",
+    "expected": "The second listing has no .env and no debug.log. docker history shows ENV API_KEY=do-not-ship-me.",
     "files": {
       "note": "Still inside node-app.",
       "entries": [
@@ -573,7 +583,7 @@
   {
     "id": "networks",
     "title": "Let containers talk",
-    "minutes": 5,
+    "minutes": 6,
     "summary": "Put two containers on a user-defined network and reach one from the other by name.",
     "steps": [
       {
@@ -592,6 +602,11 @@
         "label": "terminal"
       },
       {
+        "text": "Now try localhost instead of the name. It fails: inside a container, localhost means that container itself, and there is no Redis in it. To reach another container, use its name (in Compose, the service name).",
+        "code": "docker run --rm --network dojo-net redis:7-alpine redis-cli -h localhost ping",
+        "label": "terminal"
+      },
+      {
         "text": "Try the same without the network flag. It fails: the default bridge network has no name resolution.",
         "code": "docker run --rm redis:7-alpine redis-cli -h cache ping",
         "label": "terminal"
@@ -602,7 +617,7 @@
         "label": "terminal"
       }
     ],
-    "expected": "PONG the first time, and a \"Could not connect\" / name error the second time."
+    "expected": "PONG the first time, then \"Connection refused\" for localhost, and a \"Could not connect\" / name error without the network."
   },
   {
     "id": "compose-up",

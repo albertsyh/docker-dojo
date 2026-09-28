@@ -13,16 +13,16 @@ completions are stored, and picks the exercise for the Live page's focused view.
 | 4 | `build-an-image` | Build your own image | 7 | `/live?embed&exercise=build-an-image` |
 | 5 | `image-size` | Where the megabytes go | 6 | `/live?embed&exercise=image-size` |
 | 6 | `layer-cache` | Cache your dependencies | 7 | `/live?embed&exercise=layer-cache` |
-| 7 | `dockerignore` | Keep files out with .dockerignore | 4 | `/live?embed&exercise=dockerignore` |
+| 7 | `dockerignore` | Keep files out with .dockerignore | 5 | `/live?embed&exercise=dockerignore` |
 | 8 | `multi-stage` | Test and ship with multi-stage builds | 8 | `/live?embed&exercise=multi-stage` |
 | 9 | `scan-image` | Scan an image for vulnerabilities | 5 | `/live?embed&exercise=scan-image` |
 | 10 | `volumes` | Keep data with volumes | 5 | `/live?embed&exercise=volumes` |
-| 11 | `networks` | Let containers talk | 5 | `/live?embed&exercise=networks` |
+| 11 | `networks` | Let containers talk | 6 | `/live?embed&exercise=networks` |
 | 12 | `compose-up` | Docker Compose: a two-service app | 8 | `/live?embed&exercise=compose-up` |
 | 13 | `this-app` | Read the Dojo’s own compose file | 5 | `/live?embed&exercise=this-app` |
 | 14 | `cleanup` | Clean up | 3 | `/live?embed&exercise=cleanup` |
 
-14 exercises, 74 minutes, plus the quiz.
+14 exercises, 76 minutes, plus the quiz.
 
 The same list, as JSON, from a running Dojo: `GET /api/exercises` (for example
 http://localhost:8000/api/exercises). Each entry has `number`, `id`, `title`, `minutes`,
