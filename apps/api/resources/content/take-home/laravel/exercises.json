@@ -1,0 +1,481 @@
+[
+  {
+    "id": "laravel-naive-dockerfile",
+    "title": "A Dockerfile that works, and why that is the problem",
+    "minutes": 9,
+    "summary": "Create a real Laravel app without installing PHP, and containerise it the way many first attempts do. It runs, but it floats on \"latest\" and ships your secrets. Find them, then fix them.",
+    "steps": [
+      {
+        "text": "Go to your home folder, make a folder for this track, and move into it. Every Laravel take-home exercise uses it.",
+        "code": "cd ~\nmkdir takehome-laravel\ncd takehome-laravel",
+        "label": "terminal"
+      },
+      {
+        "text": "Create a new Laravel app in this folder. You do not need PHP or Composer on your machine: the official composer image runs create-project, and -v .:/app lets it write into this folder. It takes a minute or two.",
+        "code": "docker run --rm -v .:/app composer:2 create-project laravel/laravel .",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Linux",
+            "text": "The files will belong to root. Add --user 1000:1000 after --rm (your id -u and id -g) so they belong to you."
+          }
+        ]
+      },
+      {
+        "text": "Create a Dockerfile the way many first attempts look. It builds and runs, so nothing warns you about what is wrong with it.",
+        "code": "FROM php:latest\nWORKDIR /app\nCOPY . .\nENV DB_PASSWORD=secret123\nCMD php artisan serve --host=0.0.0.0 --port=8000",
+        "label": "Dockerfile",
+        "notes": [
+          {
+            "for": "Windows",
+            "text": "Save it as Dockerfile, not Dockerfile.txt (choose \"All files\" in Notepad), or use VS Code."
+          }
+        ]
+      },
+      {
+        "text": "Build and run it, then open http://localhost:8085. You see the Laravel welcome page. The first build downloads the full php image, which is large.",
+        "code": "docker build -t laravel-shop .\ndocker run -d --name laravel-shop -p 8085:8000 laravel-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "Mistake one: \"latest\" is whatever PHP was newest on the day you built. Check which one you got and how big the image is. A teammate who builds next month can get a different PHP from the same Dockerfile.",
+        "code": "docker run --rm laravel-shop php -v\ndocker image ls laravel-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "Mistake two: secrets. The ENV password is saved in the image history, and the build output even warned you (SecretsUsedInArgOrEnv). Worse, COPY . . copied your .env file, with the APP_KEY that encrypts your sessions and cookies. Anyone who pulls the image can read both.",
+        "code": "docker history laravel-shop\ndocker run --rm laravel-shop cat .env",
+        "label": "terminal"
+      },
+      {
+        "text": "Fix the build. Create a .dockerignore, so .env and your local vendor folder never reach the image.",
+        "code": ".env\nvendor\nnode_modules\n.git",
+        "label": ".dockerignore",
+        "notes": [
+          {
+            "for": "Windows",
+            "text": "Save it as .dockerignore, not .dockerignore.txt (choose \"All files\" in Notepad), or use VS Code."
+          }
+        ]
+      },
+      {
+        "text": "Replace the Dockerfile. It pins a small PHP image, has no ENV secret, and installs the PHP packages inside the image with Composer, copied in from its official image.",
+        "code": "FROM php:8.4-cli-alpine\nCOPY --from=composer:2 /usr/bin/composer /usr/bin/composer\nWORKDIR /app\nCOPY . .\nRUN composer install --no-interaction\nCMD php artisan serve --host=0.0.0.0 --port=8000",
+        "label": "Dockerfile"
+      },
+      {
+        "text": "Rebuild, and pass .env in when the container starts with --env-file. The welcome page still works, the history has no password, the image has no .env, and it is several hundred MB smaller.",
+        "code": "docker rm -f laravel-shop\ndocker build -t laravel-shop .\ndocker run -d --name laravel-shop -p 8085:8000 --env-file .env laravel-shop\ndocker history laravel-shop\ndocker run --rm laravel-shop ls -a\ndocker image ls laravel-shop",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "--env-file reads the file when the container starts. The values are not in the image you push, but anyone who can run docker inspect on that server can still read them."
+          }
+        ]
+      },
+      {
+        "text": "Remove the container. You keep the folder and the image for the next exercise.",
+        "code": "docker rm -f laravel-shop",
+        "label": "terminal"
+      }
+    ],
+    "expected": "The first image lists ENV DB_PASSWORD=secret123 in docker history and contains .env. The rebuilt one has neither, is much smaller, and the welcome page still loads at localhost:8085.",
+    "files": {
+      "note": "Run every command from inside takehome-laravel.",
+      "entries": [
+        {
+          "path": "takehome-laravel/",
+          "note": "your working folder for the whole track, a new Laravel app"
+        },
+        {
+          "path": "takehome-laravel/.env",
+          "note": "made by create-project, holds APP_KEY"
+        },
+        {
+          "path": "takehome-laravel/.dockerignore",
+          "note": "step 7"
+        },
+        {
+          "path": "takehome-laravel/Dockerfile",
+          "note": "step 3, replaced in step 8"
+        }
+      ]
+    }
+  },
+  {
+    "id": "laravel-stop-signals",
+    "title": "Stop cleanly",
+    "minutes": 5,
+    "summary": "docker stop asks your app to finish up, and PHP ignores the request when it runs as process 1. Put a tiny init process in front of it.",
+    "steps": [
+      {
+        "text": "Start the app again, and open http://localhost:8085 so you know it has started.",
+        "code": "docker run -d --name laravel-shop -p 8085:8000 --env-file .env laravel-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "Stop it and check how it ended. docker stop sends SIGTERM, waits a few seconds, and then kills the container. Exit code 137 means it was killed.",
+        "code": "docker stop laravel-shop\ndocker ps -a --filter name=laravel-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "The build warned about this (JSONArgsRecommended): CMD written as plain text may run through a shell. Write it in the list form, so Docker starts PHP directly.",
+        "code": "FROM php:8.4-cli-alpine\nCOPY --from=composer:2 /usr/bin/composer /usr/bin/composer\nWORKDIR /app\nCOPY . .\nRUN composer install --no-interaction\nCMD [\"php\", \"artisan\", \"serve\", \"--host=0.0.0.0\", \"--port=8000\"]",
+        "label": "Dockerfile"
+      },
+      {
+        "text": "Rebuild and try again. Still 137. The list form removed the shell, but PHP is now process 1, and Linux does not apply the usual \"exit on SIGTERM\" to process 1. PHP only stops if it handles the signal itself, and this one does not.",
+        "code": "docker rm laravel-shop\ndocker build -t laravel-shop .\ndocker run -d --name laravel-shop -p 8085:8000 --env-file .env laravel-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "Give it a moment to start, then stop it.",
+        "code": "docker stop laravel-shop\ndocker ps -a --filter name=laravel-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "The fix: --init puts a tiny process 1 in front of PHP that passes the signal on. It stops at once, with exit code 143, which means \"ended by SIGTERM\", the polite way. In Compose, the same is init: true.",
+        "code": "docker rm laravel-shop\ndocker run -d --init --name laravel-shop -p 8085:8000 --env-file .env laravel-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "Give it a moment, then stop it and check.",
+        "code": "docker stop laravel-shop\ndocker ps -a --filter name=laravel-shop",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "In production, Laravel usually runs on php-fpm (like this Dojo's own api) or FrankenPHP. The official php-fpm image already sets the right stop signal, and a supervisor or init process still helps when you start more than one program."
+          }
+        ]
+      },
+      {
+        "text": "Remove the container.",
+        "code": "docker rm laravel-shop",
+        "label": "terminal"
+      }
+    ],
+    "expected": "Exited (137) after a pause, twice: once with the shell form, once with the list form. With --init: Exited (143) straight away.",
+    "files": {
+      "note": "Still inside takehome-laravel.",
+      "entries": [
+        {
+          "path": "takehome-laravel/Dockerfile",
+          "note": "step 3, CMD in list form"
+        },
+        {
+          "path": "takehome-laravel/.dockerignore"
+        }
+      ]
+    }
+  },
+  {
+    "id": "laravel-listen-address",
+    "title": "Who can reach your app",
+    "minutes": 5,
+    "summary": "php artisan serve listens on 127.0.0.1 unless told otherwise, and inside a container nobody can reach that. A published port can also be reached by more people than you think.",
+    "steps": [
+      {
+        "text": "Run the image with its command replaced by plain php artisan serve, without --host. Anything after the image name replaces the CMD. The log says the server is running, yet http://localhost:8085 fails.",
+        "code": "docker run -d --init --name laravel-shop -p 8085:8000 --env-file .env laravel-shop php artisan serve --port=8000\ndocker logs laravel-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "Why: the log says 127.0.0.1:8000. Inside a container, 127.0.0.1 is the container itself. Traffic from -p arrives on the container's network address instead, where nothing is listening. That is why the Dockerfile says --host=0.0.0.0, which means every address.",
+        "code": "docker rm -f laravel-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "The other side: -p 8085:8000 opens 8085 on every network your machine is on, so anyone on the same Wi-Fi can reach it. On a Linux server it is worse: Docker writes its own firewall rules, so ufw or firewalld do not block a published port. That is how exposed databases get found and wiped. Publish to your own machine only by putting 127.0.0.1 in front. docker ps then shows 127.0.0.1:8085->8000.",
+        "code": "docker run -d --init --name laravel-shop -p 127.0.0.1:8085:8000 --env-file .env laravel-shop\ndocker ps --filter name=laravel-shop",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "A database almost never needs a published port. Other containers reach it over the Compose network by service name. Leave ports out of the db service entirely."
+          }
+        ]
+      },
+      {
+        "text": "Open http://localhost:8085 to check it works, then remove the container.",
+        "code": "docker rm -f laravel-shop",
+        "label": "terminal"
+      }
+    ],
+    "expected": "Without --host the log says 127.0.0.1:8000 and the page does not load. With the image's own CMD it loads, and docker ps shows 127.0.0.1:8085->8000/tcp."
+  },
+  {
+    "id": "laravel-bind-mount",
+    "title": "Edit code without rebuilding",
+    "minutes": 8,
+    "summary": "A bind mount puts your folder inside the container, so edits show up at once. It can also hide the vendor folder the image installed, which is exactly what a teammate with a fresh clone runs into.",
+    "steps": [
+      {
+        "text": "Create compose.yaml for development. The volumes line mounts this folder over /app in the container, so the container reads your files directly.",
+        "code": "services:\n  app:\n    build: .\n    init: true\n    env_file: .env\n    ports:\n      - \"127.0.0.1:8085:8000\"\n    volumes:\n      - ./:/app",
+        "label": "compose.yaml"
+      },
+      {
+        "text": "First, see what a teammate sees. vendor is in .gitignore, so a fresh clone of the project has none. Rename yours, then start the stack.",
+        "code": "mv vendor vendor-off\ndocker compose up -d --build",
+        "label": "terminal"
+      },
+      {
+        "text": "Give it a few seconds, then check. The app has exited, and the log says it failed to open vendor/autoload.php. The image did install vendor, but the bind mount laid your folder over the whole of /app, and your folder has none.",
+        "code": "docker compose ps -a\ndocker compose logs app",
+        "label": "terminal"
+      },
+      {
+        "text": "Add a second volume line for /app/vendor. It keeps the image's copy visible under the bind mount.",
+        "code": "services:\n  app:\n    build: .\n    init: true\n    env_file: .env\n    ports:\n      - \"127.0.0.1:8085:8000\"\n    volumes:\n      - ./:/app\n      - /app/vendor",
+        "label": "compose.yaml"
+      },
+      {
+        "text": "Start it again and open http://localhost:8085. It works, with no vendor folder on your machine.",
+        "code": "docker compose up -d",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Linux",
+            "text": "Files the container creates in a bind mount (logs, cache in storage/) belong to the container's user. When that user is not you, you get \"permission denied\" on storage/ in one direction or the other. Run the service as your own user with user: \"1000:1000\", or make storage/ writable for the container's user."
+          },
+          {
+            "for": "Windows",
+            "text": "Keep projects you bind-mount inside WSL (for example \\\\wsl$\\Ubuntu\\home\\you), not on the Windows drive, where they are much slower. Open them in VS Code with the WSL extension."
+          },
+          {
+            "for": "Windows",
+            "text": "Shell scripts saved with Windows line endings (CRLF) fail in a Linux container with a confusing \"no such file or directory\". Add a .gitattributes file with the line *.sh text eol=lf to any repo that has them."
+          }
+        ]
+      },
+      {
+        "text": "Now the good part. Add a route to routes/web.php, save, and open http://localhost:8085/hello. It works without a rebuild or a restart. Change the message, save, and reload: the new one shows.",
+        "code": "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::get('/', function () {\n    return view('welcome');\n});\n\nRoute::get('/hello', fn () => ['message' => 'Hello from laravel-shop']);",
+        "label": "routes/web.php"
+      },
+      {
+        "text": "Remember the catch: /app/vendor is now a volume that Compose keeps. After you change composer.json, rebuild and ask for fresh volumes with -V, or the old packages stay. Stop it, and put your vendor folder back.",
+        "code": "docker compose down\nmv vendor-off vendor",
+        "label": "terminal"
+      }
+    ],
+    "expected": "With vendor renamed and only the bind mount, the app exits and the log mentions vendor/autoload.php. With the /app/vendor line it runs, and /hello answers {\"message\":\"Hello from laravel-shop\"} with no rebuild.",
+    "files": {
+      "note": "Still inside takehome-laravel. Compose looks for compose.yaml in the current folder.",
+      "entries": [
+        {
+          "path": "takehome-laravel/compose.yaml",
+          "note": "step 1, one line added in step 4"
+        },
+        {
+          "path": "takehome-laravel/routes/web.php",
+          "note": "step 6"
+        },
+        {
+          "path": "takehome-laravel/vendor/",
+          "note": "renamed to vendor-off in step 2, back in step 7"
+        },
+        {
+          "path": "takehome-laravel/Dockerfile"
+        }
+      ]
+    }
+  },
+  {
+    "id": "laravel-compose-ready",
+    "title": "Wait for the database",
+    "minutes": 10,
+    "summary": "Move the app onto MySQL with Compose. Meet two classic crashes, localhost and a database that is not ready yet, and make the stack come back after a crash.",
+    "steps": [
+      {
+        "text": "Add the MySQL driver to the Dockerfile. docker-php-ext-install is a helper that comes with the official php images.",
+        "code": "FROM php:8.4-cli-alpine\nRUN docker-php-ext-install pdo_mysql\nCOPY --from=composer:2 /usr/bin/composer /usr/bin/composer\nWORKDIR /app\nCOPY . .\nRUN composer install --no-interaction\nCMD [\"php\", \"artisan\", \"serve\", \"--host=0.0.0.0\", \"--port=8000\"]",
+        "label": "Dockerfile"
+      },
+      {
+        "text": "Replace compose.yaml. The app runs its migrations, then starts. environment overrides the database settings from .env. The exec in the command makes PHP replace the shell, so the stop signal reaches it.",
+        "code": "services:\n  db:\n    image: mysql:8.4\n    environment:\n      MYSQL_DATABASE: shop\n      MYSQL_USER: shop\n      MYSQL_PASSWORD: shop\n      MYSQL_ROOT_PASSWORD: root\n    volumes:\n      - dbdata:/var/lib/mysql\n\n  app:\n    build: .\n    init: true\n    command: [\"sh\", \"-c\", \"php artisan migrate --force && exec php artisan serve --host=0.0.0.0 --port=8000\"]\n    env_file: .env\n    environment:\n      DB_CONNECTION: mysql\n      DB_HOST: localhost\n      DB_DATABASE: shop\n      DB_USERNAME: shop\n      DB_PASSWORD: shop\n    ports:\n      - \"127.0.0.1:8085:8000\"\n    depends_on:\n      - db\n\nvolumes:\n  dbdata:",
+        "label": "compose.yaml"
+      },
+      {
+        "text": "Start it. The first time, this also downloads MySQL.",
+        "code": "docker compose up -d --build",
+        "label": "terminal"
+      },
+      {
+        "text": "Give it a few seconds, then check. The app has exited, and its log says SQLSTATE[HY000] [2002] No such file or directory. To PHP's MySQL driver, localhost means a socket file inside this container, and there is no database in it.",
+        "code": "docker compose ps -a\ndocker compose logs app",
+        "label": "terminal"
+      },
+      {
+        "text": "Point DB_HOST at the service name instead. Compose gives every service a DNS name on the stack's network.",
+        "code": "services:\n  db:\n    image: mysql:8.4\n    environment:\n      MYSQL_DATABASE: shop\n      MYSQL_USER: shop\n      MYSQL_PASSWORD: shop\n      MYSQL_ROOT_PASSWORD: root\n    volumes:\n      - dbdata:/var/lib/mysql\n\n  app:\n    build: .\n    init: true\n    command: [\"sh\", \"-c\", \"php artisan migrate --force && exec php artisan serve --host=0.0.0.0 --port=8000\"]\n    env_file: .env\n    environment:\n      DB_CONNECTION: mysql\n      DB_HOST: db\n      DB_DATABASE: shop\n      DB_USERNAME: shop\n      DB_PASSWORD: shop\n    ports:\n      - \"127.0.0.1:8085:8000\"\n    depends_on:\n      - db\n\nvolumes:\n  dbdata:",
+        "label": "compose.yaml"
+      },
+      {
+        "text": "Start from scratch, as a fresh server would. This deletes the dbdata volume, which only holds an empty database here.",
+        "code": "docker compose down -v\ndocker compose up -d",
+        "label": "terminal"
+      },
+      {
+        "text": "Give it a few seconds, then read the app's log. It crashed again, with Connection refused: the name worked, but MySQL was still setting itself up. depends_on only waits for the db container to start, not for the database to be ready.",
+        "code": "docker compose ps -a\ndocker compose logs app",
+        "label": "terminal"
+      },
+      {
+        "text": "Fix it properly. The healthcheck asks MySQL whether it is up, and condition: service_healthy makes the app wait for that. restart: unless-stopped brings a container back after a crash or a reboot. The logging limits stop the log file from growing until the disk is full.",
+        "code": "services:\n  db:\n    image: mysql:8.4\n    environment:\n      MYSQL_DATABASE: shop\n      MYSQL_USER: shop\n      MYSQL_PASSWORD: shop\n      MYSQL_ROOT_PASSWORD: root\n    volumes:\n      - dbdata:/var/lib/mysql\n    healthcheck:\n      test: [\"CMD\", \"mysqladmin\", \"ping\", \"-h\", \"127.0.0.1\"]\n      interval: 3s\n      retries: 30\n    restart: unless-stopped\n\n  app:\n    build: .\n    init: true\n    command: [\"sh\", \"-c\", \"php artisan migrate --force && exec php artisan serve --host=0.0.0.0 --port=8000\"]\n    env_file: .env\n    environment:\n      DB_CONNECTION: mysql\n      DB_HOST: db\n      DB_DATABASE: shop\n      DB_USERNAME: shop\n      DB_PASSWORD: shop\n    ports:\n      - \"127.0.0.1:8085:8000\"\n    depends_on:\n      db:\n        condition: service_healthy\n    restart: unless-stopped\n    logging:\n      options:\n        max-size: \"10m\"\n        max-file: \"3\"\n\nvolumes:\n  dbdata:",
+        "label": "compose.yaml"
+      },
+      {
+        "text": "Start from scratch again. This time up waits until db is healthy before it starts the app. A new MySQL can take up to half a minute.",
+        "code": "docker compose down -v\ndocker compose up -d",
+        "label": "terminal"
+      },
+      {
+        "text": "Give it a few seconds, then check. db shows (healthy), the app log shows the migrations running, and http://localhost:8085 works.",
+        "code": "docker compose ps\ndocker compose logs app",
+        "label": "terminal"
+      },
+      {
+        "text": "Crash the app on purpose, then check again. The restart policy starts it again within seconds.",
+        "code": "docker compose exec app kill 1\ndocker compose ps",
+        "label": "terminal"
+      },
+      {
+        "text": "Stop the stack. Plain down keeps the dbdata volume.",
+        "code": "docker compose down",
+        "label": "terminal"
+      }
+    ],
+    "expected": "Two failures first: [2002] No such file or directory for localhost, then Connection refused while MySQL was starting. With the healthcheck: db (healthy), the migrations ran, the page loads, and after kill 1 the app is Up again.",
+    "files": {
+      "note": "Still inside takehome-laravel.",
+      "entries": [
+        {
+          "path": "takehome-laravel/Dockerfile",
+          "note": "step 1, adds pdo_mysql"
+        },
+        {
+          "path": "takehome-laravel/compose.yaml",
+          "note": "replaced in step 2, then edited in steps 5 and 8"
+        },
+        {
+          "path": "takehome-laravel/.env",
+          "note": "still used, via env_file"
+        }
+      ]
+    }
+  },
+  {
+    "id": "laravel-platform",
+    "title": "Build for the server's CPU",
+    "minutes": 4,
+    "summary": "An image is built for one kind of processor. Build on an Apple Silicon Mac and deploy to a normal server, and it will not start.",
+    "steps": [
+      {
+        "text": "Build the image and ask which CPU it is for. On an Apple Silicon Mac it says arm64. On most Windows and Intel machines it says amd64.",
+        "code": "docker build -t laravel-shop .\ndocker image inspect laravel-shop --format '{{.Architecture}}'",
+        "label": "terminal"
+      },
+      {
+        "text": "Most servers are amd64. An arm64 image fails there with \"exec format error\", and nothing else in the message says why. Build for the server's CPU with --platform.",
+        "code": "docker build --platform linux/amd64 -t laravel-shop:amd64 .\ndocker image inspect laravel-shop:amd64 --format '{{.Architecture}}'",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "macOS",
+            "text": "On Apple Silicon this build runs under emulation, so it is slower. That is normal."
+          }
+        ]
+      },
+      {
+        "text": "Docker Desktop can even run the other CPU's image, by emulating it. uname -m prints x86_64, which is amd64. A plain Linux server cannot do this unless someone set emulation up.",
+        "code": "docker run --rm --platform linux/amd64 laravel-shop:amd64 uname -m",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "The safest habit: build release images in CI or on the server itself. docker buildx build --platform linux/amd64,linux/arm64 builds both at once, but has to push the result to a registry."
+          }
+        ]
+      },
+      {
+        "text": "Remove the extra image.",
+        "code": "docker image rm laravel-shop:amd64",
+        "label": "terminal"
+      }
+    ],
+    "expected": "Your own architecture first (arm64 or amd64), then amd64 for laravel-shop:amd64, and x86_64 from uname -m."
+  },
+  {
+    "id": "laravel-production-dockerfile",
+    "title": "Capstone: a Dockerfile fit for production",
+    "minutes": 10,
+    "summary": "Put it all together. Fix the rest of the Dockerfile yourself, compare with a worked answer, then clean up the whole track.",
+    "steps": [
+      {
+        "text": "Your Dockerfile is pinned and has no secret, but three mistakes from the course are still in it. Before you read on, try to name them and fix them yourself. Hints: a code change reinstalls every package; phpunit and the other dev tools end up in the image; and the app runs as root."
+      },
+      {
+        "text": "Here is one answer. First, add old log files to .dockerignore.",
+        "code": ".env\nvendor\nnode_modules\n.git\nstorage/logs/*.log",
+        "label": ".dockerignore"
+      },
+      {
+        "text": "Then the Dockerfile. Stage one installs packages with composer.json and composer.lock copied first, so they are cached, and --no-dev leaves out the dev tools. Stage two starts from a clean PHP image and copies in only the app and its packages, owned by www-data, the normal web user, which it then runs as.",
+        "code": "# Stage 1: install PHP packages with the official Composer image.\nFROM composer:2 AS vendor\nWORKDIR /app\n# composer.json and composer.lock first, so a code change does not reinstall.\nCOPY composer.json composer.lock ./\nRUN composer install --no-dev --no-scripts --no-autoloader --no-interaction\nCOPY . .\nRUN composer dump-autoload --optimize --no-dev\n\n# Stage 2: only PHP, the app and its production packages.\nFROM php:8.4-cli-alpine\nRUN docker-php-ext-install pdo_mysql\nWORKDIR /app\nCOPY --from=vendor --chown=www-data:www-data /app /app\nUSER www-data\nCMD [\"php\", \"artisan\", \"serve\", \"--host=0.0.0.0\", \"--port=8000\"]",
+        "label": "Dockerfile"
+      },
+      {
+        "text": "Start the stack with the new image. The page at http://localhost:8085 works as before, whoami answers www-data, and phpunit is not in the image.",
+        "code": "docker compose up -d --build\ndocker compose exec app whoami\ndocker compose exec app ls vendor/phpunit",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "A real production image also runs php artisan optimize to cache config and routes, and serves through php-fpm behind nginx (like this Dojo's own api) or FrankenPHP rather than artisan serve."
+          }
+        ]
+      },
+      {
+        "text": "Check what the track cost in disk space. Images, build cache, volumes and logs all add up quietly on a server.",
+        "code": "docker system df",
+        "label": "terminal"
+      },
+      {
+        "text": "Clean up the whole track. This deletes the dbdata volume and its data for good, and removes the track's images.",
+        "code": "docker compose down -v --rmi local\ndocker image rm laravel-shop",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "The large php:latest from the first exercise is still in the build cache. docker builder prune clears the cache, and docker system prune also clears stopped containers, unused networks and dangling images. Both delete permanently, so read what they list before you say yes."
+          }
+        ]
+      },
+      {
+        "text": "Delete the takehome-laravel folder when you no longer need it."
+      }
+    ],
+    "expected": "whoami prints www-data, ls vendor/phpunit fails with \"No such file or directory\", and the page still loads. After the cleanup, docker system df shows less in use.",
+    "files": {
+      "note": "Still inside takehome-laravel.",
+      "entries": [
+        {
+          "path": "takehome-laravel/.dockerignore",
+          "note": "step 2"
+        },
+        {
+          "path": "takehome-laravel/Dockerfile",
+          "note": "step 3, the final version"
+        },
+        {
+          "path": "takehome-laravel/compose.yaml"
+        }
+      ]
+    }
+  }
+]

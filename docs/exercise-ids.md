@@ -48,6 +48,22 @@ Page: `/take-home/node`. Quiz: `/take-home/node/quiz`.
 
 7 exercises, 47 minutes, plus the track's quiz.
 
+### Take-home: Laravel
+
+Page: `/take-home/laravel`. Quiz: `/take-home/laravel/quiz`.
+
+| # | Id | Title | Minutes | Live page, focused on it |
+|---|---|---|---|---|
+| 1 | `laravel-naive-dockerfile` | A Dockerfile that works, and why that is the problem | 9 | `/live?embed&exercise=laravel-naive-dockerfile` |
+| 2 | `laravel-stop-signals` | Stop cleanly | 5 | `/live?embed&exercise=laravel-stop-signals` |
+| 3 | `laravel-listen-address` | Who can reach your app | 5 | `/live?embed&exercise=laravel-listen-address` |
+| 4 | `laravel-bind-mount` | Edit code without rebuilding | 8 | `/live?embed&exercise=laravel-bind-mount` |
+| 5 | `laravel-compose-ready` | Wait for the database | 10 | `/live?embed&exercise=laravel-compose-ready` |
+| 6 | `laravel-platform` | Build for the server's CPU | 4 | `/live?embed&exercise=laravel-platform` |
+| 7 | `laravel-production-dockerfile` | Capstone: a Dockerfile fit for production | 10 | `/live?embed&exercise=laravel-production-dockerfile` |
+
+7 exercises, 51 minutes, plus the track's quiz.
+
 The same lists, as JSON, from a running Dojo: `GET /api/exercises` (for example
 http://localhost:8000/api/exercises). Each entry has `number`, `id`, `title`, `minutes`,
 `page` and `live` (relative paths), and `totalMinutes` sums the workshop's. Published

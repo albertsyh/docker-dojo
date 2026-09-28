@@ -5,5 +5,12 @@
     "label": "Node",
     "summary": "The mistakes that only show up later, on a Node.js app: floating tags, secrets in images, stop signals, listen addresses, bind mounts, a database that is not ready, and the wrong CPU.",
     "published": true
+  },
+  {
+    "id": "laravel",
+    "title": "Take-home: Laravel",
+    "label": "Laravel",
+    "summary": "The same mistakes on a real Laravel app with MySQL: floating tags, secrets in images, stop signals, listen addresses, bind mounts, a database that is not ready, and the wrong CPU.",
+    "published": true
   }
 ]

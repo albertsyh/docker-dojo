@@ -39,6 +39,24 @@ rely on the ones before it: run, exec, build, image size and layers, dependency 
 `layer-cache`, `dockerignore` and `multi-stage` share one `~/node-app` folder, each
 building on the last. The home page and journey list point students at the first unfinished one.
 
+**Take-home tracks.** After the workshop, students can carry on with a self-paced track per
+stack. They live in `take-home/`: `tracks.json` lists them (`id`, `title`, `label` such as
+"Node", `summary`, `published`), and each has `take-home/<id>/exercises.json` and its own
+`quiz.json`. There are two tracks today, `node` and `laravel`. They teach the same pitfalls,
+each on one app from start to finish: floating tags, secrets in images, stop signals, listen
+addresses and published ports, bind mounts, a database that is not ready, CPU architecture,
+and a production Dockerfile.
+- Each track stands alone. It creates its own folder (`~/takehome-node`, `~/takehome-laravel`)
+  and cleans up everything in its last exercise, so it never relies on the core course's folders.
+- Ids start with the track id (`node-…`) and are unique across every track, because
+  completions have no track column. The content tests check both.
+- The 80-minute budget is for the workshop only. Take-home minutes are shown, not capped.
+- `published: false` hides a track from students and the API. Use it for a track that is not
+  verified yet.
+- A track's exercises and quiz stay out of the workshop's figures: the header count, the home
+  page and the Live page's totals and quiz groups. The Live page lists take-home progress in
+  its own section.
+
 **Shape of an exercise:**
 
 ```jsonc
@@ -81,7 +99,9 @@ building on the last. The home page and journey list point students at the first
   - 8080: nginx exercises;
   - 8081: my-site;
   - 8082: the Compose demo;
-  - 8083: node-app.
+  - 8083: node-app;
+  - 8084: the Node take-home track (node-shop);
+  - 8085: the Laravel take-home track (laravel-shop).
 
   Pick a free one for anything new.
 - Name everything the student creates, and tidy up at the end of the exercise, so that
@@ -96,7 +116,7 @@ ids that are still in the file. Renaming or removing an id silently drops everyo
 progress for it. Only do that between workshops.
 
 **Keep `docs/exercise-ids.md` in step.** It is the trainer's list of ids and focused Live
-URLs, generated from `exercises.json`. After adding, removing, renaming, reordering or
+URLs, generated from `exercises.json` and the take-home tracks. After adding, removing, renaming, reordering or
 retiming an exercise, run `bun scripts/exercise-ids.ts` and commit the result.
 `tests/docs.test.ts` fails while it is out of date, and so does `./scripts/test-stack.sh`.
 Don't edit the doc by hand. `GET /api/exercises` serves the same list live, as JSON.
@@ -138,6 +158,14 @@ than one line, so the JSON stays readable. The three kinds of question:
     only once, via the unique `paper_token` column;
   - any new field that gives away an answer must stay out of `Quiz::publicQuestion`.
 - **Answer positions:** keep the correct option in varied positions.
+- **Take-home quizzes:** each track has its own pool in `take-home/<id>/quiz.json`, same
+  shape, with a smaller split (3 easy, 2 medium, 2 advanced). The same rules and tests apply,
+  and question ids are unique across every pool.
+  - Papers come from `GET|POST /participants/{id}/quiz/{track}`. The track is part of the
+    signature, so a paper only counts for its own quiz.
+  - Attempts are stored with a `track` column (`core` for the workshop). Only the workshop
+    quiz sets `quiz_opened_at` or counts on the Live page. `progress.quiz` is the workshop's,
+    and `progress.trackQuizzes` has each track's.
 
 ## Copy and voice
 
@@ -196,6 +224,11 @@ than one line, so the JSON stays readable. The three kinds of question:
 - State lives in `src/store.ts` (progress, content) and `src/prefs.ts` (theme, text
   size). Pets are in `src/pets.ts`. There is no Pinia; plain `reactive` modules are the
   pattern.
+- `completed` holds ids from every track. Workshop counts use `coreCompleted`. `trackOf(id)`
+  gives an exercise's own list, so the stepper, numbering and Previous/Next stay inside its
+  track, and the last exercise leads to that track's quiz (`quizRoute`). `JourneyList.vue`
+  draws a track's numbered stops for `/exercises` and `/take-home/<id>`, and
+  `ExerciseLadder.vue` draws the Live page's rows.
 - Styling:
   - use the tokens in `src/style.css` (OKLCH, light and dark), never raw colours;
   - every page sits in the same `var(--content)` column so nothing shifts between
@@ -212,7 +245,8 @@ than one line, so the JSON stays readable. The three kinds of question:
 - `?embed` on any route (used as `/live?embed`) hides the header, footer and pet, for an
   iframe on another site. On `/live` it also drops the quiz and shows exercise progress only.
   `/live?exercise=<id>&count=N` narrows the list to N exercises (default 3) centred on that
-  one, shifted in at either end, with the named one highlighted. An unknown id shows them all.
+  one, shifted in at either end, with the named one highlighted. A take-home id narrows that
+  track's own list instead. An unknown id shows them all.
   Keep nginx free of `X-Frame-Options` and `frame-ancestors`, or the embed breaks (the stack test checks).
 - Copying goes through `copyText()` in `src/clipboard.ts`. The Clipboard API is missing on
   plain-http LAN addresses (a workshop on a laptop's IP), so it falls back to a hidden

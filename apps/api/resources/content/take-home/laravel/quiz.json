@@ -1,0 +1,359 @@
+{
+  "passMark": 0.7,
+  "minutes": 8,
+  "split": {
+    "easy": 3,
+    "medium": 2,
+    "advanced": 2
+  },
+  "scenarios": [
+    {
+      "id": "laravel-first-deploy",
+      "title": "A first deploy",
+      "intro": "A Laravel app and MySQL, as first put on a Linux server. This file is committed to the project's git repository.",
+      "label": "compose.yaml",
+      "code": [
+        "services:",
+        "  app:",
+        "    build: .",
+        "    environment:",
+        "      APP_KEY: base64:Zm9vYmFyYmF6cXV4",
+        "      DB_HOST: localhost",
+        "      DB_PASSWORD: secret",
+        "    ports:",
+        "      - \"8000:8000\"",
+        "    depends_on:",
+        "      - mysql",
+        "",
+        "  mysql:",
+        "    image: mysql:latest",
+        "    environment:",
+        "      MYSQL_ROOT_PASSWORD: secret",
+        "    ports:",
+        "      - \"3306:3306\""
+      ]
+    },
+    {
+      "id": "laravel-almost-ready",
+      "title": "Almost ready for a server",
+      "intro": "The same app a few weeks later. Secrets moved to .env files, and someone added a volume and a healthcheck.",
+      "label": "compose.yaml",
+      "code": [
+        "services:",
+        "  app:",
+        "    build: .",
+        "    init: true",
+        "    env_file: .env",
+        "    environment:",
+        "      DB_HOST: mysql",
+        "    ports:",
+        "      - \"127.0.0.1:8085:8000\"",
+        "    depends_on:",
+        "      - mysql",
+        "",
+        "  mysql:",
+        "    image: mysql:8.4",
+        "    env_file: .env.mysql",
+        "    volumes:",
+        "      - dbdata:/var/lib/mysql",
+        "    healthcheck:",
+        "      test: [\"CMD\", \"mysqladmin\", \"ping\", \"-h\", \"127.0.0.1\"]",
+        "      interval: 3s",
+        "      retries: 30",
+        "",
+        "volumes:",
+        "  dbdata:"
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "laravel-dotenv-copied",
+      "level": "easy",
+      "prompt": "A Laravel Dockerfile has `COPY . .` and there is no .dockerignore. What ends up in the image that should not?",
+      "options": [
+        "Nothing: Docker skips hidden files",
+        "Only the tests folder",
+        "Your .env file, with APP_KEY and passwords",
+        "The composer.lock file"
+      ],
+      "answer": 2,
+      "explanation": "COPY . . copies everything, .env included. Put .env in .dockerignore, and pass it in at run time with `--env-file .env` or Compose's `env_file`."
+    },
+    {
+      "id": "laravel-latest-tag",
+      "level": "easy",
+      "prompt": "Your Dockerfile starts with `FROM php:latest`. What is the problem?",
+      "options": [
+        "The same Dockerfile can build with a different PHP version next month",
+        "It has no Composer",
+        "It cannot run Laravel",
+        "Docker refuses to build it"
+      ],
+      "answer": 0,
+      "explanation": "`latest` is whatever was newest on the day you build. Pin a version, such as `php:8.4-cli-alpine`."
+    },
+    {
+      "id": "laravel-serve-host",
+      "level": "easy",
+      "prompt": "In a container, `php artisan serve` says it is running, but `localhost:8085` does not load, with `-p 8085:8000`. What is missing?",
+      "options": [
+        "`--port=8085`",
+        "`--host=0.0.0.0`, because by default it listens on 127.0.0.1, which is the container itself",
+        "An EXPOSE line",
+        "A restart policy"
+      ],
+      "answer": 1,
+      "explanation": "Traffic from -p arrives on the container's network address. artisan serve listens only on 127.0.0.1 unless you pass `--host=0.0.0.0`."
+    },
+    {
+      "id": "laravel-exit-137",
+      "level": "easy",
+      "prompt": "`CMD [\"php\", \"artisan\", \"serve\", ...]` is in exec form, yet `docker stop` still ends with `Exited (137)` after a pause. What fixes it?",
+      "options": [
+        "Going back to the shell form",
+        "A bigger stop timeout",
+        "Publishing another port",
+        "Running with `--init` (or `init: true` in Compose)"
+      ],
+      "answer": 3,
+      "explanation": "PHP is process 1 and ignores SIGTERM. `--init` puts a tiny process 1 in front that passes the signal on, so the container stops with 143, cleanly."
+    },
+    {
+      "id": "laravel-localhost-socket",
+      "level": "easy",
+      "prompt": "With `DB_HOST=localhost`, the app says `SQLSTATE[HY000] [2002] No such file or directory`. What does that mean?",
+      "options": [
+        "The database name is wrong",
+        "The migration files are missing",
+        "PHP looked for a MySQL socket file inside the app container, where there is no database",
+        "MySQL ran out of disk space"
+      ],
+      "answer": 2,
+      "explanation": "To PHP's MySQL driver, localhost means a socket file on the same machine. In Compose, use the database's service name, such as `DB_HOST=mysql`."
+    },
+    {
+      "id": "laravel-vendor-hidden",
+      "level": "easy",
+      "prompt": "A teammate clones the repo and runs the dev compose file with `./:/app`. The app fails to open `vendor/autoload.php`, although the image ran composer install. Why?",
+      "options": [
+        "The bind mount covers /app, and their clone has no vendor folder",
+        "composer install failed without telling you",
+        "vendor is in .dockerignore, so the image has none",
+        "PHP cannot read bind mounts"
+      ],
+      "answer": 0,
+      "explanation": "vendor is in .gitignore, and the bind mount hides the image's copy. An extra `- /app/vendor` volume keeps the image's vendor visible."
+    },
+    {
+      "id": "laravel-exec-format",
+      "level": "easy",
+      "prompt": "An image built on an Apple Silicon Mac fails on the server with `exec format error`. What fixes it?",
+      "options": [
+        "Running `composer install` again",
+        "Adding `--init`",
+        "Building with `--platform linux/amd64`, or in CI",
+        "Switching to `php:latest`"
+      ],
+      "answer": 2,
+      "explanation": "The image was built for arm64 and the server is amd64. Build for the server's CPU."
+    },
+    {
+      "id": "laravel-env-file-flag",
+      "level": "medium",
+      "context": "The image has no .env inside it. The app should read your .env file when the container starts.",
+      "prompt": "Fill in the flag.",
+      "label": "terminal",
+      "code": [
+        "docker run -d --name laravel-shop {{1}} .env laravel-shop"
+      ],
+      "blanks": [
+        [
+          "--env-file"
+        ]
+      ],
+      "explanation": "`--env-file` reads the file at start time. The values never become part of the image."
+    },
+    {
+      "id": "laravel-init-flag",
+      "level": "medium",
+      "context": "PHP runs as process 1 and ignores docker stop. You want a tiny init process in front of it that passes the signal on.",
+      "prompt": "Fill in the flag.",
+      "label": "terminal",
+      "code": [
+        "docker run -d {{1}} --name laravel-shop -p 8085:8000 laravel-shop"
+      ],
+      "blanks": [
+        [
+          "--init"
+        ]
+      ],
+      "explanation": "`--init` adds a small init as process 1. In Compose, write `init: true` on the service."
+    },
+    {
+      "id": "laravel-db-host",
+      "level": "medium",
+      "context": "In this compose file the database service is called mysql. The app runs in another service of the same file.",
+      "prompt": "Fill in the host.",
+      "label": "compose.yaml",
+      "code": [
+        "  app:",
+        "    environment:",
+        "      DB_CONNECTION: mysql",
+        "      DB_HOST: {{1}}"
+      ],
+      "blanks": [
+        [
+          "mysql"
+        ]
+      ],
+      "explanation": "Compose gives each service a DNS name on the stack's network. localhost would be the app container itself."
+    },
+    {
+      "id": "laravel-no-dev",
+      "level": "medium",
+      "context": "The production image should not contain phpunit or the other tools listed under require-dev.",
+      "prompt": "Fill in the Composer option.",
+      "label": "Dockerfile",
+      "code": [
+        "RUN composer install {{1}} --no-interaction"
+      ],
+      "blanks": [
+        [
+          "--no-dev"
+        ]
+      ],
+      "explanation": "`--no-dev` installs only the packages under require. The image is smaller and has fewer tools to attack."
+    },
+    {
+      "id": "laravel-keep-vendor",
+      "level": "medium",
+      "context": "In development you bind-mount the project over /app, but the packages the image installed must stay visible.",
+      "prompt": "Fill in the second volume.",
+      "label": "compose.yaml",
+      "code": [
+        "    volumes:",
+        "      - ./:/app",
+        "      - {{1}}"
+      ],
+      "blanks": [
+        [
+          "/app/vendor"
+        ]
+      ],
+      "explanation": "A volume on the more specific path wins over the bind mount, so /app/vendor keeps the image's packages."
+    },
+    {
+      "id": "laravel-first-host",
+      "level": "advanced",
+      "scenario": "laravel-first-deploy",
+      "prompt": "The app fails with `[2002] No such file or directory`. What is the fix?",
+      "options": [
+        "Publish 3306 on the app too",
+        "Set `DB_HOST: mysql`",
+        "Add `restart: always`",
+        "Use `mysql:8.4`"
+      ],
+      "answer": 1,
+      "explanation": "localhost makes PHP look for a socket inside the app container. The database is the service called mysql."
+    },
+    {
+      "id": "laravel-first-public-db",
+      "level": "advanced",
+      "scenario": "laravel-first-deploy",
+      "prompt": "The server's firewall (ufw) blocks port 3306. Can someone on the internet reach MySQL?",
+      "options": [
+        "Yes: Docker's published ports get past ufw, so remove the mysql ports",
+        "No: ufw blocks it",
+        "Only with the root password",
+        "Only from another container"
+      ],
+      "answer": 0,
+      "explanation": "Docker writes its own firewall rules for published ports. The app reaches mysql over the Compose network, so mysql needs no `ports` at all."
+    },
+    {
+      "id": "laravel-first-git",
+      "level": "advanced",
+      "scenario": "laravel-first-deploy",
+      "prompt": "This file is in the git repository. What is the security problem?",
+      "options": [
+        "depends_on is in the wrong order",
+        "Port 8000 is too common",
+        "`build: .` can run any code",
+        "APP_KEY and the passwords are readable by anyone with access to the repo, for ever"
+      ],
+      "answer": 3,
+      "explanation": "Anything committed stays in the history. Keep secrets in a .env file that is not committed, and use `env_file`, as in the second file."
+    },
+    {
+      "id": "laravel-first-data",
+      "level": "advanced",
+      "scenario": "laravel-first-deploy",
+      "prompt": "After `docker compose down` and `up` again, the database is empty. Why?",
+      "options": [
+        "MySQL deletes data on every start",
+        "The mysql service has no volume, so the data lived in the container that down removed",
+        "The APP_KEY changed",
+        "The migrations dropped everything"
+      ],
+      "answer": 1,
+      "explanation": "Without a volume on /var/lib/mysql, the data is part of the container. Add a named volume, as in the second file."
+    },
+    {
+      "id": "laravel-ready-race",
+      "level": "advanced",
+      "scenario": "laravel-almost-ready",
+      "prompt": "mysql has a healthcheck, but on a fresh server the app's first migration still fails with Connection refused. What is missing?",
+      "options": [
+        "A volume on the app",
+        "`condition: service_healthy` under the app's depends_on",
+        "A published port on mysql",
+        "A second healthcheck on the app"
+      ],
+      "answer": 1,
+      "explanation": "A healthcheck only reports. Nothing waits for it until depends_on asks for `condition: service_healthy`."
+    },
+    {
+      "id": "laravel-ready-init",
+      "level": "advanced",
+      "scenario": "laravel-almost-ready",
+      "prompt": "What does `init: true` on the app do?",
+      "options": [
+        "Runs the migrations first",
+        "Creates the database on first start",
+        "Passes docker stop's signal on to PHP, so the app stops cleanly instead of being killed",
+        "Builds the image before starting"
+      ],
+      "answer": 2,
+      "explanation": "PHP as process 1 ignores SIGTERM. The init process forwards it, so `docker compose down` does not wait and then kill the app."
+    },
+    {
+      "id": "laravel-ready-reboot",
+      "level": "advanced",
+      "scenario": "laravel-almost-ready",
+      "prompt": "The server reboots for updates, and afterwards nothing is running. What would bring both services back on their own?",
+      "options": [
+        "A healthcheck on the app",
+        "Removing init: true",
+        "A bigger volume",
+        "`restart: unless-stopped` on both services"
+      ],
+      "answer": 3,
+      "explanation": "Without a restart policy, Docker leaves containers stopped after a reboot. `unless-stopped` starts them again, unless you stopped them yourself."
+    },
+    {
+      "id": "laravel-ready-who",
+      "level": "advanced",
+      "scenario": "laravel-almost-ready",
+      "prompt": "Who can open the app on port 8085?",
+      "options": [
+        "Anyone on the internet",
+        "Anyone on the same network",
+        "Only programs on the server itself",
+        "Nobody, until you open it in the firewall"
+      ],
+      "answer": 2,
+      "explanation": "`127.0.0.1:8085:8000` publishes on the loopback address only. A reverse proxy or tunnel on the server then decides what the outside can see."
+    }
+  ]
+}

@@ -6,6 +6,11 @@ and compose-file questions, with a glossary, a page of further videos and readin
 tracking and a live tracker for the trainer. The app is itself fully dockerised, so students can
 read and run it as the final example.
 
+After the workshop, two self-paced take-home tracks (Node.js and Laravel, about 50 minutes
+each, with a quiz each) cover the mistakes that only show up later: floating tags, secrets in
+images, stop signals, listen addresses, bind mounts, a database that is not ready yet, and
+building for the wrong CPU.
+
 ## Run it
 
 ```sh
@@ -43,7 +48,7 @@ browser ──► web (nginx :80, published as :8000)
 | Path | What |
 | --- | --- |
 | `apps/web` | Vue 3 + Vite + vue-router. Multi-stage Dockerfile: Bun installs, Node builds, nginx serves. |
-| `apps/api` | Laravel API. `resources/content/*.json` holds the exercises, the quiz pool, the glossary and the references. Edit those to change the course (see CLAUDE.md for the formats). |
+| `apps/api` | Laravel API. `resources/content/*.json` holds the exercises, the quiz pool, the glossary and the references, and `resources/content/take-home/` the take-home tracks. Edit those to change the course (see CLAUDE.md for the formats). |
 | `compose.yaml` | The four services. Every setting has a localhost default. |
 | `compose.prod.yaml` | Production overrides: required secrets, no published ports, a Cloudflare Tunnel. |
 
