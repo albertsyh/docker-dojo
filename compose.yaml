@@ -6,6 +6,7 @@
 #
 # Local:  docker compose up -d --build   ->  http://localhost:8000
 # Deploy: copy .env.example to .env and set real secrets first.
+# Limits total 3 CPUs / ~1.5GB, sized from a 150-student load test (see README).
 name: docker-dojo
 
 x-laravel-env: &laravel-env
@@ -52,6 +53,10 @@ services:
       timeout: 5s
       retries: 30
       start_period: 20s
+    # Idle ~480MB, mostly MySQL's default buffers; barely moves under load.
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 768M }
 
   api:
     build: ./apps/api
@@ -61,6 +66,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # php-fpm runs up to 5 workers (~10MB each, 128MB PHP limit per request).
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 384M }
 
   reverb:
     build: ./apps/api          # same Dockerfile as api -> fully cached second build
@@ -71,6 +80,10 @@ services:
     depends_on:
       api:
         condition: service_started
+    # One process; ~40MB with 150 live-tracker connections open.
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
 
   web:
     build: ./apps/web
@@ -80,6 +93,9 @@ services:
     depends_on:
       - api
       - reverb
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 64M }
 
 volumes:
   dbdata:
