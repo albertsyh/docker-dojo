@@ -38,6 +38,7 @@ const journeyPct = computed(() => {
         <RouterLink to="/exercises">Exercises</RouterLink>
         <RouterLink to="/quiz">Quiz</RouterLink>
         <RouterLink to="/glossary">Glossary</RouterLink>
+        <RouterLink to="/references">References</RouterLink>
         <RouterLink to="/live" class="live"><i aria-hidden="true" />Live</RouterLink>
         <p v-if="state.progress" class="nav-id muted">You are <code>{{ state.progress.id }}</code></p>
       </nav>

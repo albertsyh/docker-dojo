@@ -42,10 +42,15 @@ export type Answer = number | string[]
 export type Term = { term: string; aka?: string; text: string; seenIn?: string[] }
 export type TermGroup = { id: string; title: string; terms: Term[] }
 
+/** Further learning: videos and reading, grouped by topic. source says who made it and when. */
+export type Reference = { title: string; url: string; kind: 'video' | 'reading'; source: string; note?: string }
+export type ReferenceGroup = { id: string; title: string; intro?: string; links: Reference[] }
+
 export type Content = {
   exercises: Exercise[]
   quiz: QuizSummary
   glossary: TermGroup[]
+  references: ReferenceGroup[]
   realtime: { key: string }
 }
 

@@ -3,7 +3,7 @@
 namespace App\Support;
 
 /**
- * Exercises, quiz and glossary live in resources/content/*.json so they can be edited
+ * Exercises, quiz, glossary and references live in resources/content/*.json so they can be edited
  * without touching PHP. Quiz answers never leave the server before grading (see Quiz).
  */
 class Content
@@ -13,6 +13,8 @@ class Content
     private static ?array $quiz = null;
 
     private static ?array $glossary = null;
+
+    private static ?array $references = null;
 
     public static function exercises(): array
     {
@@ -32,6 +34,11 @@ class Content
     public static function glossary(): array
     {
         return self::$glossary ??= self::load('glossary.json');
+    }
+
+    public static function references(): array
+    {
+        return self::$references ??= self::load('references.json');
     }
 
     private static function load(string $file): array

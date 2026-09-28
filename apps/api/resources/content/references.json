@@ -1,0 +1,36 @@
+[
+  {
+    "id": "learn",
+    "title": "Learning Docker",
+    "intro": "Videos that cover the same ground as the exercises. Start with one of the first two.",
+    "links": [
+      { "title": "Docker Crash Course for Absolute Beginners", "url": "https://www.youtube.com/watch?v=pg19Z8LL06w", "kind": "video", "source": "TechWorld with Nana, 2023", "note": "Short and current. The best first pick." },
+      { "title": "Docker Tutorial for Beginners [FULL COURSE in 3 Hours]", "url": "https://www.youtube.com/watch?v=3c-iBn73dDE", "kind": "video", "source": "TechWorld with Nana, 2020", "note": "The long version of the crash course." },
+      { "title": "Learn Docker in 7 Easy Steps", "url": "https://www.youtube.com/watch?v=gAkwW2tuIqE", "kind": "video", "source": "2020", "note": "A very fast big-picture tour, including Docker Compose." },
+      { "title": "Learn Docker in 2 Hours", "url": "https://www.youtube.com/watch?v=zJ6WbK9zFpI", "kind": "video", "source": "KodeKloud", "note": "Hands-on labs." },
+      { "title": "Docker and Kubernetes: Full Course for Beginners", "url": "https://www.youtube.com/watch?v=Wf2eSG3owoA", "kind": "video", "source": "freeCodeCamp", "note": "For later, when you move on to Kubernetes." }
+    ]
+  },
+  {
+    "id": "windows-server",
+    "title": "Deploying on Windows Server",
+    "intro": "The rule to know first: a container shares the host's kernel. So Windows containers (for example .NET Framework or IIS) run only on Windows hosts, and Linux containers need Linux, or a VM on Windows. Docker Desktop is not supported on Windows Server, so the engine is set up by hand. The container's Windows version usually has to match the host's, unless you use Hyper-V isolation.",
+    "links": [
+      { "title": "Containers on Windows Server 2025 | Docker CE, containerd, MCR and WSL2 Explained", "url": "https://www.youtube.com/watch?v=90Gpfou_oeI", "kind": "video", "source": "February 2026", "note": "The newest. Which tools to use on current servers." },
+      { "title": "How to run Windows Docker containers on Windows Server 2022", "url": "https://www.youtube.com/watch?v=6ENy6mtuGuU", "kind": "video", "source": "2024", "note": "A step-by-step setup on a production server." },
+      { "title": "Install Docker on Windows Server 2022: Build your own Custom IIS Container", "url": "https://www.youtube.com/watch?v=g2W5Mkjed10", "kind": "video", "source": "2022", "note": "Useful for moving old .NET apps into containers." },
+      { "title": "Hyper-V and Windows Docker containers on Windows Server", "url": "https://www.youtube.com/watch?v=hElwBXu3tuo", "kind": "video", "source": "2024", "note": "Hyper-V isolation runs each container in a small VM, which gets round host and image version mismatches." },
+      { "title": "About Windows containers", "url": "https://learn.microsoft.com/en-us/virtualization/windowscontainers/about/", "kind": "reading", "source": "Microsoft Learn", "note": "Background reading on how Windows containers work." }
+    ]
+  },
+  {
+    "id": "older-talks",
+    "title": "Older talks, still good on concepts",
+    "intro": "The ideas hold up, but the setup steps in these are out of date.",
+    "links": [
+      { "title": "Docker on Windows: The Beginners' Guide", "url": "https://www.youtube.com/watch?v=cW6pU8cQpEE", "kind": "video", "source": "Elton Stoneman, WinOps 2017" },
+      { "title": "Windows Server & Docker: The Internals Behind Bringing Docker & Containers to Windows", "url": "https://www.youtube.com/watch?v=85nCF5S8Qok", "kind": "video", "source": "DockerCon 2016", "note": "Explains why the kernel rule exists." },
+      { "title": "How to Stuff Monolithic Applications Into a Container", "url": "https://www.youtube.com/watch?v=CkP51msEV7k", "kind": "video", "source": "DockerCon 2023" }
+    ]
+  }
+]

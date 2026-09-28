@@ -2,7 +2,7 @@
 
 A 90-minute, hands-on Docker and Docker Compose workshop: 14 copy-paste exercises
 (~75 min) and a 10-question quiz (~12 min) drawn from a pool of easy, fill-in-the-blank
-and compose-file questions, with a glossary, anonymous progress
+and compose-file questions, with a glossary, a page of further videos and reading, anonymous progress
 tracking and a live tracker for the trainer. The app is itself fully dockerised, so students can
 read and run it as the final example.
 
@@ -31,7 +31,7 @@ browser ──► web (nginx :80, published as :8000)
 | Path | What |
 | --- | --- |
 | `apps/web` | Vue 3 + Vite + vue-router. Multi-stage Dockerfile: Bun installs, Node builds, nginx serves. |
-| `apps/api` | Laravel API. `resources/content/*.json` holds the exercises, the quiz pool and the glossary. Edit those to change the course (see CLAUDE.md for the formats). |
+| `apps/api` | Laravel API. `resources/content/*.json` holds the exercises, the quiz pool, the glossary and the references. Edit those to change the course (see CLAUDE.md for the formats). |
 | `compose.yaml` | The four services. Every setting has a localhost default. |
 
 - **Identity:** `POST /api/participants` returns an anonymous id like `swift-otter-7f3k9q`,
@@ -90,13 +90,13 @@ run the tests explicitly:
 
 ```sh
 docker build --target test apps/api    # PHPUnit: API behaviour and content rules
-docker build --target test apps/web    # Vitest: glossary, header menu, pets
+docker build --target test apps/web    # Vitest: quiz, tracker, glossary, references, header menu, pets
 ./scripts/test-stack.sh                # whole stack end to end (needs Bun)
 ```
 
 - **API tests** cover joining, conflicts, grading, stats and broadcasts.
-- **Content tests** check `exercises.json`, `quiz.json` and `glossary.json`: ids,
-  required fields, no em-dashes, shell-safe commands, and glossary links.
+- **Content tests** check `exercises.json`, `quiz.json`, `glossary.json` and `references.json`:
+  ids, required fields, no em-dashes, shell-safe commands, glossary links, and https reference links.
 - **`test-stack.sh`** starts a throwaway copy of the stack as the compose project
   `docker-dojo-test` on port 8099, with its own database volume. It tests through
   nginx (routing, websockets, published ports, resource limits), then removes the

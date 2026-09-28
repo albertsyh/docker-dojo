@@ -14,7 +14,7 @@ It is an unofficial training app, not affiliated with Docker, Inc.
 
 ## Writing exercises
 
-Content lives in `apps/api/resources/content/`: `exercises.json`, `quiz.json` and `glossary.json`. The API
+Content lives in `apps/api/resources/content/`: `exercises.json`, `quiz.json`, `glossary.json` and `references.json`. The API
 serves it. Editing it needs an api rebuild (`docker compose up -d --build api reverb`),
 not a web rebuild.
 
@@ -131,6 +131,10 @@ than one line, so the JSON stays readable. The three kinds of question:
 - The glossary (`apps/api/resources/content/glossary.json`) is the vocabulary list for the exercises.
   When an exercise introduces a new term, add it there. `seenIn` must name real
   exercise ids. The content tests check that.
+- The References page (`references.json`) lists videos and reading for after the workshop,
+  grouped by topic. Each link needs `title`, an https `url`, `kind` (`video` or `reading`)
+  and `source` (who made it, and when). `note` and a group `intro` are optional. Keep
+  titles as published, but swap any em-dash for a colon.
 
 ## Backend patterns (apps/api)
 

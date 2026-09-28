@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, test } from 'bun:test'
 const BASE = process.env.BASE_URL ?? 'http://localhost:8099'
 const PROJECT = process.env.COMPOSE_PROJECT ?? 'docker-dojo-test'
 
-type Content = { exercises: { id: string }[]; quiz: { questionCount: number }; glossary: unknown[]; realtime: { key: string } }
+type Content = { exercises: { id: string }[]; quiz: { questionCount: number }; glossary: unknown[]; references: unknown[]; realtime: { key: string } }
 let content: Content
 
 async function api(method: string, path: string, body?: unknown) {
@@ -58,7 +58,7 @@ beforeAll(async () => {
 
 describe('web (nginx)', () => {
   test('serves the app shell on every route, for client-side routing', async () => {
-    for (const path of ['/', '/exercises/hello-docker', '/glossary', '/live']) {
+    for (const path of ['/', '/exercises/hello-docker', '/glossary', '/references', '/live']) {
       const res = await fetch(BASE + path)
       expect(res.status).toBe(200)
       expect(await res.text()).toContain('<div id="app">')
@@ -76,9 +76,10 @@ describe('web (nginx)', () => {
 })
 
 describe('api', () => {
-  test('content has exercises, glossary and a quiz summary, but no questions', () => {
+  test('content has exercises, glossary, references and a quiz summary, but no questions', () => {
     expect(content.exercises.length).toBeGreaterThan(0)
     expect(content.glossary.length).toBeGreaterThan(0)
+    expect(content.references.length).toBeGreaterThan(0)
     expect(content.quiz.questionCount).toBe(10)
     expect(JSON.stringify(content.quiz)).not.toContain('"answer"')
   })

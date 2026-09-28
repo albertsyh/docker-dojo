@@ -68,6 +68,7 @@ class DojoApiTest extends TestCase
 
         $this->assertNotEmpty($response->json('exercises'));
         $this->assertNotEmpty($response->json('glossary'));
+        $this->assertNotEmpty($response->json('references'));
         $this->assertSame(['easy' => 4, 'medium' => 3, 'advanced' => 3], $response->json('quiz.split'));
         $this->assertSame(10, $response->json('quiz.questionCount'));
         $this->assertNull($response->json('quiz.questions'));

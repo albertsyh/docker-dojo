@@ -81,7 +81,7 @@ class ContentTest extends TestCase
 
     public function test_copy_has_no_em_dashes(): void
     {
-        $all = [...$this->strings(Content::exercises()), ...$this->strings(Content::quiz()), ...$this->strings(Content::glossary())];
+        $all = [...$this->strings(Content::exercises()), ...$this->strings(Content::quiz()), ...$this->strings(Content::glossary()), ...$this->strings(Content::references())];
 
         foreach ($all as $text) {
             $this->assertStringNotContainsString('—', $text, "Em-dash in: $text");
@@ -165,6 +165,29 @@ class ContentTest extends TestCase
             }
         }
         $this->assertSame(count($terms), count(array_unique($terms)), 'Glossary terms must be unique.');
+    }
+
+    public function test_references_are_well_formed(): void
+    {
+        $groups = Content::references();
+        $this->assertNotEmpty($groups);
+        $this->assertSame(count($groups), count(array_unique(array_column($groups, 'id'))), 'Reference group ids must be unique.');
+        $urls = [];
+
+        foreach ($groups as $group) {
+            $this->assertMatchesRegularExpression('/^[a-z0-9-]+$/', $group['id'], 'Group ids are used as page anchors.');
+            $this->assertNotEmpty($group['title']);
+            $this->assertNotEmpty($group['links'], "{$group['id']} has no links.");
+            foreach ($group['links'] as $link) {
+                $urls[] = $link['url'];
+                $this->assertNotEmpty($link['title']);
+                $this->assertNotEmpty($link['source'] ?? null, "{$link['title']} needs a source (who made it, and when).");
+                $this->assertContains($link['kind'], ['video', 'reading'], "{$link['title']} has an unknown kind.");
+                $this->assertStringStartsWith('https://', $link['url'], "{$link['title']} must link over https.");
+                $this->assertNotFalse(filter_var($link['url'], FILTER_VALIDATE_URL), "{$link['title']} has a malformed url.");
+            }
+        }
+        $this->assertSame(count($urls), count(array_unique($urls)), 'Each link should appear once.');
     }
 
     public function test_host_ports_do_not_clash_with_the_dojo(): void

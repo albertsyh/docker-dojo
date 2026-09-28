@@ -20,6 +20,7 @@ class DojoController extends Controller
             'exercises' => Content::exercises(),
             'quiz' => Quiz::summary(),
             'glossary' => Content::glossary(),
+            'references' => Content::references(),
             // The Reverb app key is public by design; the secret never leaves the server.
             'realtime' => ['key' => config('broadcasting.connections.reverb.key')],
         ]);

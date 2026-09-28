@@ -22,5 +22,21 @@ export const content: Content = {
       terms: [{ term: 'Volume', aka: '-v', text: 'Storage that survives `docker rm`.', seenIn: ['volumes'] }],
     },
   ],
+  references: [
+    {
+      id: 'learn',
+      title: 'Learning Docker',
+      intro: 'Start with the first one.',
+      links: [
+        { title: 'Crash course', url: 'https://www.youtube.com/watch?v=abc', kind: 'video', source: 'A channel, 2023', note: 'Short.' },
+        { title: 'About containers', url: 'https://learn.example.com/containers', kind: 'reading', source: 'Docs' },
+      ],
+    },
+    {
+      id: 'windows-server',
+      title: 'Deploying on Windows Server',
+      links: [{ title: 'Windows containers', url: 'https://www.youtube.com/watch?v=def', kind: 'video', source: '2024' }],
+    },
+  ],
   realtime: { key: 'test' },
 }
