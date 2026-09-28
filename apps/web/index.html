@@ -5,6 +5,19 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Docker Dojo</title>
+    <!-- Link previews. nginx fills in the placeholders per route and host (apps/web/og-meta.conf and
+         nginx.conf), because crawlers don't run the app. Under `bun run dev` they stay as they are. -->
+    <meta name="description" content="__OG_DESCRIPTION__" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Docker Dojo" />
+    <meta property="og:title" content="__OG_TITLE__" />
+    <meta property="og:description" content="__OG_DESCRIPTION__" />
+    <meta property="og:url" content="__OG_ORIGIN____OG_PATH__" />
+    <meta property="og:image" content="__OG_ORIGIN__/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Docker Dojo: copy a command, run it, tick it off. A 90-minute, hands-on Docker and Compose workshop." />
+    <meta name="twitter:card" content="summary_large_image" />
     <script>
       // Apply saved display preferences before first paint (see src/prefs.ts).
       try {
@@ -12,6 +25,11 @@
         if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
         var s = Number(localStorage.getItem('docker-dojo:text-scale'))
         if ([1.15, 1.3].indexOf(s) !== -1) document.documentElement.style.fontSize = s * 100 + '%'
+      } catch (e) {}
+      // A theme in the URL (?theme= or #theme=, the # wins) beats the saved one and is not saved.
+      try {
+        var u = new URLSearchParams(location.hash.slice(1)).get('theme') || new URLSearchParams(location.search).get('theme')
+        if (u === 'light' || u === 'dark') document.documentElement.dataset.theme = u
       } catch (e) {}
     </script>
   </head>

@@ -10,6 +10,8 @@ import { chat, unread } from './chat'
 import ToastHost from './components/ToastHost.vue'
 import { copyId } from './clipboard'
 import { pet } from './pets'
+import { setUrlTheme } from './prefs'
+import { routeParam } from './routeParams'
 import { coreCompleted, state } from './store'
 
 // Small screens fold the nav into a menu. It closes when you navigate or press Esc.
@@ -24,6 +26,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 // ?embed (for example /live?embed) drops the header, footer and pet, for showing a page in an iframe.
 const embed = computed(() => route.query.embed !== undefined)
+// ?theme=light|dark (or after the #) sets the theme for this view only, to match the host page.
+watch(() => routeParam(route, 'theme'), setUrlTheme, { immediate: true })
 
 const exerciseCount = computed(() => state.content?.exercises.length ?? 0)
 // The quiz counts as one more step on the journey, done once it's passed.

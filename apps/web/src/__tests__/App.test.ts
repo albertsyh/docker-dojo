@@ -68,6 +68,38 @@ describe('App header', () => {
     wrapper.unmount()
   })
 
+  it('a theme in the URL applies without replacing the saved one', async () => {
+    const root = document.documentElement
+    localStorage.setItem('docker-dojo:theme', 'light')
+    const { wrapper, router } = await renderApp()
+
+    await router.push('/live?embed#theme=dark')
+    await flushPromises()
+    expect(root.dataset.theme).toBe('dark')
+    expect(localStorage.getItem('docker-dojo:theme')).toBe('light')
+
+    // The ? works too, and the # wins over it.
+    await router.push('/live?embed&theme=dark#theme=light')
+    await flushPromises()
+    expect(root.dataset.theme).toBe('light')
+    await router.push('/live?embed&theme=dark')
+    await flushPromises()
+    expect(root.dataset.theme).toBe('dark')
+
+    // Nonsense, or no theme at all, falls back to the saved choice.
+    await router.push('/live?embed#theme=purple')
+    await flushPromises()
+    expect(root.dataset.theme).toBe('light')
+    await router.push('/live?embed#theme=dark')
+    await router.push('/live')
+    await flushPromises()
+    expect(root.dataset.theme).toBe('light')
+
+    wrapper.unmount()
+    localStorage.removeItem('docker-dojo:theme')
+    delete root.dataset.theme
+  })
+
   it('menu button opens and closes the menu from its live state', async () => {
     const { wrapper } = await renderApp()
     const button = wrapper.find('button.menu-btn')

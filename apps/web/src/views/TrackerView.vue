@@ -5,6 +5,7 @@ import { api, type Stats } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import ExerciseLadder from '../components/ExerciseLadder.vue'
 import { getEcho } from '../realtime'
+import { routeParam } from '../routeParams'
 import { state } from '../store'
 
 // /live?embed: exercise progress only, for an iframe on the session's own site. App.vue drops the chrome.
@@ -109,13 +110,8 @@ const quizGroups = computed(() => {
 })
 // ?exercise=<id>&count=N: just the named exercise and its neighbours (N in all, default 3),
 // for showing the part of the course the room is on. Numbers keep their place in the full list.
-// Both may also come after the # (/live?embed#exercise=<id>): a host page that changes only that
-// part of an iframe's src moves the list along without reloading the frame. The # wins over the ?.
-const hashParams = computed(() => new URLSearchParams(route.hash.slice(1)))
-const param = (name: string) => {
-  const q = route.query[name]
-  return hashParams.value.get(name) ?? (typeof q === 'string' ? q : null)
-}
+// Both may also come after the # (/live?embed#exercise=<id>), see routeParams.ts.
+const param = (name: string) => routeParam(route, name)
 const focusId = computed(() => param('exercise'))
 // A take-home exercise in ?exercise swaps the list for that track's own.
 const focusTrack = computed(() => stats.value?.takeHome.find((t) => t.exercises.some((e) => e.id === focusId.value)) ?? null)

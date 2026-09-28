@@ -1,0 +1,60 @@
+<!doctype html>
+<!-- Source of apps/web/public/og.png, the link-preview image. Render it with: bun scripts/og-image.ts -->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+  @font-face { font-family: 'Figtree'; font-weight: 300 900; src: url('../node_modules/@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'JetBrains Mono'; font-weight: 100 800; src: url('../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2') format('woff2'); }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; }
+  body {
+    font-family: 'Figtree', sans-serif; color: #141d16; background: #ffffff;
+    display: grid; grid-template-columns: 1fr 470px; gap: 56px; padding: 72px 72px 64px;
+    font-feature-settings: 'ss01'; -webkit-font-smoothing: antialiased;
+  }
+  .copy { display: flex; flex-direction: column; }
+  .brand { display: flex; align-items: center; gap: 16px; font-size: 34px; font-weight: 800; letter-spacing: -0.02em; }
+  .brand svg { width: 56px; height: 56px; }
+  h1 { margin-top: 56px; font-size: 64px; line-height: 1.08; font-weight: 800; letter-spacing: -0.035em; }
+  h1 mark { background: #fde75e; color: #272201; padding: 0 10px; border-radius: 8px; }
+  .sub { margin-top: 28px; font-size: 26px; line-height: 1.4; color: #535e55; max-width: 24ch; }
+  .fine { margin-top: auto; font-size: 17px; color: #535e55; }
+
+  .bench { align-self: center; display: grid; gap: 20px; }
+  .term { background: #131a15; color: #e3eae4; border-radius: 12px; padding: 22px 24px; font-family: 'JetBrains Mono', monospace; font-size: 17px; line-height: 1.7; }
+  .term .p { color: #80cd82; }
+  .term .m { color: #8c9e8f; }
+  .ladder { list-style: none; padding: 20px 24px; border: 1px solid #d9e0da; border-radius: 12px; background: #f3f8f4; display: grid; gap: 14px; }
+  .ladder li { display: grid; grid-template-columns: 26px 1fr 110px; gap: 14px; align-items: center; font-size: 20px; font-weight: 650; }
+  .ladder .n { color: #535e55; font-weight: 500; }
+  .ladder .bar { height: 12px; border-radius: 999px; background: #e9f1ea; overflow: hidden; }
+  .ladder .bar i { display: block; height: 100%; background: #226929; border-radius: 999px; }
+  .ladder li.here { background: #fff7c9; margin: 0 -12px; padding: 6px 12px; border-radius: 8px; }
+</style>
+</head>
+<body>
+  <div class="copy">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#226929"/><path d="M3 13.5h26v5H3z" fill="#fde75e"/><path d="M14.2 18.3l-4.4 8.2h3.6l2.6-6.3zM17.8 18.3l4.4 8.2h-3.6l-2.6-6.3z" fill="#fde75e"/><rect x="13" y="12.2" width="6" height="7.6" rx="1.4" fill="#e3c93d"/></svg>
+      Docker Dojo
+    </div>
+    <h1>Copy a command.<br />Run it. <mark>Tick it off.</mark></h1>
+    <p class="sub">A 90-minute, hands-on Docker and Compose workshop.</p>
+    <p class="fine">Unofficial. Not affiliated with Docker, Inc.</p>
+  </div>
+
+  <div class="bench" aria-hidden="true">
+    <div class="term">
+      <div><span class="p">$</span> docker run -d -p 8080:80 nginx:alpine</div>
+      <div class="m">3f9a2c1e8b7d…</div>
+      <div><span class="p">$</span> docker compose up -d</div>
+    </div>
+    <ol class="ladder">
+      <li><span class="n">1</span><span>Hello, Docker</span><span class="bar"><i style="width: 92%"></i></span></li>
+      <li class="here"><span class="n">2</span><span>Run a web server</span><span class="bar"><i style="width: 64%"></i></span></li>
+      <li><span class="n">3</span><span>Look inside</span><span class="bar"><i style="width: 30%"></i></span></li>
+    </ol>
+  </div>
+</body>
+</html>

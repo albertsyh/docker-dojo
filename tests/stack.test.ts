@@ -73,6 +73,28 @@ describe('web (nginx)', () => {
     }
   })
 
+  test('fills in link previews per route, from the request host', async () => {
+    const meta = async (path: string, headers: Record<string, string> = {}) => {
+      const html = await (await fetch(BASE + path, { headers })).text()
+      expect(html).not.toContain('__OG_')
+      const tag = (p: string) => html.match(new RegExp(`property="${p}" content="([^"]*)"`))?.[1]
+      return { title: tag('og:title'), url: tag('og:url'), image: tag('og:image') }
+    }
+    const host = new URL(BASE).host
+    expect(await meta('/')).toEqual({ title: 'Docker Dojo', url: `http://${host}/`, image: `http://${host}/og.png` })
+    expect((await meta('/live?embed&exercise=hello-docker')).title).toBe('Live · Docker Dojo')
+    expect((await meta('/live?embed&exercise=hello-docker')).url).toBe(`http://${host}/live`)
+    expect((await meta('/exercises/hello-docker')).title).toBe('Exercises · Docker Dojo')
+    // A lookalike path is not the Live page.
+    expect((await meta('/lively')).title).toBe('Docker Dojo')
+    // Behind the tunnel, cloudflared says https.
+    expect((await meta('/', { 'X-Forwarded-Proto': 'https' })).image).toBe(`https://${host}/og.png`)
+
+    const image = await fetch(`${BASE}/og.png`)
+    expect(image.status).toBe(200)
+    expect(image.headers.get('content-type')).toBe('image/png')
+  })
+
   test('does not expose the Reverb HTTP API', async () => {
     // /apps/... is how servers publish events to Reverb. nginx must answer it itself.
     const post = await fetch(`${BASE}/apps/dojo/events`, { method: 'POST' })

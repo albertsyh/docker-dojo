@@ -2,6 +2,9 @@
 # ${APP_TLS_NAME} come from the environment. nginx's own $variables are left alone.
 server_tokens off;
 
+# Link previews: titles, descriptions and the page path, from the web image (apps/web/og-meta.conf).
+include /etc/nginx/og-meta.conf;
+
 server {
     listen 80;
     server_name _;
@@ -73,5 +76,11 @@ server {
 
     location / {
         try_files $uri $uri/ /index.html;
+        # Link previews, on the one public hostname.
+        sub_filter_once off;
+        sub_filter '__OG_TITLE__' $og_title;
+        sub_filter '__OG_DESCRIPTION__' $og_description;
+        sub_filter '__OG_ORIGIN__' https://${PUBLIC_HOSTNAME};
+        sub_filter '__OG_PATH__' $og_path;
     }
 }

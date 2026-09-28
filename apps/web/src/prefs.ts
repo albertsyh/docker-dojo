@@ -48,6 +48,16 @@ export function toggleTheme() {
   prefs.theme = next
 }
 
+// A theme in the URL (?theme=dark, or #theme=dark for an embed) applies without being saved, so it
+// never changes the viewer's own choice. Without one, the saved choice or the system setting applies.
+export function setUrlTheme(theme: string | null) {
+  const saved = read(THEME_KEY)
+  const next = theme === 'light' || theme === 'dark' ? theme : saved === 'light' || saved === 'dark' ? saved : null
+  if (next) root.dataset.theme = next
+  else delete root.dataset.theme
+  prefs.theme = effectiveTheme()
+}
+
 export function setScale(index: number) {
   prefs.scale = index
   root.style.fontSize = `${TEXT_SCALES[index] * 100}%`

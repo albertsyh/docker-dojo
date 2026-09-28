@@ -69,6 +69,8 @@ take-home tracks are under \`takeHome\`, each with its own \`exercises\`.
 - For an iframe whose exercise changes (a slide deck), put the settings after a \`#\`:
   \`/live?embed#exercise=<id>&count=5\`. Changing only the part after the \`#\` moves the list
   along without reloading the frame. \`embed\` stays before the \`#\`.
+- Add \`theme=light\` or \`theme=dark\` (before or after the \`#\`) to match the host page. It
+  applies to that view only and never changes the theme a viewer saved on the Dojo.
 - A take-home id shows that track's list instead, numbered within the track.
 - An id that doesn't exist shows every exercise, with a note saying so.
 

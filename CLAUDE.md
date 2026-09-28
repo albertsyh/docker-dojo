@@ -249,7 +249,14 @@ than one line, so the JSON stays readable. The three kinds of question:
   track's own list instead. An unknown id shows them all. `exercise` and `count` also work after
   a `#` (`/live?embed#exercise=<id>`, the `#` wins), so a host changing only that part of an
   iframe's src moves the list without reloading it. `main.ts` skips anchor scrolling for a `#` with `=`.
+  `theme=light|dark` (either place, any route, read by `routeParam()` in `src/routeParams.ts`) sets the
+  theme for that view without saving it (`setUrlTheme` in `prefs.ts`; `index.html` applies it before first paint).
   Keep nginx free of `X-Frame-Options` and `frame-ancestors`, or the embed breaks (the stack test checks).
+- Link previews: `index.html` carries Open Graph tags with `__OG_TITLE__`-style placeholders, which
+  nginx fills in (`sub_filter`) because crawlers don't run the app. Per-route titles and descriptions
+  live in `apps/web/og-meta.conf`, shared by `nginx.conf` and the enterprise edge; add a route there
+  when you add a page. Every page shares `public/og.png`, rendered from `apps/web/og/og-image.html`
+  by `bun scripts/og-image.ts`. The stack test checks the filled-in tags.
 - Copying goes through `copyText()` in `src/clipboard.ts`. The Clipboard API is missing on
   plain-http LAN addresses (a workshop on a laptop's IP), so it falls back to a hidden
   textarea. `notify()` shows the one-line toast (`ToastHost.vue`). The participant id copies
