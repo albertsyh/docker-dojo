@@ -146,6 +146,8 @@ nav a.router-link-active::after {
 .rail > span { display: block; height: 100%; background: var(--primary); transform-origin: left; transition: transform var(--dur-slow) var(--ease-out); }
 .main { flex: 1; width: 100%; padding-top: var(--space-7); padding-bottom: var(--space-8); }
 .main.embed { padding-block: var(--space-5); }
+/* The Live page fits itself to the frame, so it gets all of it. */
+.main.embed:has(> .fit) { max-width: none; padding: 0; }
 .foot { border-top: 1px solid var(--border); background: var(--panel); }
 .foot-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-5); flex-wrap: wrap; padding-block: var(--space-4); }
 .credits { margin: 0; font-size: var(--text-sm); }

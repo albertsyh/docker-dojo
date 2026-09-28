@@ -49,7 +49,46 @@ onMounted(() => {
   unbind = () => conn.unbind('state_change', onState)
 })
 
+// Embedded, the page scales to fill its frame. An iframe comes in any shape, so it lays the
+// content out at a range of widths and keeps the one that fills the frame best when scaled up.
+// Too tall even at the smallest scale, it scrolls rather than shrinking past readable.
+const MIN_WIDTH = 640
+const MAX_WIDTH = 1100
+const MIN_SCALE = 0.75
+const frame = ref<HTMLElement | null>(null)
+const stage = ref<HTMLElement | null>(null)
+const fit = ref({ width: 0, height: 0, scale: 1 })
+function refit() {
+  const box = frame.value
+  const el = stage.value
+  if (!embed.value || !box || !el) return
+  const vw = box.clientWidth
+  const vh = document.documentElement.clientHeight
+  let best = { width: MIN_WIDTH, height: 0, scale: 0 }
+  for (let w = Math.min(MIN_WIDTH, vw); w <= Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, vw)); w += 40) {
+    el.style.width = `${w}px`
+    const h = el.offsetHeight
+    const scale = Math.min(vw / w, vh / h)
+    if (scale > best.scale) best = { width: w, height: h, scale }
+  }
+  // Vue only patches the width when its own value changes, so put the winner back by hand.
+  el.style.width = `${best.width}px`
+  fit.value = { ...best, scale: Math.max(MIN_SCALE, best.scale) }
+}
+let observer: ResizeObserver | undefined
+onMounted(() => {
+  if (!embed.value || !stage.value) return
+  observer = new ResizeObserver(() => refit())
+  observer.observe(stage.value)
+  window.addEventListener('resize', refit)
+  refit()
+})
+const sizerStyle = computed(() => (embed.value && fit.value.height ? { width: `${fit.value.width * fit.value.scale}px`, height: `${fit.value.height * fit.value.scale}px` } : undefined))
+const stageStyle = computed(() => (embed.value && fit.value.height ? { width: `${fit.value.width}px`, transform: `scale(${fit.value.scale})` } : undefined))
+
 onBeforeUnmount(() => {
+  observer?.disconnect()
+  window.removeEventListener('resize', refit)
   clearInterval(refreshTimer)
   unbind?.()
   state.content?.realtime.key && getEcho(state.content.realtime.key).leaveChannel('tracker')
@@ -88,7 +127,9 @@ const width = (n: number) => `${pct(n, stats.value?.participants ?? 0)}%`
 </script>
 
 <template>
-  <div class="tracker wide-page">
+  <div ref="frame" class="wide-page" :class="{ fit: embed }">
+  <div class="sizer" :style="sizerStyle">
+  <div ref="stage" class="tracker" :style="stageStyle">
     <header class="head">
       <h1 v-if="!embed">Live</h1>
       <span class="status" :class="connection" role="status">
@@ -172,10 +213,17 @@ const width = (n: number) => `${pct(n, stats.value?.participants ?? 0)}%`
     </template>
     <p v-else-if="!error" class="muted">Loading…</p>
   </div>
+  </div>
+  </div>
 </template>
 
 <style scoped>
 .tracker { display: grid; gap: var(--space-6); }
+/* Embedded: the stage is laid out at a fixed width, then scaled from its corner into a sizer
+   that reserves the scaled size, centred in the frame. */
+.fit { min-height: 100dvh; display: grid; place-items: center; overflow-x: hidden; }
+.fit .tracker { padding: var(--space-5); transform-origin: 0 0; }
+.fit .headline { font-size: var(--text-3xl); }
 .head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
 .head h1 { margin: 0; }
 .status { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 650; font-size: var(--text-sm); color: var(--muted); padding: var(--space-1) var(--space-3); border-radius: 999px; background: var(--panel); }
