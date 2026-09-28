@@ -246,7 +246,9 @@ than one line, so the JSON stays readable. The three kinds of question:
   iframe on another site. On `/live` it also drops the quiz and shows exercise progress only.
   `/live?exercise=<id>&count=N` narrows the list to N exercises (default 3) centred on that
   one, shifted in at either end, with the named one highlighted. A take-home id narrows that
-  track's own list instead. An unknown id shows them all.
+  track's own list instead. An unknown id shows them all. `exercise` and `count` also work after
+  a `#` (`/live?embed#exercise=<id>`, the `#` wins), so a host changing only that part of an
+  iframe's src moves the list without reloading it. `main.ts` skips anchor scrolling for a `#` with `=`.
   Keep nginx free of `X-Frame-Options` and `frame-ancestors`, or the embed breaks (the stack test checks).
 - Copying goes through `copyText()` in `src/clipboard.ts`. The Clipboard API is missing on
   plain-http LAN addresses (a workshop on a laptop's IP), so it falls back to a hidden

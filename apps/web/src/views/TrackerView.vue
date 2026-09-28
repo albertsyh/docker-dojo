@@ -109,7 +109,14 @@ const quizGroups = computed(() => {
 })
 // ?exercise=<id>&count=N: just the named exercise and its neighbours (N in all, default 3),
 // for showing the part of the course the room is on. Numbers keep their place in the full list.
-const focusId = computed(() => (typeof route.query.exercise === 'string' ? route.query.exercise : null))
+// Both may also come after the # (/live?embed#exercise=<id>): a host page that changes only that
+// part of an iframe's src moves the list along without reloading the frame. The # wins over the ?.
+const hashParams = computed(() => new URLSearchParams(route.hash.slice(1)))
+const param = (name: string) => {
+  const q = route.query[name]
+  return hashParams.value.get(name) ?? (typeof q === 'string' ? q : null)
+}
+const focusId = computed(() => param('exercise'))
 // A take-home exercise in ?exercise swaps the list for that track's own.
 const focusTrack = computed(() => stats.value?.takeHome.find((t) => t.exercises.some((e) => e.id === focusId.value)) ?? null)
 const numbered = <T,>(list: T[]) => list.map((ex, i) => ({ ...ex, n: i + 1 }))
@@ -117,7 +124,7 @@ const rows = computed(() => {
   const all = numbered(focusTrack.value?.exercises ?? stats.value?.exercises ?? [])
   const at = all.findIndex((ex) => ex.id === focusId.value)
   if (at < 0) return { list: all, total: all.length, focused: false }
-  const count = Math.min(all.length, Math.max(1, Number.parseInt(String(route.query.count ?? 3), 10) || 3))
+  const count = Math.min(all.length, Math.max(1, Number.parseInt(param('count') ?? '3', 10) || 3))
   // Centred on the named exercise, shifted inwards at either end so there are always `count`.
   const start = Math.min(Math.max(0, at - Math.floor((count - 1) / 2)), all.length - count)
   return { list: all.slice(start, start + count), total: all.length, focused: true }

@@ -31,7 +31,11 @@ const router = createRouter({
     { path: '/live', component: TrackerView },
   ],
   // In-page links (the glossary's and references' topic lists) land below the sticky header.
-  scrollBehavior: (to) => (to.hash ? { el: to.hash, top: 88 } : { top: 0 }),
+  // A # holding settings (the Live page's #exercise=<id>) is not an anchor, and changing it stays put.
+  scrollBehavior: (to, from) => {
+    if (to.hash.includes('=')) return to.path === from.path ? false : { top: 0 }
+    return to.hash ? { el: to.hash, top: 88 } : { top: 0 }
+  },
 })
 
 // The chat listens app-wide, so the pet and nav can show unread questions on any page.

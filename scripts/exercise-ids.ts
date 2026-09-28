@@ -66,6 +66,9 @@ take-home tracks are under \`takeHome\`, each with its own \`exercises\`.
 - Add \`&count=5\` (any number) to show more. At the start or end of the course the
   window shifts in, so the count stays the same.
 - Leave out \`embed\` to keep the header and the quiz section.
+- For an iframe whose exercise changes (a slide deck), put the settings after a \`#\`:
+  \`/live?embed#exercise=<id>&count=5\`. Changing only the part after the \`#\` moves the list
+  along without reloading the frame. \`embed\` stays before the \`#\`.
 - A take-home id shows that track's list instead, numbered within the track.
 - An id that doesn't exist shows every exercise, with a note saying so.
 

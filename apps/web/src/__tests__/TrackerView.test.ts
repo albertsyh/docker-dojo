@@ -41,13 +41,18 @@ const stats: Stats = {
 }
 
 async function render(path = '/live', s: Stats = stats) {
-  vi.spyOn(api, 'stats').mockResolvedValue(structuredClone(s))
+  const { wrapper } = await renderWithRouter(path, s)
+  return wrapper
+}
+
+async function renderWithRouter(path = '/live', s: Stats = stats) {
+  const spy = vi.spyOn(api, 'stats').mockResolvedValue(structuredClone(s))
   const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/live', component: TrackerView }] })
   router.push(path)
   await router.isReady()
   const wrapper = mount(TrackerView, { global: { plugins: [router] } })
   await flushPromises()
-  return wrapper
+  return { wrapper, router, spy }
 }
 
 describe('TrackerView', () => {
@@ -109,6 +114,31 @@ describe('TrackerView', () => {
     // Nonsense counts fall back to 3, and huge ones to the whole list.
     expect((await shown('exercise=c&count=abc')).nums).toBe('2,3,4')
     expect((await shown('exercise=c&count=99')).nums).toBe('1,2,3,4,5,6')
+  })
+
+  it('#exercise works like ?exercise, and a new # moves the list without reloading', async () => {
+    const many: Stats = {
+      ...stats,
+      exercises: ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => ({ id, title: id.toUpperCase(), completed: 0, here: 0 })),
+    }
+    const { wrapper, router, spy } = await renderWithRouter('/live?embed#exercise=c&count=1', many)
+    const nums = () => wrapper.findAll('.ladder li .ex-num').map((n) => n.text()).join(',')
+    expect(nums()).toBe('3')
+    const fetches = spy.mock.calls.length
+
+    // What an iframe host does: change only the part after the #.
+    await router.push('/live?embed#exercise=f')
+    await flushPromises()
+    expect(nums()).toBe('4,5,6')
+    expect(wrapper.find('.ladder li.current .ex-name').text()).toBe('F')
+    // Same page, same stats: nothing was fetched again.
+    expect(spy.mock.calls.length).toBe(fetches)
+
+    // With both, the # wins.
+    await router.push('/live?embed&exercise=a#exercise=d&count=1')
+    await flushPromises()
+    expect(nums()).toBe('4')
+    wrapper.unmount()
   })
 
   it('an unknown ?exercise shows everything and says so', async () => {
