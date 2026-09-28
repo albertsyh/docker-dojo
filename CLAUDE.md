@@ -86,12 +86,41 @@ progress for it. Only do that between workshops.
 
 ## Quiz
 
-- `quiz.json` has a `passMark` (0.7) and questions with an `id`, `prompt`, four
-  `options`, the `answer` index, and an `explanation`.
-- Answers are graded on the server and must never reach the browser before submission.
-  `Content::publicQuiz()` strips them. Keep it that way for any new field that gives the
-  answer away.
-- One question per exercise idea, roughly. Keep the correct-answer positions varied.
+`quiz.json` is a **pool**. Each quiz (a "paper") draws `split` questions from each level:
+4 easy, 3 medium and 3 advanced, 10 in total. The server picks the questions the
+participant has seen least, so retakes get new ones. `App\Support\Quiz` holds the logic.
+
+Top-level keys: `passMark`, `minutes` (shown in the course list), `split`, `scenarios`
+and `questions`. Code may be a string or a list of lines. Use lines for anything longer
+than one line, so the JSON stays readable. The three kinds of question:
+
+```jsonc
+// easy: multiple choice
+{ "id": "ps-all", "level": "easy", "prompt": "…", "options": ["…", "…", "…", "…"], "answer": 2, "explanation": "…" }
+
+// medium: fill in the blanks. context sets the scene first; {{1}}, {{2}} mark the gaps.
+// Each blank lists accepted answers, and the first one is shown as the solution.
+{ "id": "build-tag", "level": "medium", "context": "You are in a folder…", "prompt": "Fill in the flag and the build context.",
+  "label": "terminal", "code": ["docker build {{1}} my-site:2.0 {{2}}"], "blanks": [["-t", "--tag"], ["."]], "explanation": "…" }
+
+// advanced: multiple choice about one full compose file from "scenarios"
+{ "id": "shop-browser", "level": "advanced", "scenario": "shop", "prompt": "…", "options": […], "answer": 1, "explanation": "…" }
+```
+
+- **Blanks matching:** case, surrounding spaces and quotes, and doubled spaces are
+  ignored (`Quiz::normalise`). List real alternatives (`-d`, `--detach`), not typos.
+- **Blank order:** if two blanks could be filled in either order, rewrite the question so
+  each has only one right place. Grading is by position.
+- **Advanced papers:** all advanced questions in a paper come from one scenario. Give
+  every scenario at least `split.advanced` questions (more is better, for variety).
+- **Growing the pool:** keep at least twice the split per level, so a retake never
+  repeats a question. The content tests enforce all of this.
+- **Answers stay on the server:**
+  - they are never sent before submission;
+  - a paper is signed (HMAC over participant and question ids) and can be submitted
+    only once, via the unique `paper_token` column;
+  - any new field that gives away an answer must stay out of `Quiz::publicQuestion`.
+- **Answer positions:** keep the correct option in varied positions.
 
 ## Copy and voice
 
@@ -116,6 +145,11 @@ progress for it. Only do that between workshops.
 - Named rate limiters in `AppServiceProvider`: `join`, `suggest`, `participant`, `quiz`.
   A whole classroom shares one IP behind NAT, so `join` is configurable
   (`DOJO_JOIN_PER_MINUTE`).
+- The tracker puts every participant in exactly one quiz group: passed, trying again
+  (submitted, not passed), taking it now, or not started. "Taking it now" means
+  `quiz_opened_at` is set, no submission yet, and `last_seen_at` is inside the 5-minute
+  active window. Answering sends nothing, so the quiz page checks in every 2 minutes to
+  keep a student in that group. Keep that check-in if you touch `QuizView`.
 - Redis is not needed. It only becomes necessary with more than one Reverb instance.
 - The container entrypoint caches config and routes and runs migrations, so env changes
   need a restart, not just a file edit.

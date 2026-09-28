@@ -86,9 +86,14 @@ class DojoController extends Controller
     /** A new quiz for this participant: questions without answers, and a one-time token. */
     public function quizPaper(string $id): JsonResponse
     {
-        $this->touch($id);
+        $this->touch($id)->forceFill(['quiz_opened_at' => now()])->save();
+        $paper = Quiz::paper($id);
+        // Opening a first quiz moves someone to "taking it now" on the tracker.
+        if (! QuizAttempt::where('participant_id', $id)->exists()) {
+            Stats::broadcast();
+        }
 
-        return response()->json(Quiz::paper($id));
+        return response()->json($paper);
     }
 
     public function submitQuiz(Request $request, string $id): JsonResponse
@@ -141,7 +146,7 @@ class DojoController extends Controller
     }
 
     /** 404 for unknown ids, and record activity for the "active now" count. */
-    private function touch(string $id): void
+    private function touch(string $id): Participant
     {
         abort_unless(Participant::isValidId($id), 404, 'Unknown participant.');
         // Not update()'s row count: MySQL reports 0 affected rows when the timestamp
@@ -149,6 +154,8 @@ class DojoController extends Controller
         $participant = Participant::find($id);
         abort_unless($participant, 404, 'Unknown participant.');
         $participant->forceFill(['last_seen_at' => now()])->save();
+
+        return $participant;
     }
 
     private function progress(string $id): array

@@ -71,7 +71,8 @@ export type Stats = {
   exerciseCompletionPct: number
   finishedAllExercises: number
   exercises: { id: string; title: string; completed: number }[]
-  quiz: { attempted: number; passed: number; averageBestPct: number | null }
+  /** attempted = submitted at least once. takingNow = opened a quiz, not submitted yet, active in the window. */
+  quiz: { attempted: number; passed: number; takingNow: number; averageBestPct: number | null }
   updatedAt: string
 }
 

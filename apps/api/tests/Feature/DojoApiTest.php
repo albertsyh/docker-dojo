@@ -6,6 +6,7 @@ use App\Events\StatsUpdated;
 use App\Models\Participant;
 use App\Support\Content;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -288,7 +289,7 @@ class DojoApiTest extends TestCase
             'participants' => 2,
             'activeNow' => 2,
             'finishedAllExercises' => 1,
-            'quiz' => ['attempted' => 1, 'passed' => 1, 'averageBestPct' => 100],
+            'quiz' => ['attempted' => 1, 'passed' => 1, 'takingNow' => 0, 'averageBestPct' => 100],
         ]);
         $this->assertSame(2, collect($stats->json('exercises'))->firstWhere('id', 'hello-docker')['completed']);
     }
@@ -300,8 +301,43 @@ class DojoApiTest extends TestCase
         $this->putJson("/api/participants/$id/exercises/hello-docker");
         $this->deleteJson("/api/participants/$id/exercises/hello-docker");
         $this->passQuiz($id);
+        // A retake does not change the tracker until it is submitted.
+        $this->paper($id);
 
-        Event::assertDispatchedTimes(StatsUpdated::class, 4);
+        // join, done, undone, first quiz opened, quiz submitted.
+        Event::assertDispatchedTimes(StatsUpdated::class, 5);
+    }
+
+    public function test_opening_a_quiz_counts_as_taking_it_now_while_active(): void
+    {
+        $id = $this->join();
+        $quizStats = fn () => $this->getJson('/api/stats')->json('quiz');
+
+        $this->assertSame(0, $quizStats()['takingNow'], 'Joining is not taking the quiz.');
+
+        $this->paper($id);
+        $this->assertSame(1, $quizStats()['takingNow']);
+
+        // The quiz page checks in every 2 minutes, which keeps them in the group...
+        $this->travel(4)->minutes();
+        $this->getJson("/api/participants/$id")->assertOk();
+        $this->travel(4)->minutes();
+        $this->assertSame(1, $quizStats()['takingNow']);
+
+        // ...and someone who opened it and left drops out after 5 quiet minutes.
+        $this->travel(6)->minutes();
+        $this->assertSame(0, $quizStats()['takingNow']);
+    }
+
+    public function test_after_submitting_you_are_no_longer_taking_it_now(): void
+    {
+        $id = $this->join();
+        $this->submit($id, $this->paper($id), right: 0)->assertOk();
+        // Opening a retake keeps them under "trying again", not "taking it now".
+        $this->paper($id);
+
+        $quiz = $this->getJson('/api/stats')->json('quiz');
+        $this->assertSame(['attempted' => 1, 'passed' => 0, 'takingNow' => 0], Arr::only($quiz, ['attempted', 'passed', 'takingNow']));
     }
 
     public function test_a_broadcast_failure_does_not_fail_the_request(): void

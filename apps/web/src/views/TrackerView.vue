@@ -52,14 +52,17 @@ onBeforeUnmount(() => {
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0)
 const origin = location.origin
 
-// Quiz as one stacked bar across everyone who joined: passed / tried but not passed / not yet.
-const quizSplit = computed(() => {
+// Quiz as one stacked bar across everyone who joined. Every participant is in exactly one group.
+const quizGroups = computed(() => {
   const s = stats.value
-  if (!s || !s.participants) return { passed: 0, tried: 0, notYet: 100 }
-  const passed = pct(s.quiz.passed, s.participants)
-  const tried = pct(s.quiz.attempted - s.quiz.passed, s.participants)
-  return { passed, tried, notYet: Math.max(0, 100 - passed - tried) }
+  if (!s) return null
+  const passed = s.quiz.passed
+  const tryingAgain = s.quiz.attempted - s.quiz.passed
+  const takingNow = s.quiz.takingNow
+  const notStarted = Math.max(0, s.participants - passed - tryingAgain - takingNow)
+  return { passed, tryingAgain, takingNow, notStarted }
 })
+const width = (n: number) => `${pct(n, stats.value?.participants ?? 0)}%`
 </script>
 
 <template>
@@ -103,18 +106,21 @@ const quizSplit = computed(() => {
 
         <section aria-labelledby="quiz-title" class="quiz">
           <h2 id="quiz-title">Quiz</h2>
-          <p class="quiz-line">
-            <strong>{{ stats.quiz.passed }}</strong> passed,
-            <strong>{{ stats.quiz.attempted - stats.quiz.passed }}</strong> still trying,
-            <strong>{{ stats.participants - stats.quiz.attempted }}</strong> not started.
+          <p v-if="quizGroups" class="quiz-line">
+            <strong>{{ quizGroups.passed }}</strong> passed,
+            <strong>{{ quizGroups.tryingAgain }}</strong> trying again,
+            <strong>{{ quizGroups.takingNow }}</strong> taking it now,
+            <strong>{{ quizGroups.notStarted }}</strong> not started.
           </p>
-          <div class="stacked" aria-hidden="true">
-            <span class="passed" :style="{ width: `${quizSplit.passed}%` }" />
-            <span class="tried" :style="{ width: `${quizSplit.tried}%` }" />
+          <div v-if="quizGroups" class="stacked" aria-hidden="true">
+            <span class="passed" :style="{ width: width(quizGroups.passed) }" />
+            <span class="tried" :style="{ width: width(quizGroups.tryingAgain) }" />
+            <span class="taking" :style="{ width: width(quizGroups.takingNow) }" />
           </div>
           <ul class="legend">
             <li><i class="passed" />Passed</li>
-            <li><i class="tried" />Tried, not passed yet</li>
+            <li><i class="tried" />Submitted, not passed yet</li>
+            <li><i class="taking" />Taking it now (active in the last {{ stats.activeWindowMinutes }} min)</li>
             <li><i class="not-yet" />Not started</li>
           </ul>
           <p v-if="stats.quiz.averageBestPct !== null" class="muted">Average best score: {{ stats.quiz.averageBestPct }}%</p>
@@ -168,6 +174,8 @@ h2 { font-size: var(--text-xl); margin-bottom: var(--space-1); }
 .stacked span { display: block; height: 100%; }
 .passed { background: var(--primary); }
 .tried { background: var(--highlight); }
+/* In progress: stripes of the "done" green, so it reads as on its way there. */
+.taking { background: repeating-linear-gradient(135deg, var(--primary) 0 4px, var(--primary-soft) 4px 8px); }
 .legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); font-size: var(--text-sm); }
 .legend li { display: inline-flex; align-items: center; gap: var(--space-2); }
 .legend i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border-strong); }

@@ -16,7 +16,7 @@ class Participant extends Model
 
     protected function casts(): array
     {
-        return ['last_seen_at' => 'datetime'];
+        return ['last_seen_at' => 'datetime', 'quiz_opened_at' => 'datetime'];
     }
 
     private const ADJECTIVES = ['swift', 'calm', 'brave', 'bright', 'clever', 'eager', 'gentle', 'happy', 'jolly', 'keen', 'lucky', 'mighty', 'nimble', 'proud', 'quick', 'sunny', 'tidy', 'witty', 'zesty', 'bold'];

@@ -102,3 +102,35 @@ describe('QuizView', () => {
     expect(wrapper.find('.score').exists()).toBe(false)
   })
 })
+
+describe('QuizView check-in', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers()
+    state.content = structuredClone(content)
+    state.progress = { id: 'brave-otter-abc123', completed: [], quiz: null }
+    vi.spyOn(api, 'quizPaper').mockResolvedValue(structuredClone(paper))
+    window.scrollTo = vi.fn()
+  })
+
+  it('checks in every 2 minutes while a quiz is open, and stops once submitted', async () => {
+    const progress = vi.spyOn(api, 'progress').mockResolvedValue(state.progress!)
+    vi.spyOn(api, 'submitQuiz').mockResolvedValue(structuredClone(graded))
+    const wrapper = await render()
+
+    vi.advanceTimersByTime(119_000)
+    expect(progress).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1_000)
+    expect(progress).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(120_000)
+    expect(progress).toHaveBeenCalledTimes(2)
+
+    ;(wrapper.vm as unknown as { result: QuizResult }).result = structuredClone(graded)
+    await flushPromises()
+    vi.advanceTimersByTime(600_000)
+    expect(progress).toHaveBeenCalledTimes(2)
+
+    wrapper.unmount()
+    vi.useRealTimers()
+  })
+})

@@ -1,7 +1,8 @@
 # docker-dojo
 
 A 90-minute, hands-on Docker and Docker Compose workshop: 14 copy-paste exercises
-(~75 min) and a 15-question quiz (~12 min), with a glossary, anonymous progress
+(~75 min) and a 10-question quiz (~12 min) drawn from a pool of easy, fill-in-the-blank
+and compose-file questions, with a glossary, anonymous progress
 tracking and a live tracker for the trainer. The app is itself fully dockerised, so students can
 read and run it as the final example.
 
@@ -30,7 +31,7 @@ browser ──► web (nginx :80, published as :8000)
 | Path | What |
 | --- | --- |
 | `apps/web` | Vue 3 + Vite + vue-router. Multi-stage Dockerfile: Bun installs, Node builds, nginx serves. |
-| `apps/api` | Laravel API. `resources/content/*.json` holds the exercises and quiz. Edit those to change the course. |
+| `apps/api` | Laravel API. `resources/content/*.json` holds the exercises, the quiz pool and the glossary. Edit those to change the course (see CLAUDE.md for the formats). |
 | `compose.yaml` | The four services. Every setting has a localhost default. |
 
 - **Identity:** `POST /api/participants` returns an anonymous id like `swift-otter-7f3k9q`,

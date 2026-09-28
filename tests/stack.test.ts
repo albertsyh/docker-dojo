@@ -91,6 +91,8 @@ describe('api', () => {
     // A paper has no answers. Submitting it once grades it; the same paper cannot count twice.
     const paper = (await api('GET', `/participants/${id}/quiz`)).json
     expect(paper.questions).toHaveLength(content.quiz.questionCount)
+    // Opening it puts this student under "taking it now" on the tracker.
+    expect((await api('GET', '/stats')).json.quiz.takingNow).toBeGreaterThanOrEqual(1)
     expect(JSON.stringify(paper.questions)).not.toMatch(/"(answer|explanation)"/)
     const ids = paper.questions.map((q: any) => q.id)
     const answers = paper.questions.map((q: any) => (q.kind === 'blanks' ? Array(q.blanks).fill('x') : 0))

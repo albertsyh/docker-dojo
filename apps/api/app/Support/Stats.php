@@ -40,6 +40,14 @@ class Stats
             ->selectRaw('COUNT(DISTINCT CASE WHEN passed THEN participant_id END) AS passed')
             ->first();
 
+        // Opened a quiz, has not submitted one yet, and was active recently. The quiz page
+        // checks in every 2 minutes, so someone mid-quiz stays in this group.
+        $takingNow = DB::table('participants')
+            ->whereNotNull('quiz_opened_at')
+            ->where('last_seen_at', '>=', now()->subMinutes(self::ACTIVE_WINDOW_MINUTES))
+            ->whereNotExists(fn ($q) => $q->from('quiz_attempts')->whereColumn('quiz_attempts.participant_id', 'participants.id'))
+            ->count();
+
         $avgBest = DB::query()->fromSub(
             DB::table('quiz_attempts')
                 // * 1.0 keeps the division decimal on every database (SQLite divides integers).
@@ -66,6 +74,7 @@ class Stats
             'quiz' => [
                 'attempted' => (int) $quiz->attempted,
                 'passed' => (int) $quiz->passed,
+                'takingNow' => $takingNow,
                 'averageBestPct' => $avgBest === null ? null : round($avgBest * 100, 1),
             ],
             'updatedAt' => now()->toIso8601String(),

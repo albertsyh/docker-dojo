@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { api, type Answer, type Level, type Question, type QuizPaper, type QuizResult } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import BlankCode from '../components/BlankCode.vue'
@@ -41,6 +41,24 @@ async function start() {
   }
 }
 watch(() => state.progress?.id, (id) => id && start(), { immediate: true })
+
+// Answering sends nothing to the server, so check in every 2 minutes while a quiz is open.
+// That keeps this student under "taking it now" on the live tracker (a 5-minute window).
+const CHECK_IN_MS = 120_000
+let checkIn: number | undefined
+watch(
+  () => !!paper.value && !result.value,
+  (open) => {
+    clearInterval(checkIn)
+    if (open) {
+      checkIn = window.setInterval(() => {
+        if (state.progress && document.visibilityState === 'visible') api.progress(state.progress.id).catch(() => {})
+      }, CHECK_IN_MS)
+    }
+  },
+  { immediate: true },
+)
+onBeforeUnmount(() => clearInterval(checkIn))
 
 const questions = computed(() => paper.value?.questions ?? [])
 const sections = computed(() =>
