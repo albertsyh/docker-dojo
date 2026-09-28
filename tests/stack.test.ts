@@ -84,6 +84,13 @@ describe('api', () => {
     expect(JSON.stringify(content.quiz)).not.toContain('"answer"')
   })
 
+  test('/api/exercises lists the ids through nginx, matching the content', async () => {
+    const { status, json } = await api('GET', '/exercises')
+    expect(status).toBe(200)
+    expect(json.exercises.map((e: any) => e.id)).toEqual(content.exercises.map((e) => e.id))
+    expect(json.exercises[0]).toMatchObject({ number: 1, live: `/live?embed&exercise=${content.exercises[0].id}` })
+  })
+
   test('a student joins, completes an exercise and takes the quiz', async () => {
     const id = await join()
     const done = await api('PUT', `/participants/${id}/exercises/${content.exercises[0].id}`)
@@ -108,6 +115,22 @@ describe('api', () => {
 
     const resumed = await api('GET', `/participants/${id}`)
     expect(resumed.json.quiz).toMatchObject({ attempts: 1, total: content.quiz.questionCount })
+  })
+
+  test('the tracker counts who is on an exercise page, and the page can be framed', async () => {
+    const id = await join()
+    const here = async () => (await api('GET', '/stats')).json.exercises.find((e: any) => e.id === 'hello-docker').here
+    expect((await api('POST', `/participants/${id}/presence`, { exercise: 'hello-docker' })).status).toBe(200)
+    expect(await here()).toBeGreaterThanOrEqual(1)
+    const before = await here()
+    // What the browser's goodbye beacon sends when a tab closes.
+    await fetch(`${BASE}/api/participants/${id}/presence`, { method: 'POST', body: new Blob([JSON.stringify({ exercise: null })], { type: 'application/json' }) })
+    expect(await here()).toBe(before - 1)
+
+    // /live?embed goes in an iframe on another site, so nothing may forbid framing.
+    const res = await fetch(`${BASE}/live?embed`)
+    expect(res.headers.get('x-frame-options')).toBeNull()
+    expect(res.headers.get('content-security-policy') ?? '').not.toContain('frame-ancestors')
   })
 
   test('the live tracker gets a websocket update when someone makes progress', async () => {

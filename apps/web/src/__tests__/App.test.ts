@@ -29,6 +29,17 @@ describe('App header', () => {
     wrapper.unmount()
   })
 
+  it('embed mode drops the header and footer', async () => {
+    const { wrapper, router } = await renderApp()
+    expect(wrapper.find('header.top').exists()).toBe(true)
+    await router.push('/live?embed')
+    await flushPromises()
+    expect(wrapper.find('header.top').exists()).toBe(false)
+    expect(wrapper.find('footer').exists()).toBe(false)
+    expect(wrapper.find('main').classes()).toContain('embed')
+    wrapper.unmount()
+  })
+
   it('menu button opens and closes the menu from its live state', async () => {
     const { wrapper } = await renderApp()
     const button = wrapper.find('button.menu-btn')

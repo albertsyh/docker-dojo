@@ -4,6 +4,7 @@ import AppIcon from '../components/AppIcon.vue'
 import CodeBlock from '../components/CodeBlock.vue'
 import FilesPanel from '../components/FilesPanel.vue'
 import JoinGate from '../components/JoinGate.vue'
+import { usePresence } from '../presence'
 import { completed, setDone, state } from '../store'
 
 const props = defineProps<{ id: string }>()
@@ -14,6 +15,9 @@ const exercise = computed(() => list.value[index.value])
 const prev = computed(() => list.value[index.value - 1])
 const next = computed(() => list.value[index.value + 1])
 const isDone = computed(() => completed.value.has(props.id))
+
+// Counts you on this exercise on the Live page while the page is open.
+usePresence(() => (state.progress && exercise.value ? props.id : null))
 
 const busy = ref(false)
 const error = ref('')

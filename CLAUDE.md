@@ -84,6 +84,12 @@ building on the last. The home page and journey list point students at the first
 ids that are still in the file. Renaming or removing an id silently drops everyone's
 progress for it. Only do that between workshops.
 
+**Keep `docs/exercise-ids.md` in step.** It is the trainer's list of ids and focused Live
+URLs, generated from `exercises.json`. After adding, removing, renaming, reordering or
+retiming an exercise, run `bun scripts/exercise-ids.ts` and commit the result.
+`tests/docs.test.ts` fails while it is out of date, and so does `./scripts/test-stack.sh`.
+Don't edit the doc by hand. `GET /api/exercises` serves the same list live, as JSON.
+
 ## Quiz
 
 `quiz.json` is a **pool**. Each quiz (a "paper") draws `split` questions from each level:
@@ -154,6 +160,12 @@ than one line, so the JSON stays readable. The three kinds of question:
   `quiz_opened_at` is set, no submission yet, and `last_seen_at` is inside the 5-minute
   active window. Answering sends nothing, so the quiz page checks in every 2 minutes to
   keep a student in that group. Keep that check-in if you touch `QuizView`.
+- "Here now" on the Live page counts who has each exercise page open. `usePresence`
+  (`src/presence.ts`) posts the exercise id on arrival and every minute, even while the tab
+  is hidden (the student is in their terminal), and sends `null` on leaving (a beacon on
+  tab close). The server stores it in `participants.current_exercise_id` and counts it for
+  3 minutes after the last check-in. Only a change of page broadcasts, not the heartbeat.
+  The heartbeat also refreshes `last_seen_at`, so "active now" includes students reading an exercise.
 - Redis is not needed. It only becomes necessary with more than one Reverb instance.
 - The container entrypoint caches config and routes and runs migrations, so env changes
   need a restart, not just a file edit.
@@ -176,6 +188,11 @@ than one line, so the JSON stays readable. The three kinds of question:
 - A control that opens something also closes it, deciding from the live state.
 - Buttons that swap their label use the `.swap` stacked-grid pattern so they never
   change width.
+- `?embed` on any route (used as `/live?embed`) hides the header, footer and pet, for an
+  iframe on another site. On `/live` it also drops the quiz and shows exercise progress only.
+  `/live?exercise=<id>&count=N` narrows the list to N exercises (default 3) centred on that
+  one, shifted in at either end, with the named one highlighted. An unknown id shows them all.
+  Keep nginx free of `X-Frame-Options` and `frame-ancestors`, or the embed breaks (the stack test checks).
 - The header folds its nav into a Menu button below 860px. Check new pages at phone
   width and at the largest text size, in both themes.
 - Pets are OpenPets sprite sheets, used with permission and credited in the footer and
@@ -190,6 +207,7 @@ than one line, so the JSON stays readable. The three kinds of question:
   - `docker build --target test apps/api` (PHPUnit);
   - `docker build --target test apps/web` (Vitest);
   - `./scripts/test-stack.sh` (the whole stack end to end, in a throwaway compose project on port 8099).
+    It also runs `tests/docs.test.ts`, which you can run alone with `bun test tests/docs.test.ts`.
 - API tests use SQLite in memory, so keep SQL portable. For example, write
   `score * 1.0 / total`, because SQLite divides integers.
 - `tests/Feature/ContentTest.php` encodes the exercise rules above. When you add a

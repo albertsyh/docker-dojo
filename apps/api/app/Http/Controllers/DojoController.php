@@ -26,6 +26,28 @@ class DojoController extends Controller
         ]);
     }
 
+    /**
+     * The exercise ids in course order, with the paths that use them. For trainers and
+     * scripts (docs/exercise-ids.md is the same list). Paths are relative, so they hold
+     * behind any host or TLS proxy.
+     */
+    public function exerciseIds(): JsonResponse
+    {
+        $exercises = array_map(fn (array $e, int $i) => [
+            'number' => $i + 1,
+            'id' => $e['id'],
+            'title' => $e['title'],
+            'minutes' => $e['minutes'],
+            'page' => '/exercises/'.$e['id'],
+            'live' => '/live?embed&exercise='.$e['id'],
+        ], Content::exercises(), array_keys(Content::exercises()));
+
+        return response()->json([
+            'exercises' => $exercises,
+            'totalMinutes' => array_sum(array_column($exercises, 'minutes')),
+        ]);
+    }
+
     /** A candidate id for the student to accept or reroll. Nothing is stored. */
     public function suggestId(): JsonResponse
     {
@@ -84,10 +106,30 @@ class DojoController extends Controller
         return response()->json($this->progress($id));
     }
 
+    /**
+     * Which exercise page the participant has open (null when they leave it). The page
+     * sends this on arrival, then every minute as a heartbeat, which keeps last_seen_at fresh.
+     * Only a change of page is broadcast; the tracker's own refresh catches people who drift off.
+     */
+    public function presence(Request $request, string $id): JsonResponse
+    {
+        $participant = $this->touch($id);
+        $exercise = $request->validate(['exercise' => ['present', 'nullable', 'string', 'max:64']])['exercise'];
+        abort_unless($exercise === null || in_array($exercise, Content::exerciseIds(), true), 404, 'Unknown exercise.');
+
+        if ($participant->current_exercise_id !== $exercise) {
+            $participant->forceFill(['current_exercise_id' => $exercise])->save();
+            Stats::broadcast();
+        }
+
+        return response()->json(['exercise' => $exercise]);
+    }
+
     /** A new quiz for this participant: questions without answers, and a one-time token. */
     public function quizPaper(string $id): JsonResponse
     {
-        $this->touch($id)->forceFill(['quiz_opened_at' => now()])->save();
+        // On the quiz, so no longer on an exercise, even if the page's goodbye never arrived.
+        $this->touch($id)->forceFill(['quiz_opened_at' => now(), 'current_exercise_id' => null])->save();
         $paper = Quiz::paper($id);
         // Opening a first quiz moves someone to "taking it now" on the tracker.
         if (! QuizAttempt::where('participant_id', $id)->exists()) {

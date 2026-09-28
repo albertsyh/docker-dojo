@@ -18,6 +18,9 @@ function onKey(e: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onKey))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
+// ?embed (for example /live?embed) drops the header, footer and pet, for showing a page in an iframe.
+const embed = computed(() => route.query.embed !== undefined)
+
 const exerciseCount = computed(() => state.content?.exercises.length ?? 0)
 // The quiz counts as one more step on the journey, done once it's passed.
 const journeyPct = computed(() => {
@@ -28,7 +31,7 @@ const journeyPct = computed(() => {
 </script>
 
 <template>
-  <header class="top">
+  <header v-if="!embed" class="top">
     <div class="container top-inner">
       <RouterLink to="/" class="brand">
         <img src="/favicon.svg" alt="" width="28" height="28" />
@@ -70,7 +73,7 @@ const journeyPct = computed(() => {
     </div>
   </header>
 
-  <main class="container main">
+  <main class="container main" :class="{ embed }">
     <p v-if="state.loading" class="muted">Loading…</p>
     <div v-else-if="state.error" class="callout error">
       <AppIcon name="alert" />
@@ -79,7 +82,7 @@ const journeyPct = computed(() => {
     <RouterView v-else />
   </main>
 
-  <footer class="foot" :class="{ 'with-pet': pet.shown }">
+  <footer v-if="!embed" class="foot" :class="{ 'with-pet': pet.shown }">
     <div class="container foot-inner">
       <p class="credits muted">
         Docker Dojo · Vibe-coded with AI by <a href="https://github.com/albertsyh" target="_blank" rel="noopener">albertsyh</a>
@@ -91,7 +94,7 @@ const journeyPct = computed(() => {
     </div>
   </footer>
 
-  <PetCompanion v-if="pet.shown" />
+  <PetCompanion v-if="pet.shown && !embed" />
   <PetPicker v-if="pet.pickerOpen" />
 </template>
 
@@ -120,6 +123,7 @@ nav a.router-link-active::after {
 .rail { position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; }
 .rail > span { display: block; height: 100%; background: var(--primary); transform-origin: left; transition: transform var(--dur-slow) var(--ease-out); }
 .main { flex: 1; width: 100%; padding-top: var(--space-7); padding-bottom: var(--space-8); }
+.main.embed { padding-block: var(--space-5); }
 .foot { border-top: 1px solid var(--border); background: var(--panel); }
 .foot-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-5); flex-wrap: wrap; padding-block: var(--space-4); }
 .credits { margin: 0; font-size: var(--text-sm); }

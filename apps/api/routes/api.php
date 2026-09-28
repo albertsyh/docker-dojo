@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/content', [DojoController::class, 'content']);
 Route::get('/stats', [DojoController::class, 'stats']);
+Route::get('/exercises', [DojoController::class, 'exerciseIds']);
 
 // Before the {id} group, so "suggestion" isn't read as a participant id.
 Route::get('/participants/suggestion', [DojoController::class, 'suggestId'])->middleware('throttle:suggest');
@@ -14,6 +15,7 @@ Route::prefix('/participants/{id}')->middleware('throttle:participant')->group(f
     Route::get('/', [DojoController::class, 'showParticipant']);
     Route::put('/exercises/{exerciseId}', [DojoController::class, 'completeExercise']);
     Route::delete('/exercises/{exerciseId}', [DojoController::class, 'uncompleteExercise']);
+    Route::post('/presence', [DojoController::class, 'presence']);
     Route::get('/quiz', [DojoController::class, 'quizPaper']);
     Route::post('/quiz', [DojoController::class, 'submitQuiz'])->middleware('throttle:quiz');
 });

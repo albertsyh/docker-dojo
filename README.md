@@ -14,6 +14,18 @@ docker compose up -d --build
 
 Open http://localhost:8000. The live tracker is at http://localhost:8000/live.
 
+To show exercise progress inside another website during a session, embed `/live?embed`. It has
+no header, footer or quiz, just the room's progress and who is on each exercise right now:
+
+Add `&exercise=<id>` to show just that exercise and its neighbours, one on each side,
+highlighted, for example `/live?embed&exercise=dockerignore`. `&count=5` widens it to five.
+[`docs/exercise-ids.md`](docs/exercise-ids.md) lists every id with its ready-made URL, and
+`GET /api/exercises` returns the same list as JSON.
+
+```html
+<iframe src="https://your-dojo-host/live?embed" title="Docker Dojo progress" style="width:100%;height:900px;border:0"></iframe>
+```
+
 Stop with `docker compose down`. To also wipe all progress, run `docker compose down -v`
 (this permanently deletes the database volume).
 
@@ -38,7 +50,7 @@ browser ──► web (nginx :80, published as :8000)
   stored in the browser's localStorage. Students can type it in on another device to continue.
 - **Quiz grading** happens on the server. Answers are never sent to the browser before submission.
   Retakes are allowed, and the best score counts.
-- **Live tracker:** every join, exercise toggle and quiz submission broadcasts a fresh
+- **Live tracker:** every join, exercise toggle, quiz submission and move between exercise pages broadcasts a fresh
   aggregate snapshot to the public `tracker` channel. It uses `ShouldBroadcastNow`, so no queue
   worker is needed. If Reverb is down, students' requests still succeed and the tracker falls back
   to polling every 30 seconds.

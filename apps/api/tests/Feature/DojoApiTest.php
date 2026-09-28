@@ -74,6 +74,26 @@ class DojoApiTest extends TestCase
         $this->assertNull($response->json('quiz.questions'));
     }
 
+    public function test_exercise_ids_are_listed_in_course_order_with_their_urls(): void
+    {
+        $response = $this->getJson('/api/exercises')->assertOk();
+        $ids = Content::exerciseIds();
+
+        $this->assertSame($ids, $response->json('exercises.*.id'));
+        $this->assertSame(range(1, count($ids)), $response->json('exercises.*.number'));
+        $this->assertSame([
+            'number' => 7,
+            'id' => $ids[6],
+            'title' => Content::exercises()[6]['title'],
+            'minutes' => Content::exercises()[6]['minutes'],
+            'page' => "/exercises/{$ids[6]}",
+            'live' => "/live?embed&exercise={$ids[6]}",
+        ], $response->json('exercises.6'));
+        $this->assertSame(array_sum(array_column(Content::exercises(), 'minutes')), $response->json('totalMinutes'));
+        // Just the list: no steps or commands.
+        $this->assertArrayNotHasKey('steps', $response->json('exercises.0'));
+    }
+
     public function test_a_suggested_id_is_not_stored_until_claimed(): void
     {
         $id = $this->getJson('/api/participants/suggestion')->json('id');
@@ -339,6 +359,61 @@ class DojoApiTest extends TestCase
 
         $quiz = $this->getJson('/api/stats')->json('quiz');
         $this->assertSame(['attempted' => 1, 'passed' => 0, 'takingNow' => 0], Arr::only($quiz, ['attempted', 'passed', 'takingNow']));
+    }
+
+    public function test_the_tracker_counts_who_is_on_each_exercise_page(): void
+    {
+        [$a, $b] = [$this->join(), $this->join()];
+        $here = fn () => collect($this->getJson('/api/stats')->json('exercises'))->pluck('here', 'id')->filter()->all();
+
+        $this->assertSame([], $here());
+        $this->postJson("/api/participants/$a/presence", ['exercise' => 'hello-docker'])->assertOk();
+        $this->postJson("/api/participants/$b/presence", ['exercise' => 'hello-docker'])->assertOk();
+        $this->assertSame(['hello-docker' => 2], $here());
+
+        // Moving on, leaving the page, and opening the quiz each take you off the old one.
+        $this->postJson("/api/participants/$a/presence", ['exercise' => 'volumes'])->assertOk();
+        $this->assertSame(['hello-docker' => 1, 'volumes' => 1], $here());
+        $this->postJson("/api/participants/$a/presence", ['exercise' => null])->assertOk();
+        $this->paper($b);
+        $this->assertSame([], $here());
+    }
+
+    public function test_heartbeats_keep_you_here_and_silence_drops_you(): void
+    {
+        $id = $this->join();
+        $here = fn () => collect($this->getJson('/api/stats')->json('exercises'))->firstWhere('id', 'hello-docker')['here'];
+
+        $this->postJson("/api/participants/$id/presence", ['exercise' => 'hello-docker']);
+        $this->travel(2)->minutes();
+        $this->postJson("/api/participants/$id/presence", ['exercise' => 'hello-docker']);
+        $this->travel(2)->minutes();
+        $this->assertSame(1, $here(), 'A heartbeat 2 minutes ago keeps you here.');
+
+        // A closed laptop sends no goodbye. Three quiet minutes and you are gone.
+        $this->travel(2)->minutes();
+        $this->assertSame(0, $here());
+    }
+
+    public function test_presence_broadcasts_only_when_you_change_page(): void
+    {
+        $id = $this->join();
+        Event::fake([StatsUpdated::class]);
+
+        $this->postJson("/api/participants/$id/presence", ['exercise' => 'hello-docker']);
+        $this->postJson("/api/participants/$id/presence", ['exercise' => 'hello-docker']);
+        $this->postJson("/api/participants/$id/presence", ['exercise' => 'hello-docker']);
+        $this->postJson("/api/participants/$id/presence", ['exercise' => null]);
+
+        Event::assertDispatchedTimes(StatsUpdated::class, 2);
+    }
+
+    public function test_presence_needs_a_real_exercise(): void
+    {
+        $id = $this->join();
+        $this->postJson("/api/participants/$id/presence", ['exercise' => 'not-an-exercise'])->assertNotFound();
+        $this->postJson("/api/participants/$id/presence", [])->assertUnprocessable();
+        $this->postJson('/api/participants/brave-otter-zzzzzz/presence', ['exercise' => 'hello-docker'])->assertNotFound();
     }
 
     public function test_a_broadcast_failure_does_not_fail_the_request(): void

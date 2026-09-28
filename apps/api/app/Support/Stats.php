@@ -11,6 +11,9 @@ class Stats
 {
     public const ACTIVE_WINDOW_MINUTES = 5;
 
+    /** Exercise pages check in every minute. Three minutes allows for a late or throttled heartbeat. */
+    public const HERE_WINDOW_MINUTES = 3;
+
     public static function snapshot(): array
     {
         $exerciseIds = Content::exerciseIds();
@@ -25,6 +28,13 @@ class Stats
             ->whereIn('exercise_id', $exerciseIds)
             ->groupBy('exercise_id')
             ->pluck(DB::raw('COUNT(*)'), 'exercise_id');
+
+        // Who has each exercise page open right now.
+        $here = DB::table('participants')
+            ->whereNotNull('current_exercise_id')
+            ->where('last_seen_at', '>=', now()->subMinutes(self::HERE_WINDOW_MINUTES))
+            ->groupBy('current_exercise_id')
+            ->pluck(DB::raw('COUNT(*)'), 'current_exercise_id');
 
         $finishedAll = DB::query()->fromSub(
             DB::table('exercise_completions')
@@ -62,6 +72,7 @@ class Stats
             'participants' => $participants,
             'activeNow' => $active,
             'activeWindowMinutes' => self::ACTIVE_WINDOW_MINUTES,
+            'hereWindowMinutes' => self::HERE_WINDOW_MINUTES,
             'exerciseCompletionPct' => $participants && $exerciseCount
                 ? round($totalCompletions / ($participants * $exerciseCount) * 100, 1)
                 : 0,
@@ -70,6 +81,7 @@ class Stats
                 'id' => $e['id'],
                 'title' => $e['title'],
                 'completed' => (int) ($perExercise[$e['id']] ?? 0),
+                'here' => (int) ($here[$e['id']] ?? 0),
             ], Content::exercises()),
             'quiz' => [
                 'attempted' => (int) $quiz->attempted,

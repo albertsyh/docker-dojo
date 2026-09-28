@@ -73,9 +73,11 @@ export type Stats = {
   participants: number
   activeNow: number
   activeWindowMinutes: number
+  hereWindowMinutes: number
   exerciseCompletionPct: number
   finishedAllExercises: number
-  exercises: { id: string; title: string; completed: number }[]
+  /** here = people with that exercise page open right now. */
+  exercises: { id: string; title: string; completed: number; here: number }[]
   /** attempted = submitted at least once. takingNow = opened a quiz, not submitted yet, active in the window. */
   quiz: { attempted: number; passed: number; takingNow: number; averageBestPct: number | null }
   updatedAt: string
@@ -113,6 +115,10 @@ export const api = {
   progress: (id: string) => request<Progress>('GET', p(id)),
   setDone: (id: string, exerciseId: string, done: boolean) =>
     request<Progress>(done ? 'PUT' : 'DELETE', `${p(id)}/exercises/${encodeURIComponent(exerciseId)}`),
+  presence: (id: string, exercise: string | null) => request<{ exercise: string | null }>('POST', `${p(id)}/presence`, { exercise }),
+  /** For pagehide: a beacon still arrives after the tab has gone. */
+  presenceBeacon: (id: string, exercise: string | null) =>
+    navigator.sendBeacon(`/api${p(id)}/presence`, new Blob([JSON.stringify({ exercise })], { type: 'application/json' })),
   quizPaper: (id: string) => request<QuizPaper>('GET', `${p(id)}/quiz`),
   submitQuiz: (id: string, paper: QuizPaper, answers: Answer[]) =>
     request<QuizResult>('POST', `${p(id)}/quiz`, { token: paper.token, questions: paper.questions.map((q) => q.id), answers }),
