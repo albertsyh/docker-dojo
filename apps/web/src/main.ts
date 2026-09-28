@@ -11,7 +11,9 @@ import QuizView from './views/QuizView.vue'
 import TrackerView from './views/TrackerView.vue'
 import GlossaryView from './views/GlossaryView.vue'
 import ReferencesView from './views/ReferencesView.vue'
-import { boot } from './store'
+import { boot, state } from './store'
+import { startChat } from './chat'
+import ChatView from './views/ChatView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -20,6 +22,7 @@ const router = createRouter({
     { path: '/exercises', component: ExercisesView },
     { path: '/exercises/:id', component: ExerciseView, props: true },
     { path: '/quiz', component: QuizView },
+    { path: '/chat', component: ChatView },
     { path: '/glossary', component: GlossaryView },
     { path: '/references', component: ReferencesView },
     { path: '/live', component: TrackerView },
@@ -28,5 +31,6 @@ const router = createRouter({
   scrollBehavior: (to) => (to.hash ? { el: to.hash, top: 88 } : { top: 0 }),
 })
 
-boot()
+// The chat listens app-wide, so the pet and nav can show unread questions on any page.
+boot().then(() => state.content && startChat(state.content.realtime.key))
 createApp(App).use(router).mount('#app')

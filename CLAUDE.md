@@ -152,7 +152,7 @@ than one line, so the JSON stays readable. The three kinds of question:
   Reverb outage never fails the student's request.
 - Update rows with `find()` + `save()`, not `where()->update()`. MySQL reports 0
   affected rows when nothing changed, which once caused false 404s.
-- Named rate limiters in `AppServiceProvider`: `join`, `suggest`, `participant`, `quiz`.
+- Named rate limiters in `AppServiceProvider`: `join`, `suggest`, `participant`, `quiz`, `chat`.
   A whole classroom shares one IP behind NAT, so `join` is configurable
   (`DOJO_JOIN_PER_MINUTE`).
 - The tracker puts every participant in exactly one quiz group: passed, trying again
@@ -166,6 +166,16 @@ than one line, so the JSON stays readable. The three kinds of question:
   tab close). The server stores it in `participants.current_exercise_id` and counts it for
   3 minutes after the last check-in. Only a change of page broadcasts, not the heartbeat.
   The heartbeat also refreshes `last_seen_at`, so "active now" includes students reading an exercise.
+- **Chat** (`ChatController`, `App\Support\Chat`): students post questions, delete their
+  own, and say "Me too". There is no trainer role or moderation, by design: the trainer
+  reads `/chat`, which works without joining (`GET /api/chat` is public).
+  - A participant id works like a password, so it never appears in chat responses or
+    events. Authors show as `Participant::displayName()` ("brave otter"), and `mine` and
+    `meToo` come only from the participant-scoped `GET /participants/{id}/chat`. Tests
+    assert on the raw JSON; keep it that way if you add fields.
+  - `ChatUpdated` on the public `chat` channel carries no messages, only "changed".
+    Every browser then refetches its own view (`src/chat.ts`). Don't put messages in the event.
+  - Deleting is a hard delete of your own message (someone else's is a 404). Nothing is pruned automatically.
 - Redis is not needed. It only becomes necessary with more than one Reverb instance.
 - The container entrypoint caches config and routes and runs migrations, so env changes
   need a restart, not just a file edit.
@@ -193,7 +203,9 @@ than one line, so the JSON stays readable. The three kinds of question:
   `/live?exercise=<id>&count=N` narrows the list to N exercises (default 3) centred on that
   one, shifted in at either end, with the named one highlighted. An unknown id shows them all.
   Keep nginx free of `X-Frame-Options` and `frame-ancestors`, or the embed breaks (the stack test checks).
-- The header folds its nav into a Menu button below 860px. Check new pages at phone
+- The pet opens the chat popup (the unread count shows on the pet and on the Chat nav
+  link). The popup and the pet picker share the pet's corner, so opening one closes the other.
+- The header folds its nav into a Menu button below 1024px, and hides the id text below 1280px. Check new pages at phone
   width and at the largest text size, in both themes.
 - Pets are OpenPets sprite sheets, used with permission and credited in the footer and
   README. To add one, run `bun scripts/build-pets.ts` in `apps/web`, which regenerates

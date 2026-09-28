@@ -42,6 +42,25 @@ class Participant extends Model
             && in_array($m[2], self::ANIMALS, true);
     }
 
+    /** What others see in the chat: the words only. The random suffix is what makes an id secret. */
+    public static function displayName(string $id): string
+    {
+        return implode(' ', array_slice(explode('-', $id), 0, 2));
+    }
+
+    /** 404 for unknown ids, and record activity for the "active now" count. */
+    public static function touchOrFail(string $id): self
+    {
+        abort_unless(self::isValidId($id), 404, 'Unknown participant.');
+        // Not update()'s row count: MySQL reports 0 affected rows when the timestamp
+        // is unchanged (two requests in the same second), which isn't "not found".
+        $participant = self::find($id);
+        abort_unless($participant, 404, 'Unknown participant.');
+        $participant->forceFill(['last_seen_at' => now()])->save();
+
+        return $participant;
+    }
+
     public function completions(): HasMany
     {
         return $this->hasMany(ExerciseCompletion::class);

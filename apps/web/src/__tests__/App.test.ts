@@ -13,7 +13,7 @@ async function renderApp() {
   state.content = structuredClone(content)
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: ['/', '/exercises', '/quiz', '/glossary', '/references', '/live'].map((path) => ({ path, component: Blank })),
+    routes: ['/', '/exercises', '/quiz', '/chat', '/glossary', '/references', '/live'].map((path) => ({ path, component: Blank })),
   })
   router.push('/')
   await router.isReady()
@@ -22,10 +22,10 @@ async function renderApp() {
 }
 
 describe('App header', () => {
-  it('links to every page, including the glossary and references', async () => {
+  it('links to every page', async () => {
     const { wrapper } = await renderApp()
     const links = wrapper.findAll('nav[aria-label="Main"] a').map((a) => a.attributes('href'))
-    expect(links).toEqual(['/exercises', '/quiz', '/glossary', '/references', '/live'])
+    expect(links).toEqual(['/exercises', '/quiz', '/chat', '/glossary', '/references', '/live'])
     wrapper.unmount()
   })
 

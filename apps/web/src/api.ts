@@ -69,6 +69,19 @@ export type QuizResult = {
   progress: Progress
 }
 
+/** A chat message. author is a display name ("brave otter"), never an id. mine/meToo only come with your own view. */
+export type ChatMessage = {
+  id: number
+  author: string
+  body: string
+  exercise: string | null
+  createdAt: string
+  meTooCount: number
+  mine?: boolean
+  meToo?: boolean
+}
+export type ChatList = { messages: ChatMessage[] }
+
 export type Stats = {
   participants: number
   activeNow: number
@@ -119,6 +132,11 @@ export const api = {
   /** For pagehide: a beacon still arrives after the tab has gone. */
   presenceBeacon: (id: string, exercise: string | null) =>
     navigator.sendBeacon(`/api${p(id)}/presence`, new Blob([JSON.stringify({ exercise })], { type: 'application/json' })),
+  chat: () => request<ChatList>('GET', '/chat'),
+  chatFor: (id: string) => request<ChatList>('GET', `${p(id)}/chat`),
+  postChat: (id: string, body: string, exercise: string | null) => request<ChatList>('POST', `${p(id)}/chat`, { body, exercise }),
+  deleteChat: (id: string, messageId: number) => request<ChatList>('DELETE', `${p(id)}/chat/${messageId}`),
+  setMeToo: (id: string, messageId: number, on: boolean) => request<ChatList>(on ? 'PUT' : 'DELETE', `${p(id)}/chat/${messageId}/me-too`),
   quizPaper: (id: string) => request<QuizPaper>('GET', `${p(id)}/quiz`),
   submitQuiz: (id: string, paper: QuizPaper, answers: Answer[]) =>
     request<QuizResult>('POST', `${p(id)}/quiz`, { token: paper.token, questions: paper.questions.map((q) => q.id), answers }),

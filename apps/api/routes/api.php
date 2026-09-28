@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DojoController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/content', [DojoController::class, 'content']);
 Route::get('/stats', [DojoController::class, 'stats']);
 Route::get('/exercises', [DojoController::class, 'exerciseIds']);
+Route::get('/chat', [ChatController::class, 'index']);
 
 // Before the {id} group, so "suggestion" isn't read as a participant id.
 Route::get('/participants/suggestion', [DojoController::class, 'suggestId'])->middleware('throttle:suggest');
@@ -18,4 +20,9 @@ Route::prefix('/participants/{id}')->middleware('throttle:participant')->group(f
     Route::post('/presence', [DojoController::class, 'presence']);
     Route::get('/quiz', [DojoController::class, 'quizPaper']);
     Route::post('/quiz', [DojoController::class, 'submitQuiz'])->middleware('throttle:quiz');
+    Route::get('/chat', [ChatController::class, 'show']);
+    Route::post('/chat', [ChatController::class, 'store'])->middleware('throttle:chat');
+    Route::delete('/chat/{messageId}', [ChatController::class, 'destroy'])->whereNumber('messageId');
+    Route::put('/chat/{messageId}/me-too', [ChatController::class, 'meToo'])->whereNumber('messageId');
+    Route::delete('/chat/{messageId}/me-too', [ChatController::class, 'notMeToo'])->whereNumber('messageId');
 });

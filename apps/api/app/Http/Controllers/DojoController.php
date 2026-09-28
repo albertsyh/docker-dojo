@@ -188,17 +188,9 @@ class DojoController extends Controller
         return response()->json(Stats::snapshot());
     }
 
-    /** 404 for unknown ids, and record activity for the "active now" count. */
     private function touch(string $id): Participant
     {
-        abort_unless(Participant::isValidId($id), 404, 'Unknown participant.');
-        // Not update()'s row count: MySQL reports 0 affected rows when the timestamp
-        // is unchanged (two requests in the same second), which isn't "not found".
-        $participant = Participant::find($id);
-        abort_unless($participant, 404, 'Unknown participant.');
-        $participant->forceFill(['last_seen_at' => now()])->save();
-
-        return $participant;
+        return Participant::touchOrFail($id);
     }
 
     private function progress(string $id): array

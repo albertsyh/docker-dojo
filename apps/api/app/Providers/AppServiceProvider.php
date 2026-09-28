@@ -28,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Keyed by participant, not IP, so a classroom behind one NAT isn't throttled as one user.
         RateLimiter::for('participant', fn (Request $request) => Limit::perMinute(120)->by('p:'.$request->route('id')));
+        RateLimiter::for('chat', fn (Request $request) => Limit::perMinute(10)->by('c:'.$request->route('id')));
         RateLimiter::for('quiz', fn (Request $request) => Limit::perMinute(20)->by('q:'.$request->route('id')));
     }
 }

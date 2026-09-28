@@ -81,14 +81,6 @@ export function petReact(reaction: Reaction) {
   play(ROW[reaction])
 }
 
-/** On click: any animation except idle and whatever is playing now. */
-export function petSurprise() {
-  const choices = currentPet()
-    .rows.map((_, row) => row)
-    .filter((row) => row !== ROW.idle && row !== pet.row)
-  play(choices[Math.floor(Math.random() * choices.length)])
-}
-
 export function choosePet(id: string) {
   pet.id = id
   write(PET_ID_KEY, id)

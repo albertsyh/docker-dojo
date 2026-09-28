@@ -5,6 +5,8 @@ import AppIcon from './components/AppIcon.vue'
 import DisplayControls from './components/DisplayControls.vue'
 import PetCompanion from './components/PetCompanion.vue'
 import PetPicker from './components/PetPicker.vue'
+import ChatPopup from './components/ChatPopup.vue'
+import { chat, unread } from './chat'
 import { pet } from './pets'
 import { completed, state } from './store'
 
@@ -40,6 +42,7 @@ const journeyPct = computed(() => {
       <nav id="main-nav" aria-label="Main" :class="{ open: menuOpen }">
         <RouterLink to="/exercises">Exercises</RouterLink>
         <RouterLink to="/quiz">Quiz</RouterLink>
+        <RouterLink to="/chat">Chat<span v-if="unread" class="unread" :aria-label="`${unread} new`">{{ unread > 9 ? '9+' : unread }}</span></RouterLink>
         <RouterLink to="/glossary">Glossary</RouterLink>
         <RouterLink to="/references">References</RouterLink>
         <RouterLink to="/live" class="live"><i aria-hidden="true" />Live</RouterLink>
@@ -96,6 +99,7 @@ const journeyPct = computed(() => {
 
   <PetCompanion v-if="pet.shown && !embed" />
   <PetPicker v-if="pet.pickerOpen" />
+  <ChatPopup v-if="chat.open && pet.shown && !embed && route.path !== '/chat'" />
 </template>
 
 <style scoped>
@@ -114,6 +118,10 @@ nav a:hover { color: var(--ink); background: var(--panel); }
 nav a.router-link-active { color: var(--ink); }
 nav a.router-link-active::after {
   content: ''; position: absolute; left: var(--space-3); right: var(--space-3); bottom: 2px; height: 2px; border-radius: 2px; background: var(--primary);
+}
+.unread {
+  min-width: 1.25rem; height: 1.25rem; padding: 0 0.3rem; display: inline-grid; place-items: center; border-radius: 999px;
+  font-size: var(--text-xs); font-weight: 800; font-variant-numeric: tabular-nums; color: var(--highlight-ink); background: var(--highlight);
 }
 .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
 .me { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; }
@@ -136,9 +144,15 @@ nav a.router-link-active::after {
 .menu-btn { display: none; }
 .nav-id { display: none; }
 
+/* Six links, the brand and your tags fit one row from about 1024px. Below 1280px the id
+   text goes first (your tags stay); it is on the start page and in the menu. */
+@media (max-width: 1279px) {
+  .me-id { display: none; }
+}
+
 /* Small screens: brand, your tags and a Menu button on one row.
    The links drop down as a full-width panel under the header. */
-@media (max-width: 859px) {
+@media (max-width: 1023px) {
   .top-inner { flex-wrap: nowrap; gap: var(--space-3); }
   .brand { flex: none; }
   .me { min-width: 0; }

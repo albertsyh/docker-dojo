@@ -25,19 +25,19 @@ async function join() {
   return json.id as string
 }
 
-/** Opens a Pusher-protocol websocket on the tracker channel and resolves with the next stats event. */
-function nextStatsEvent(): Promise<{ ready: Promise<void>; event: Promise<any>; close: () => void }> {
+/** Opens a Pusher-protocol websocket on a public channel and resolves with the next event of that name. */
+function nextEvent(channel = 'tracker', name = 'stats.updated'): Promise<{ ready: Promise<void>; event: Promise<any>; close: () => void }> {
   return new Promise((resolve) => {
     const ws = new WebSocket(`${BASE.replace('http', 'ws')}/app/${content.realtime.key}?protocol=7&client=js&version=8`)
     let subscribed: () => void
     let received: (data: any) => void
     const ready = new Promise<void>((r) => (subscribed = r))
     const event = new Promise<any>((r) => (received = r))
-    ws.onopen = () => ws.send(JSON.stringify({ event: 'pusher:subscribe', data: { channel: 'tracker' } }))
+    ws.onopen = () => ws.send(JSON.stringify({ event: 'pusher:subscribe', data: { channel } }))
     ws.onmessage = (m) => {
       const msg = JSON.parse(String(m.data))
       if (msg.event === 'pusher_internal:subscription_succeeded') subscribed()
-      if (msg.event === 'stats.updated') received(JSON.parse(msg.data))
+      if (msg.event === name) received(JSON.parse(msg.data))
     }
     resolve({ ready, event, close: () => ws.close() })
   })
@@ -58,7 +58,7 @@ beforeAll(async () => {
 
 describe('web (nginx)', () => {
   test('serves the app shell on every route, for client-side routing', async () => {
-    for (const path of ['/', '/exercises/hello-docker', '/glossary', '/references', '/live']) {
+    for (const path of ['/', '/exercises/hello-docker', '/chat', '/glossary', '/references', '/live']) {
       const res = await fetch(BASE + path)
       expect(res.status).toBe(200)
       expect(await res.text()).toContain('<div id="app">')
@@ -133,8 +133,31 @@ describe('api', () => {
     expect(res.headers.get('content-security-policy') ?? '').not.toContain('frame-ancestors')
   })
 
+  test('chat: a question is pushed to everyone, shown without the asker\'s id, and can be deleted', async () => {
+    const id = await join()
+    const socket = await nextEvent('chat', 'chat.updated')
+    await socket.ready
+    const posted = await api('POST', `/participants/${id}/chat`, { body: 'Why is port 8080 busy?', exercise: 'first-web-server' })
+    expect(posted.status).toBe(201)
+    const event = await Promise.race([socket.event, Bun.sleep(3000).then(() => null)])
+    socket.close()
+    // The event only says "changed": no message, no ids.
+    expect(event).not.toBeNull()
+    expect(Object.keys(event)).toEqual(['at'])
+
+    const res = await fetch(`${BASE}/api/chat`)
+    const raw = await res.text()
+    expect(raw).toContain('Why is port 8080 busy?')
+    expect(raw).not.toContain(id.slice(-6))
+    const mine = posted.json.messages.find((m: any) => m.mine)
+    expect(mine.author).toBe(id.split('-').slice(0, 2).join(' '))
+
+    expect((await api('DELETE', `/participants/${id}/chat/${mine.id}`)).status).toBe(200)
+    expect((await api('GET', '/chat')).json.messages.some((m: any) => m.id === mine.id)).toBe(false)
+  })
+
   test('the live tracker gets a websocket update when someone makes progress', async () => {
-    const socket = await nextStatsEvent()
+    const socket = await nextEvent()
     await socket.ready
     const id = await join()
     const stats = await Promise.race([socket.event, Bun.sleep(3000).then(() => null)])

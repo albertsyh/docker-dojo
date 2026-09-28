@@ -2,7 +2,7 @@
 
 A 90-minute, hands-on Docker and Docker Compose workshop: 14 copy-paste exercises
 (~75 min) and a 10-question quiz (~12 min) drawn from a pool of easy, fill-in-the-blank
-and compose-file questions, with a glossary, a page of further videos and reading, anonymous progress
+and compose-file questions, with a glossary, a page of further videos and reading, a questions chat, anonymous progress
 tracking and a live tracker for the trainer. The app is itself fully dockerised, so students can
 read and run it as the final example.
 
@@ -48,6 +48,9 @@ browser ──► web (nginx :80, published as :8000)
 
 - **Identity:** `POST /api/participants` returns an anonymous id like `swift-otter-7f3k9q`,
   stored in the browser's localStorage. Students can type it in on another device to continue.
+- **Chat:** students ask questions at `/chat`, or by clicking their pet on wide screens.
+  They can delete their own messages and say "Me too" to others'. The trainer can read
+  `/chat` without joining. Nobody else ever sees a student's id, only its words ("brave otter").
 - **Quiz grading** happens on the server. Answers are never sent to the browser before submission.
   Retakes are allowed, and the best score counts.
 - **Live tracker:** every join, exercise toggle, quiz submission and move between exercise pages broadcasts a fresh

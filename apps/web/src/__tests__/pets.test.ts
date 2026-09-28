@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { choosePet, pet, PETS, petSurprise, togglePetShown, togglePicker } from '../pets'
+import { choosePet, pet, petReact, PETS, togglePetShown, togglePicker } from '../pets'
 
 describe('pets', () => {
   beforeEach(() => {
@@ -15,17 +15,8 @@ describe('pets', () => {
     expect(PETS.map((p) => p.id)).toEqual(expect.arrayContaining(['nori', 'crumb', 'fuse', 'professor-hoot']))
   })
 
-  it('a click never repeats the idle or the current animation', () => {
-    for (let i = 0; i < 200; i++) {
-      const before = pet.row
-      petSurprise()
-      expect(pet.row).not.toBe(0)
-      expect(pet.row).not.toBe(before)
-    }
-  })
-
   it('returns to idle after the animation plays', () => {
-    petSurprise()
+    petReact('wave')
     expect(pet.row).not.toBe(0)
     vi.runAllTimers()
     expect(pet.row).toBe(0)

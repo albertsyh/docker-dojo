@@ -1,4 +1,4 @@
 <?php
 
-// The only channel is the public "tracker" channel (see App\Events\StatsUpdated),
-// which needs no authorization callback.
+// Two public channels, neither needs an authorization callback:
+// "tracker" (App\Events\StatsUpdated) and "chat" (App\Events\ChatUpdated).
