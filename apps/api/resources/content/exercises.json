@@ -1,0 +1,458 @@
+[
+  {
+    "id": "hello-docker",
+    "title": "Hello, Docker",
+    "minutes": 2,
+    "summary": "Check Docker is installed and run your very first container.",
+    "steps": [
+      {
+        "text": "Check that the Docker client and engine are both reachable.",
+        "code": "docker version",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Linux",
+            "text": "\"permission denied … docker.sock\" means your user isn’t in the docker group. Run: sudo usermod -aG docker $USER, then log out and back in (or prefix commands with sudo for now)."
+          },
+          {
+            "for": "macOS / Windows",
+            "text": "\"Cannot connect to the Docker daemon\" means Docker Desktop isn’t running. Start it and wait for it to say it’s running."
+          }
+        ]
+      },
+      {
+        "text": "Run the hello-world image. Docker pulls it from Docker Hub, creates a container, runs it, and the container exits.",
+        "code": "docker run hello-world",
+        "label": "terminal"
+      },
+      {
+        "text": "List the images now stored on your machine.",
+        "code": "docker images",
+        "label": "terminal"
+      }
+    ],
+    "expected": "A \"Hello from Docker!\" message, and hello-world listed in docker images."
+  },
+  {
+    "id": "first-web-server",
+    "title": "Run a web server",
+    "minutes": 5,
+    "summary": "Run nginx in the background, publish a port, read its logs, then stop and remove it.",
+    "steps": [
+      {
+        "text": "Start nginx detached (-d), name it \"web\", and map port 8080 on your machine to port 80 in the container.",
+        "code": "docker run -d --name web -p 8080:80 nginx:alpine",
+        "label": "terminal"
+      },
+      {
+        "text": "Open http://localhost:8080 in your browser. You should see \"Welcome to nginx!\"."
+      },
+      {
+        "text": "List running containers. Note the PORTS column.",
+        "code": "docker ps",
+        "label": "terminal"
+      },
+      {
+        "text": "Read the access log. Your browser request should be in it.",
+        "code": "docker logs web",
+        "label": "terminal"
+      },
+      {
+        "text": "Stop and remove the container.",
+        "code": "docker stop web\ndocker rm web",
+        "label": "terminal"
+      }
+    ],
+    "expected": "The nginx welcome page at localhost:8080, and a GET request line in docker logs."
+  },
+  {
+    "id": "inside-a-container",
+    "title": "Look inside a container",
+    "minutes": 4,
+    "summary": "Open a shell in a running container and change a file, then see the change disappear with the container.",
+    "steps": [
+      {
+        "text": "Start nginx again.",
+        "code": "docker run -d --name web -p 8080:80 nginx:alpine",
+        "label": "terminal"
+      },
+      {
+        "text": "Open an interactive shell inside it.",
+        "code": "docker exec -it web sh",
+        "label": "terminal"
+      },
+      {
+        "text": "Inside the container, overwrite the homepage, then leave the shell.",
+        "code": "echo \"<h1>Edited from inside the container</h1>\" > /usr/share/nginx/html/index.html\nexit",
+        "label": "inside the container"
+      },
+      {
+        "text": "Refresh http://localhost:8080. Your edit is live."
+      },
+      {
+        "text": "Now remove the container and start a fresh one. Your edit is gone: container filesystems are disposable.",
+        "code": "docker rm -f web\ndocker run -d --name web -p 8080:80 nginx:alpine",
+        "label": "terminal"
+      },
+      {
+        "text": "Clean up.",
+        "code": "docker rm -f web",
+        "label": "terminal"
+      }
+    ],
+    "expected": "Your custom heading appears, then disappears after recreating the container."
+  },
+  {
+    "id": "build-an-image",
+    "title": "Build your own image",
+    "minutes": 7,
+    "summary": "Write a Dockerfile, build an image from it, and run it.",
+    "steps": [
+      {
+        "text": "Go to your home folder, make a new folder, and move into it.",
+        "code": "cd ~\nmkdir my-site\ncd my-site",
+        "label": "terminal"
+      },
+      {
+        "text": "Create a file called index.html with this content.",
+        "code": "<!doctype html>\n<h1>Built with my own Dockerfile</h1>",
+        "label": "index.html"
+      },
+      {
+        "text": "Create a file called Dockerfile (no extension). Each instruction adds a layer on top of the base image.",
+        "code": "FROM nginx:alpine\nCOPY index.html /usr/share/nginx/html/index.html\nEXPOSE 80",
+        "label": "Dockerfile",
+        "notes": [
+          {
+            "for": "Windows",
+            "text": "Notepad silently saves this as Dockerfile.txt and the build then fails. In the Save dialog choose \"All files (*.*)\", or use VS Code. Check with: dir"
+          }
+        ]
+      },
+      {
+        "text": "Build it and tag it my-site:1.0. The \".\" is the build context: the current folder.",
+        "code": "docker build -t my-site:1.0 .",
+        "label": "terminal"
+      },
+      {
+        "text": "Run your image and open http://localhost:8081.",
+        "code": "docker run -d --name my-site -p 8081:80 my-site:1.0",
+        "label": "terminal"
+      },
+      {
+        "text": "Change the heading in index.html, then rebuild as 1.1. Notice the FROM layer comes from cache. Only the COPY layer is rebuilt.",
+        "code": "docker build -t my-site:1.1 .\ndocker rm -f my-site\ndocker run -d --name my-site -p 8081:80 my-site:1.1",
+        "label": "terminal"
+      },
+      {
+        "text": "Clean up the container (keep the images for now).",
+        "code": "docker rm -f my-site",
+        "label": "terminal"
+      }
+    ],
+    "expected": "Your heading at localhost:8081, and both my-site:1.0 and my-site:1.1 in docker images.",
+    "files": {
+      "note": "Run every command from inside my-site.",
+      "entries": [
+        {
+          "path": "my-site/",
+          "note": "your working folder, step 1"
+        },
+        {
+          "path": "my-site/index.html",
+          "note": "step 2"
+        },
+        {
+          "path": "my-site/Dockerfile",
+          "note": "step 3, no extension"
+        }
+      ]
+    }
+  },
+  {
+    "id": "layer-cache",
+    "title": "How the build cache works",
+    "minutes": 6,
+    "summary": "See Docker reuse layers, see one change rebuild everything after it, and fix it by reordering.",
+    "steps": [
+      {
+        "text": "Go back to your home folder, make a new folder, and move into it.",
+        "code": "cd ~\nmkdir cache-demo\ncd cache-demo",
+        "label": "terminal"
+      },
+      {
+        "text": "Create a file called message.txt with this line.",
+        "code": "Hello, cache!",
+        "label": "message.txt"
+      },
+      {
+        "text": "Create a Dockerfile. The RUN step waits 5 seconds to act like a slow install (think npm install or apt-get).",
+        "code": "FROM alpine:3.20\nCOPY message.txt /message.txt\nRUN echo \"Installing dependencies...\" && sleep 5\nCMD [\"cat\", \"/message.txt\"]",
+        "label": "Dockerfile",
+        "notes": [
+          {
+            "for": "Windows",
+            "text": "Save it as Dockerfile, not Dockerfile.txt (choose \"All files\" in Notepad)."
+          }
+        ]
+      },
+      {
+        "text": "Build it. It takes about 5 seconds because of the RUN step.",
+        "code": "docker build -t cache-demo .",
+        "label": "terminal"
+      },
+      {
+        "text": "Build again without changing anything. It finishes almost instantly, and each step says CACHED. Docker reused every layer.",
+        "code": "docker build -t cache-demo .",
+        "label": "terminal"
+      },
+      {
+        "text": "Change the text in message.txt, save it, and build again. It is slow again. The COPY step changed, so every step after it rebuilds too, even the RUN step that did not change.",
+        "code": "docker build -t cache-demo .",
+        "label": "terminal"
+      },
+      {
+        "text": "Fix it: move the slow RUN step above the COPY. Things that rarely change go first, things that change often go last.",
+        "code": "FROM alpine:3.20\nRUN echo \"Installing dependencies...\" && sleep 5\nCOPY message.txt /message.txt\nCMD [\"cat\", \"/message.txt\"]",
+        "label": "Dockerfile"
+      },
+      {
+        "text": "Build once (slow, because the order changed). Then change message.txt again and rebuild. Now it is fast: the RUN step says CACHED and only COPY runs.",
+        "code": "docker build -t cache-demo .",
+        "label": "terminal"
+      },
+      {
+        "text": "Run it, then list its layers. Each Dockerfile step is one layer.",
+        "code": "docker run --rm cache-demo\ndocker history cache-demo",
+        "label": "terminal"
+      }
+    ],
+    "expected": "The last rebuild takes about 1 second instead of 5, with the RUN step marked CACHED.",
+    "files": {
+      "note": "Run every command from inside cache-demo.",
+      "entries": [
+        {
+          "path": "cache-demo/",
+          "note": "your working folder, step 1"
+        },
+        {
+          "path": "cache-demo/message.txt",
+          "note": "step 2, you edit it twice"
+        },
+        {
+          "path": "cache-demo/Dockerfile",
+          "note": "step 3, reordered in step 7"
+        }
+      ]
+    }
+  },
+  {
+    "id": "volumes",
+    "title": "Keep data with volumes",
+    "minutes": 5,
+    "summary": "Use a named volume so data outlives the container that wrote it.",
+    "steps": [
+      {
+        "text": "Create a named volume.",
+        "code": "docker volume create notes",
+        "label": "terminal"
+      },
+      {
+        "text": "Run a throwaway container (--rm deletes it on exit) that appends a line to a file in the volume. Run it twice. The single quotes matter: they stop your own shell from filling in $(hostname), so the container does it instead.",
+        "code": "docker run --rm -v notes:/data alpine sh -c 'echo hello from $(hostname) >> /data/notes.txt'",
+        "label": "terminal"
+      },
+      {
+        "text": "Read the file from yet another new container. Both lines are there, written by containers that no longer exist.",
+        "code": "docker run --rm -v notes:/data alpine cat /data/notes.txt",
+        "label": "terminal"
+      },
+      {
+        "text": "See where Docker keeps it.",
+        "code": "docker volume inspect notes",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "macOS / Windows",
+            "text": "The Mountpoint path is inside Docker Desktop’s Linux virtual machine, not on your own disk, so you won’t find it in Finder or Explorer."
+          }
+        ]
+      }
+    ],
+    "expected": "Two \"hello from <id>\" lines with different container ids."
+  },
+  {
+    "id": "networks",
+    "title": "Let containers talk",
+    "minutes": 5,
+    "summary": "Put two containers on a user-defined network and reach one from the other by name.",
+    "steps": [
+      {
+        "text": "Create a network.",
+        "code": "docker network create dojo-net",
+        "label": "terminal"
+      },
+      {
+        "text": "Start Redis on that network, named \"cache\".",
+        "code": "docker run -d --name cache --network dojo-net redis:7-alpine",
+        "label": "terminal"
+      },
+      {
+        "text": "From a second container on the same network, ping Redis using just its name. Docker provides DNS for container names.",
+        "code": "docker run --rm --network dojo-net redis:7-alpine redis-cli -h cache ping",
+        "label": "terminal"
+      },
+      {
+        "text": "Try the same without the network flag. It fails: the default bridge network has no name resolution.",
+        "code": "docker run --rm redis:7-alpine redis-cli -h cache ping",
+        "label": "terminal"
+      },
+      {
+        "text": "Clean up.",
+        "code": "docker rm -f cache\ndocker network rm dojo-net",
+        "label": "terminal"
+      }
+    ],
+    "expected": "PONG the first time, and a \"Could not connect\" / name error the second time."
+  },
+  {
+    "id": "compose-up",
+    "title": "Docker Compose: a two-service app",
+    "minutes": 8,
+    "summary": "Describe a database and an admin UI in one compose.yaml and start both with one command.",
+    "steps": [
+      {
+        "text": "Go back to your home folder, make a new folder, and move into it.",
+        "code": "cd ~\nmkdir compose-demo\ncd compose-demo",
+        "label": "terminal"
+      },
+      {
+        "text": "Create compose.yaml. Two services, one named volume, and depends_on to order startup. The services share a network automatically.",
+        "code": "services:\n  db:\n    image: postgres:17-alpine\n    environment:\n      POSTGRES_USER: dojo\n      POSTGRES_PASSWORD: dojo\n      POSTGRES_DB: dojo\n    volumes:\n      - pgdata:/var/lib/postgresql/data\n\n  adminer:\n    image: adminer\n    ports:\n      - \"8082:8080\"\n    depends_on:\n      - db\n\nvolumes:\n  pgdata:",
+        "label": "compose.yaml"
+      },
+      {
+        "text": "Start everything in the background.",
+        "code": "docker compose up -d",
+        "label": "terminal"
+      },
+      {
+        "text": "Check status and follow the database log (Ctrl+C to stop following).",
+        "code": "docker compose ps\ndocker compose logs -f db",
+        "label": "terminal"
+      },
+      {
+        "text": "Open http://localhost:8082 and log in: System \"PostgreSQL\", Server \"db\", Username \"dojo\", Password \"dojo\", Database \"dojo\". Create any table. The server name \"db\" works because Compose gives each service a DNS name."
+      },
+      {
+        "text": "Tear down and bring it back. Your table survives because it lives in the pgdata volume.",
+        "code": "docker compose down\ndocker compose up -d",
+        "label": "terminal"
+      },
+      {
+        "text": "Now remove it all, including volumes (-v). This time the data is gone.",
+        "code": "docker compose down -v",
+        "label": "terminal"
+      }
+    ],
+    "expected": "Adminer shows your table after down/up, and it is gone after down -v.",
+    "files": {
+      "note": "Run every command from inside compose-demo. Compose looks for compose.yaml in the current folder.",
+      "entries": [
+        {
+          "path": "compose-demo/",
+          "note": "your working folder, step 1"
+        },
+        {
+          "path": "compose-demo/compose.yaml",
+          "note": "step 2"
+        }
+      ]
+    }
+  },
+  {
+    "id": "this-app",
+    "title": "Read the Dojo’s own compose file",
+    "minutes": 5,
+    "summary": "This app is itself four containers. See how they are wired together.",
+    "steps": [
+      {
+        "text": "This is (a trimmed version of) the compose.yaml that runs the page you are reading.",
+        "label": "compose.yaml (excerpt)",
+        "code": "services:\n  db:\n    image: mysql:8.4\n    volumes: [dbdata:/var/lib/mysql]\n    healthcheck:\n      test: [\"CMD\", \"mysqladmin\", \"ping\", \"-h\", \"127.0.0.1\"]\n\n  api:                           # Laravel on php-fpm\n    build: ./apps/api            # built from a Dockerfile, not pulled\n    image: docker-dojo-api\n    environment:\n      DB_HOST: db                # service name = hostname\n    depends_on:\n      db:\n        condition: service_healthy   # wait until MySQL answers\n\n  reverb:                        # websockets for the live tracker\n    image: docker-dojo-api       # same image as api...\n    command: [\"php\", \"artisan\", \"reverb:start\"]   # ...different command\n\n  web:\n    build: ./apps/web            # multi-stage: bun builds, nginx serves\n    ports: [\"8000:80\"]           # the only port published to your machine\n\nvolumes:\n  dbdata:"
+      },
+      {
+        "text": "Things to notice: only \"web\" publishes a port, so the database is unreachable from outside. \"condition: service_healthy\" makes the API wait until MySQL is ready, not just started. And one image serves two roles: the command decides whether it runs PHP-FPM or Reverb."
+      },
+      {
+        "text": "If your trainer shared the repository, run the whole Dojo yourself. --build builds the api and web images from source first.",
+        "label": "terminal",
+        "code": "cd ~\ngit clone <repo-url-from-your-trainer> docker-dojo\ncd docker-dojo\ndocker compose up -d --build"
+      },
+      {
+        "text": "Open http://localhost:8000 to see your own copy. When you're finished, run: docker compose down"
+      }
+    ],
+    "expected": "You can explain why the database has no ports: entry, and what service_healthy does.",
+    "files": {
+      "note": "Only if you clone the repository in step 3. A trimmed view:",
+      "entries": [
+        {
+          "path": "docker-dojo/",
+          "note": "your working folder"
+        },
+        {
+          "path": "docker-dojo/compose.yaml",
+          "note": "the file shown in step 1"
+        },
+        {
+          "path": "docker-dojo/apps/"
+        },
+        {
+          "path": "docker-dojo/apps/api/",
+          "note": "Laravel API"
+        },
+        {
+          "path": "docker-dojo/apps/api/Dockerfile",
+          "note": "used by api and reverb"
+        },
+        {
+          "path": "docker-dojo/apps/web/",
+          "note": "Vue app"
+        },
+        {
+          "path": "docker-dojo/apps/web/Dockerfile",
+          "note": "multi-stage build"
+        },
+        {
+          "path": "docker-dojo/apps/web/nginx.conf",
+          "note": "routes /api and websockets"
+        }
+      ]
+    }
+  },
+  {
+    "id": "cleanup",
+    "title": "Clean up",
+    "minutes": 2,
+    "summary": "See how much space Docker is using and reclaim it.",
+    "steps": [
+      {
+        "text": "See disk usage by images, containers, volumes and build cache.",
+        "code": "docker system df",
+        "label": "terminal"
+      },
+      {
+        "text": "Remove what you made today. Removing a volume permanently deletes its data.",
+        "code": "docker image rm my-site:1.0 my-site:1.1 cache-demo\ndocker volume rm notes",
+        "label": "terminal"
+      },
+      {
+        "text": "Optionally, remove all stopped containers and unused images in one go (asks for confirmation).",
+        "code": "docker system prune",
+        "label": "terminal"
+      }
+    ],
+    "expected": "docker system df reports less reclaimable space than before."
+  }
+]

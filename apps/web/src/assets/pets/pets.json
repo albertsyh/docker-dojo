@@ -1,0 +1,66 @@
+[
+  {
+    "id": "nori",
+    "name": "Nori",
+    "description": "A tiny smiling salmon sushi companion.",
+    "rows": [
+      6,
+      8,
+      8,
+      4,
+      5,
+      8,
+      6,
+      6,
+      6
+    ]
+  },
+  {
+    "id": "crumb",
+    "name": "Crumb",
+    "description": "A tiny smiling toast cube with a pat of butter.",
+    "rows": [
+      6,
+      8,
+      8,
+      4,
+      5,
+      8,
+      6,
+      6,
+      6
+    ]
+  },
+  {
+    "id": "fuse",
+    "name": "Fuse",
+    "description": "A tiny soot bomb with glowing eyes and a little flower fuse.",
+    "rows": [
+      6,
+      8,
+      8,
+      4,
+      5,
+      8,
+      6,
+      6,
+      6
+    ]
+  },
+  {
+    "id": "professor-hoot",
+    "name": "Professor Hoot",
+    "description": "A scholarly owl with round glasses, a book, and a graduation cap.",
+    "rows": [
+      6,
+      8,
+      8,
+      4,
+      5,
+      8,
+      6,
+      6,
+      6
+    ]
+  }
+]

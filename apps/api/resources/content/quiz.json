@@ -1,0 +1,125 @@
+{
+  "passMark": 0.7,
+  "questions": [
+    {
+      "id": "image-vs-container",
+      "prompt": "What is a container?",
+      "options": [
+        "Another name for an image",
+        "A running copy of an image",
+        "A file you use to build an image",
+        "An image that only runs on Windows"
+      ],
+      "answer": 1,
+      "explanation": "An image is a template. A container is a copy of it that runs."
+    },
+    {
+      "id": "port-mapping",
+      "prompt": "In `docker run -p 8080:80 nginx`, what is 8080?",
+      "options": [
+        "The port inside the container",
+        "The port on your computer",
+        "The number of nginx workers",
+        "The image version"
+      ],
+      "answer": 1,
+      "explanation": "The format is HOST:CONTAINER. Port 8080 on your computer goes to port 80 in the container."
+    },
+    {
+      "id": "detached",
+      "prompt": "What does `-d` do in `docker run`?",
+      "options": [
+        "Deletes the container when it stops",
+        "Runs the container in the background",
+        "Turns on debug logs",
+        "Only downloads the image"
+      ],
+      "answer": 1,
+      "explanation": "-d means detached. You get your terminal back. The flag that deletes a stopped container is --rm."
+    },
+    {
+      "id": "ephemeral",
+      "prompt": "You change a file inside a container. Then you remove it and start a new one from the same image. Is your change still there?",
+      "options": [
+        "Yes, all containers share files",
+        "Yes, if the image tag is the same",
+        "No, it was removed with the old container",
+        "Only if you used -it"
+      ],
+      "answer": 2,
+      "explanation": "Each container has its own files, and they are removed with it. Use a volume to keep data."
+    },
+    {
+      "id": "volume",
+      "prompt": "How do you keep database files after the container is removed?",
+      "options": [
+        "Use a named volume",
+        "Use the EXPOSE instruction",
+        "Run docker commit after every change",
+        "Use a bigger container"
+      ],
+      "answer": 0,
+      "explanation": "A volume lives outside the container, so it stays when the container is removed."
+    },
+    {
+      "id": "layer-cache",
+      "prompt": "You change only index.html and rebuild. Why is `FROM nginx:alpine` not downloaded again?",
+      "options": [
+        "Docker reuses layers that did not change",
+        "nginx is built into Docker",
+        "Because of the -t flag",
+        "It is downloaded again, just quickly"
+      ],
+      "answer": 0,
+      "explanation": "Each Dockerfile step makes a layer. Docker reuses layers up to the first step that changed."
+    },
+    {
+      "id": "build-context",
+      "prompt": "In `docker build -t my-site:1.0 .`, what does the last `.` mean?",
+      "options": [
+        "The image name",
+        "The folder Docker builds from",
+        "Short for \"latest\"",
+        "The registry address"
+      ],
+      "answer": 1,
+      "explanation": "The `.` is the build context: the current folder. COPY can only use files inside it."
+    },
+    {
+      "id": "dns",
+      "prompt": "Two containers are on the same user-defined network. How can one reach the other?",
+      "options": [
+        "Only through ports on localhost",
+        "By its container or service name",
+        "They cannot reach each other",
+        "Only by a fixed IP address"
+      ],
+      "answer": 1,
+      "explanation": "User-defined networks and Compose have built-in DNS. Names work as hostnames."
+    },
+    {
+      "id": "compose-down-v",
+      "prompt": "What does `-v` add to `docker compose down`?",
+      "options": [
+        "Nothing, both do the same",
+        "It also deletes named volumes and their data",
+        "It shows more output",
+        "It stops containers but keeps them"
+      ],
+      "answer": 1,
+      "explanation": "down removes containers and networks. down -v also deletes volumes, and that data is gone for good."
+    },
+    {
+      "id": "healthy",
+      "prompt": "Why add `condition: service_healthy` to depends_on?",
+      "options": [
+        "It makes the database faster",
+        "It waits until the database is ready, not just started",
+        "It opens the database port",
+        "Volumes need it to work"
+      ],
+      "answer": 1,
+      "explanation": "MySQL takes a few seconds to accept connections after it starts. The health check waits for that."
+    }
+  ]
+}
