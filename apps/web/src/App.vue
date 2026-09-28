@@ -1,11 +1,22 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import AppIcon from './components/AppIcon.vue'
 import DisplayControls from './components/DisplayControls.vue'
 import PetCompanion from './components/PetCompanion.vue'
 import PetPicker from './components/PetPicker.vue'
 import { pet } from './pets'
 import { completed, state } from './store'
+
+// Small screens fold the nav into a menu. It closes when you navigate or press Esc.
+const menuOpen = ref(false)
+const route = useRoute()
+watch(() => route.fullPath, () => (menuOpen.value = false))
+function onKey(e: KeyboardEvent) {
+  if (e.key === 'Escape') menuOpen.value = false
+}
+onMounted(() => window.addEventListener('keydown', onKey))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 const exerciseCount = computed(() => state.content?.exercises.length ?? 0)
 // The quiz counts as one more step on the journey, done once it's passed.
@@ -23,20 +34,27 @@ const journeyPct = computed(() => {
         <img src="/favicon.svg" alt="" width="28" height="28" />
         <span>Docker Dojo</span>
       </RouterLink>
-      <nav aria-label="Main">
+      <nav id="main-nav" aria-label="Main" :class="{ open: menuOpen }">
         <RouterLink to="/exercises">Exercises</RouterLink>
         <RouterLink to="/quiz">Quiz</RouterLink>
+        <RouterLink to="/glossary">Glossary</RouterLink>
         <RouterLink to="/live" class="live"><i aria-hidden="true" />Live</RouterLink>
+        <p v-if="state.progress" class="nav-id muted">You are <code>{{ state.progress.id }}</code></p>
       </nav>
       <div v-if="state.progress" class="me" :title="`Your participant id: ${state.progress.id}`">
         <span class="me-id">{{ state.progress.id }}</span>
         <span class="tag" :class="{ ok: completed.size === exerciseCount }">
           <AppIcon v-if="completed.size === exerciseCount" name="check" class="tag-icon" />{{ completed.size }}/{{ exerciseCount }}
         </span>
-        <span v-if="state.progress.quiz" class="tag" :class="{ ok: state.progress.quiz.passed }">
+        <span v-if="state.progress.quiz" class="tag quiz-tag" :class="{ ok: state.progress.quiz.passed }">
           Quiz {{ state.progress.quiz.bestScore }}/{{ state.progress.quiz.total }}
         </span>
       </div>
+      <!-- Both labels share one grid cell so the button keeps its width. -->
+      <button class="btn small ghost swap menu-btn" type="button" aria-controls="main-nav" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
+        <span :aria-hidden="menuOpen"><AppIcon name="menu" />Menu</span>
+        <span :aria-hidden="!menuOpen"><AppIcon name="x" />Close</span>
+      </button>
     </div>
     <div
       v-if="state.progress"
@@ -109,8 +127,37 @@ nav a.router-link-active::after {
 @media (min-width: 1000px) {
   .foot.with-pet .foot-inner { padding-right: max(16px, calc(128px - max(0px, (100vw - 1180px) / 2))); }
 }
-@media (max-width: 640px) {
+
+.menu-btn { display: none; }
+.nav-id { display: none; }
+
+/* Small screens: brand, your tags and a Menu button on one row.
+   The links drop down as a full-width panel under the header. */
+@media (max-width: 859px) {
+  .top-inner { flex-wrap: nowrap; gap: var(--space-3); }
+  .brand { flex: none; }
+  .me { min-width: 0; }
   .me-id { display: none; }
-  .top-inner { gap: var(--space-3); }
+  .menu-btn { display: inline-grid; flex: none; margin-left: auto; }
+  .me + .menu-btn { margin-left: 0; }
+  nav {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; gap: 0; padding: var(--space-2) var(--space-4) var(--space-4);
+    background: var(--bg); border-bottom: 1px solid var(--border); box-shadow: var(--shadow-float);
+  }
+  nav.open { display: flex; }
+  nav a { min-height: 3rem; padding: 0 var(--space-3); font-size: var(--text-md); }
+  nav a.router-link-active { background: var(--primary-soft); }
+  nav a.router-link-active::after { display: none; }
+  .nav-id { display: block; margin: var(--space-3) var(--space-3) 0; padding-top: var(--space-3); border-top: 1px solid var(--border); font-size: var(--text-sm); overflow-wrap: anywhere; }
+}
+/* Very narrow phones: keep only the exercise count. */
+@media (max-width: 400px) {
+  .brand span { font-size: var(--text-md); }
+  .me .quiz-tag { display: none; }
+}
+/* Smallest phones: the logo alone stands for the brand (the name stays for screen readers). */
+@media (max-width: 360px) {
+  .brand span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
 </style>

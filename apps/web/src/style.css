@@ -72,6 +72,8 @@
   --content: 820px;
 
   color-scheme: light;
+  /* Always reserve the scrollbar's space, so pages that don't scroll sit exactly where scrolling ones do. */
+  scrollbar-gutter: stable;
   font-family: var(--sans);
   font-size: 100%;
   line-height: 1.6;
