@@ -4,6 +4,7 @@ import '@fontsource-variable/figtree'
 import '@fontsource-variable/jetbrains-mono'
 import './style.css'
 import App from './App.vue'
+import { i18n } from './i18n'
 import HomeView from './views/HomeView.vue'
 import ExercisesView from './views/ExercisesView.vue'
 import ExerciseView from './views/ExerciseView.vue'
@@ -40,4 +41,4 @@ const router = createRouter({
 
 // The chat listens app-wide, so the pet and nav can show unread questions on any page.
 boot().then(() => state.content && startChat(state.content.realtime.key))
-createApp(App).use(router).mount('#app')
+createApp(App).use(router).use(i18n).mount('#app')

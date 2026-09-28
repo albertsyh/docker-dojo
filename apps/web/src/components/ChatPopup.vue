@@ -3,6 +3,9 @@ import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import AppIcon from './AppIcon.vue'
 import ChatPanel from './ChatPanel.vue'
 import { chat, toggleChat } from '../chat'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const panel = ref<InstanceType<typeof ChatPanel> | null>(null)
 
@@ -20,9 +23,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 <template>
   <section class="popup" role="dialog" aria-labelledby="chat-popup-title">
     <header>
-      <h2 id="chat-popup-title"><AppIcon name="chat" />Questions</h2>
-      <RouterLink to="/chat" class="full" @click="chat.open = false">Open the chat page</RouterLink>
-      <button class="btn small ghost close" type="button" aria-label="Close" @click="toggleChat"><AppIcon name="x" /></button>
+      <h2 id="chat-popup-title"><AppIcon name="chat" />{{ t('chat.popupTitle') }}</h2>
+      <RouterLink to="/chat" class="full" @click="chat.open = false">{{ t('chat.openPage') }}</RouterLink>
+      <button class="btn small ghost close" type="button" :aria-label="t('common.close')" @click="toggleChat"><AppIcon name="x" /></button>
     </header>
     <ChatPanel ref="panel" compact />
   </section>

@@ -1,5 +1,6 @@
 import { computed, reactive, watch } from 'vue'
 import { api, type ChatMessage } from './api'
+import { t } from './i18n'
 import { pet } from './pets'
 import { getEcho } from './realtime'
 import { state } from './store'
@@ -65,7 +66,7 @@ export async function loadChat() {
 
 function withId() {
   const id = state.progress?.id
-  if (!id) throw new Error('Get your name badge first.')
+  if (!id) throw new Error(t('errors.badgeFirst'))
   return id
 }
 

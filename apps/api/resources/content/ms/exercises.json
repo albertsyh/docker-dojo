@@ -1,0 +1,545 @@
+{
+  "exercises": {
+    "hello-docker": {
+      "source": "883d6df7",
+      "title": "Helo, Docker",
+      "summary": "Pastikan Docker sudah dipasang, dan jalankan container pertama anda.",
+      "steps": [
+        {
+          "text": "Pastikan Docker client dan engine kedua-duanya boleh dihubungi.",
+          "notes": [
+            {
+              "text": "\"permission denied … docker.sock\" bermaksud pengguna anda tiada dalam kumpulan docker. Jalankan: sudo usermod -aG docker $USER, kemudian log keluar dan log masuk semula (atau letakkan sudo di hadapan arahan buat sementara waktu)."
+            },
+            {
+              "text": "\"Cannot connect to the Docker daemon\" bermaksud Docker Desktop tidak berjalan. Mulakannya dan tunggu sehingga ia menunjukkan bahawa ia sedang berjalan."
+            }
+          ]
+        },
+        {
+          "text": "Jalankan image hello-world. Docker memuat turunnya dari Docker Hub, mencipta container, menjalankannya, dan container itu kemudian berhenti."
+        },
+        {
+          "text": "Senaraikan image yang kini disimpan di komputer anda."
+        }
+      ],
+      "expected": "Mesej \"Hello from Docker!\", dan hello-world tersenarai dalam docker images."
+    },
+    "first-web-server": {
+      "source": "e371a2d2",
+      "title": "Jalankan web server",
+      "summary": "Jalankan nginx di latar belakang, publish port, baca log, kemudian hentikan dan buang container itu.",
+      "steps": [
+        {
+          "text": "Mulakan nginx secara detached (-d), namakannya \"web\", dan petakan port 8080 di komputer anda ke port 80 di dalam container. Bahagian \":alpine\" ialah tag. Jika ditinggalkan, anda akan mendapat \"latest\", yang berubah setiap kali nginx mengeluarkan versi baharu, jadi arahan yang sama mungkin memberi server yang berbeza bulan depan. Sentiasa nyatakan tag."
+        },
+        {
+          "text": "Buka http://localhost:8080 dalam pelayar anda. Anda sepatutnya melihat \"Welcome to nginx!\"."
+        },
+        {
+          "text": "Senaraikan container yang sedang berjalan. Perhatikan lajur PORTS."
+        },
+        {
+          "text": "Baca access log. Permintaan dari pelayar anda sepatutnya ada di dalamnya."
+        },
+        {
+          "text": "Hentikan dan buang container itu."
+        }
+      ],
+      "expected": "Halaman sambutan nginx di localhost:8080, dan satu baris permintaan GET dalam docker logs."
+    },
+    "inside-a-container": {
+      "source": "9f8bed8b",
+      "title": "Lihat ke dalam container",
+      "summary": "Buka shell di dalam container yang sedang berjalan dan ubah satu fail, kemudian lihat perubahan itu hilang bersama container.",
+      "steps": [
+        {
+          "text": "Mulakan nginx sekali lagi."
+        },
+        {
+          "text": "Buka shell interaktif di dalamnya."
+        },
+        {
+          "text": "Di dalam container, tulis ganti halaman utama, kemudian keluar dari shell."
+        },
+        {
+          "text": "Muat semula http://localhost:8080. Suntingan anda sudah kelihatan."
+        },
+        {
+          "text": "Sekarang buang container itu dan mulakan yang baharu. Suntingan anda sudah hilang: filesystem container boleh dibuang bila-bila masa."
+        },
+        {
+          "text": "Bersihkan."
+        }
+      ],
+      "expected": "Tajuk yang anda tulis muncul, kemudian hilang selepas container dicipta semula."
+    },
+    "build-an-image": {
+      "source": "aec005f1",
+      "title": "Build image anda sendiri",
+      "summary": "Tulis Dockerfile, build image daripadanya, dan jalankannya.",
+      "steps": [
+        {
+          "text": "Pergi ke folder rumah anda, buat folder baharu, dan masuk ke dalamnya."
+        },
+        {
+          "text": "Cipta fail bernama index.html dengan kandungan ini."
+        },
+        {
+          "text": "Cipta fail bernama Dockerfile (tanpa sambungan). Setiap arahan menambah satu layer di atas base image.",
+          "notes": [
+            {
+              "text": "Notepad menyimpannya sebagai Dockerfile.txt tanpa memberitahu anda, dan build kemudian gagal. Dalam dialog Save, pilih \"All files (*.*)\", atau gunakan VS Code. Semak dengan: dir"
+            }
+          ]
+        },
+        {
+          "text": "Build image itu dan beri tag my-site:1.0. Tanda \".\" ialah build context: folder semasa."
+        },
+        {
+          "text": "Jalankan image anda dan buka http://localhost:8081."
+        },
+        {
+          "text": "Ubah tajuk dalam index.html, kemudian build semula sebagai 1.1. Perhatikan layer FROM datang dari cache. Hanya layer COPY yang dibina semula."
+        },
+        {
+          "text": "Bersihkan container itu (simpan image buat masa ini)."
+        }
+      ],
+      "expected": "Tajuk anda di localhost:8081, dan kedua-dua my-site:1.0 dan my-site:1.1 dalam docker images.",
+      "files": {
+        "note": "Jalankan setiap arahan dari dalam my-site.",
+        "entries": [
+          {
+            "note": "folder kerja anda, langkah 1"
+          },
+          {
+            "note": "langkah 2"
+          },
+          {
+            "note": "langkah 3, tanpa sambungan"
+          }
+        ]
+      }
+    },
+    "image-size": {
+      "source": "95d03670",
+      "title": "Ke mana perginya megabait",
+      "summary": "Semak saiz sesebuah image, baca layer-nya dengan docker history, dan lihat mengapa memadam fail dalam langkah kemudian tidak menjimatkan apa-apa.",
+      "steps": [
+        {
+          "text": "Senaraikan image anda dan saiznya. Bandingkan nginx:alpine dengan image my-site anda sendiri: image anda hampir tidak lebih besar, kerana ia berkongsi layer nginx."
+        },
+        {
+          "text": "Tunjukkan layer image my-site anda. Setiap langkah Dockerfile ialah satu baris, bersama saiz yang ditambahnya. Langkah COPY anda hanya menambah beberapa bait."
+        },
+        {
+          "text": "Kembali ke folder rumah anda, buat folder baharu, dan masuk ke dalamnya."
+        },
+        {
+          "text": "Cipta Dockerfile yang membuat fail 50 MB dalam satu langkah dan memadamnya dalam langkah seterusnya.",
+          "notes": [
+            {
+              "text": "Simpan sebagai Dockerfile, bukan Dockerfile.txt (pilih \"All files\" dalam Notepad), atau gunakan VS Code."
+            }
+          ]
+        },
+        {
+          "text": "Build image itu, kemudian semak saiznya. Ia kira-kira 60 MB, walaupun fail itu sudah tiada."
+        },
+        {
+          "text": "Lihat layer-nya. Layer dd masih menyimpan 52 MB. Layer hanya boleh dibaca, jadi rm yang kemudian hanya menyembunyikan fail itu: baitnya masih dihantar bersama image."
+        },
+        {
+          "text": "Betulkannya: cipta dan padam fail itu dalam langkah RUN yang sama, supaya layer disimpan tanpanya."
+        },
+        {
+          "text": "Build versi ramping itu dan bandingkan. Dalam Dockerfile sebenar, inilah sebabnya anda melihat `apk add --no-cache`, atau `apt-get install` dan `rm -rf /var/lib/apt/lists/*` dalam satu RUN."
+        }
+      ],
+      "expected": "layers-demo:bloated kira-kira 60 MB dan layers-demo:slim kira-kira 9 MB, sama seperti alpine itu sendiri.",
+      "files": {
+        "note": "Mulai langkah 3, jalankan setiap arahan dari dalam layers-demo.",
+        "entries": [
+          {
+            "note": "folder kerja anda, langkah 3"
+          },
+          {
+            "note": "langkah 4, ditulis semula dalam langkah 7"
+          }
+        ]
+      }
+    },
+    "layer-cache": {
+      "source": "3838d56f",
+      "title": "Cache dependency anda",
+      "summary": "Susun Dockerfile Node.js supaya npm install hanya berjalan semula apabila dependency anda berubah, bukan pada setiap perubahan kod.",
+      "steps": [
+        {
+          "text": "Kembali ke folder rumah anda, buat folder baharu, dan masuk ke dalamnya. Anda akan menggunakan aplikasi Node.js kecil ini untuk tiga latihan seterusnya."
+        },
+        {
+          "text": "Cipta package.json. Ia menyenaraikan satu dependency (express) dan satu alat untuk pembangunan sahaja (prettier)."
+        },
+        {
+          "text": "Cipta greet.js."
+        },
+        {
+          "text": "Cipta server.js. Ia menjawab setiap permintaan dengan ucapan dalam JSON."
+        },
+        {
+          "text": "Cipta Dockerfile dengan cara mudah: salin semuanya, kemudian pasang. Anda tidak memerlukan Node.js di komputer anda: npm berjalan di dalam build.",
+          "notes": [
+            {
+              "text": "Simpan sebagai Dockerfile, bukan Dockerfile.txt (pilih \"All files\" dalam Notepad), atau gunakan VS Code."
+            }
+          ]
+        },
+        {
+          "text": "Build image itu. Langkah npm install memuat turun kira-kira 70 pakej."
+        },
+        {
+          "text": "Tukar \"Hello\" kepada \"Hi\" dalam greet.js, simpan, dan build semula. npm install berjalan semula, walaupun package.json tidak berubah. COPY . . nampak satu fail berubah, jadi setiap langkah selepasnya dibina semula."
+        },
+        {
+          "text": "Betulkannya: salin package.json sahaja dahulu, pasang, kemudian salin kod yang selebihnya."
+        },
+        {
+          "text": "Build sekali (ia memasang semula, kerana langkah-langkahnya berubah). Kemudian tukar \"Hi\" kepada \"Hey\" dalam greet.js dan build semula. Kali ini npm install menunjukkan CACHED dan hanya COPY yang terakhir berjalan."
+        },
+        {
+          "text": "Jalankannya dan buka http://localhost:8083. Kemudian buang container itu.",
+          "notes": [
+            {
+              "text": "Projek sebenar juga menyalin fail lock (package-lock.json) dalam COPY pertama itu dan menggunakan npm ci. PHP berfungsi dengan cara yang sama: salin composer.json dan composer.lock, jalankan composer install, kemudian salin kodnya."
+            }
+          ]
+        }
+      ],
+      "expected": "Selepas dibetulkan, perubahan pada kod sahaja dibina semula dalam kira-kira satu saat, dengan RUN npm install ditandakan CACHED.",
+      "files": {
+        "note": "Jalankan setiap arahan dari dalam node-app. Tiada node_modules di sini: pakej dipasang di dalam image.",
+        "entries": [
+          {
+            "note": "folder kerja anda, langkah 1"
+          },
+          {
+            "note": "langkah 2"
+          },
+          {
+            "note": "langkah 3, anda menyuntingnya dua kali"
+          },
+          {
+            "note": "langkah 4"
+          },
+          {
+            "note": "langkah 5, disusun semula dalam langkah 8"
+          }
+        ]
+      }
+    },
+    "dockerignore": {
+      "source": "9b847079",
+      "title": "Asingkan fail dengan .dockerignore",
+      "summary": "COPY . . menyalin semuanya, termasuk rahsia. Gunakan .dockerignore untuk menentukan apa yang sampai ke build.",
+      "steps": [
+        {
+          "text": "Kekal dalam node-app. Cipta fail .env dengan rahsia olok-olok, seperti yang ada dalam banyak projek.",
+          "notes": [
+            {
+              "text": "Simpan sebagai .env, bukan .env.txt (pilih \"All files\" dalam Notepad), atau gunakan VS Code."
+            }
+          ]
+        },
+        {
+          "text": "Cipta juga fail debug.log."
+        },
+        {
+          "text": "Build dan senaraikan fail di dalam image. Rahsia anda dan fail log anda kedua-duanya ada di situ, untuk sesiapa sahaja yang pull image itu."
+        },
+        {
+          "text": "Cipta fail .dockerignore. Ia berfungsi seperti .gitignore: fail yang sepadan tidak akan sampai ke build. node_modules ada di situ supaya pemasangan tempatan tidak boleh sekali-kali menulis ganti yang dibina di dalam image.",
+          "notes": [
+            {
+              "text": "Simpan sebagai .dockerignore, bukan .dockerignore.txt (pilih \"All files\" dalam Notepad), atau gunakan VS Code."
+            }
+          ]
+        },
+        {
+          "text": "Build dan senaraikan sekali lagi. .env dan debug.log sudah tiada. Baris \"transferring context\" dalam output build juga menunjukkan berapa banyak yang dihantar kepada Docker."
+        },
+        {
+          "text": ".dockerignore tidak dapat membantu jika rahsia ditulis dalam Dockerfile itu sendiri. Tambah baris ENV dengan kunci olok-olok, betul-betul di atas CMD."
+        },
+        {
+          "text": "Build image itu dan baca sejarah image. Kunci itu ada di situ, dan sesiapa yang pull image itu boleh membacanya dengan cara yang sama. Hantar rahsia semasa container bermula, jangan sekali-kali dalam Dockerfile. Padam semula baris ENV itu sebelum anda meneruskan."
+        }
+      ],
+      "expected": "Senarai kedua tiada .env dan tiada debug.log. docker history menunjukkan ENV API_KEY=do-not-ship-me.",
+      "files": {
+        "note": "Masih di dalam node-app.",
+        "entries": [
+          {
+            "note": "dari latihan sebelumnya"
+          },
+          {
+            "note": "langkah 1, tidak boleh dihantar"
+          },
+          {
+            "note": "langkah 2"
+          },
+          {
+            "note": "langkah 4"
+          },
+          [],
+          [],
+          [],
+          []
+        ]
+      }
+    },
+    "multi-stage": {
+      "source": "95dcce7f",
+      "title": "Uji dan hantar dengan multi-stage build",
+      "summary": "Satu Dockerfile, dua sasaran: stage ujian dengan semua alat, dan stage production yang ramping yang berjalan sebagai pengguna biasa.",
+      "steps": [
+        {
+          "text": "Kekal dalam node-app. Kembalikan greet.js kepada \"Hello\", kemudian tambah ujian untuknya. node --test mencari fail yang berakhir dengan .test.js."
+        },
+        {
+          "text": "Gantikan Dockerfile dengan tiga stage. Setiap FROM memulakan satu stage, dan AS memberinya nama. test dan production kedua-duanya bermula daripada base."
+        },
+        {
+          "text": "Build stage test sahaja dengan --target. Ujian berjalan semasa build, dan build berhenti jika mana-mana ujian gagal."
+        },
+        {
+          "text": "Rosakkan ujian itu: tukar \"Hello\" kepada \"Helo\" dalam greet.js dan build stage test sekali lagi. Build gagal dan menunjukkan expected dan actual. Tukar semula selepas itu."
+        },
+        {
+          "text": "Build image production. Tanpa --target, Docker membina stage terakhir, dan melangkau stage yang tidak diperlukannya, seperti test."
+        },
+        {
+          "text": "Bandingkan kedua-duanya. production lebih kecil: --omit=dev meninggalkan prettier, dan NODE_ENV=production memberitahu library seperti express supaya berjalan dalam mod production."
+        },
+        {
+          "text": "Jalankan production dan buka http://localhost:8083. Jawapannya menyebut \"mode\": \"production\". USER node bermaksud aplikasi itu tidak berjalan sebagai root."
+        },
+        {
+          "text": "Buang container itu. Untuk aplikasi Laravel, stage production menjalankan composer install --no-dev --optimize-autoloader dan php artisan optimize. Dockerfile api aplikasi ini sendiri melakukan betul-betul begitu, dengan stage test yang menjalankan php artisan test."
+        }
+      ],
+      "expected": "Ujian yang rosak menggagalkan build, node-app:prod lebih kecil daripada node-app:test, tiada prettier, dan whoami mencetak node.",
+      "files": {
+        "note": "Masih di dalam node-app.",
+        "entries": [
+          {
+            "note": "dari latihan-latihan sebelumnya"
+          },
+          {
+            "note": "langkah 1"
+          },
+          {
+            "note": "langkah 2, kini tiga stage"
+          },
+          {
+            "note": "dirosakkan dan dibetulkan dalam langkah 4"
+          },
+          [],
+          [],
+          [],
+          [],
+          []
+        ]
+      }
+    },
+    "scan-image": {
+      "source": "e1f5655e",
+      "title": "Imbas image untuk kelemahan keselamatan",
+      "summary": "Gunakan Docker Scout, yang terbina dalam Docker Desktop, untuk mencari isu keselamatan yang diketahui dalam image anda dan cara membetulkannya.",
+      "steps": [
+        {
+          "text": "Scout memerlukan akaun Docker percuma. Log masuk ke Docker Desktop (di kanan atas), atau jalankan docker login dalam terminal anda.",
+          "notes": [
+            {
+              "text": "Docker Engine sahaja tidak termasuk Scout. Gunakan Docker Desktop untuk latihan ini, atau pasang plugin scout dari github.com/docker/scout-cli."
+            }
+          ]
+        },
+        {
+          "text": "Dalam Docker Desktop, buka Images dan pilih node-app:prod. Paparan Vulnerabilities menyenaraikan isu yang diketahui (CVE) mengikut tahap keterukan dan pakej tempat setiap satunya berada."
+        },
+        {
+          "text": "Perkara yang sama dari terminal. quickview memberi ringkasan dan skor kesihatan: baris USER node anda sudah lulus semakan non-root. cves hanya menyenaraikan isu yang serius, dan --locations menunjukkan fail tempat setiap satunya ditemui."
+        },
+        {
+          "text": "Lihat laluannya: semuanya di bawah /usr/local/lib/node_modules/npm, iaitu npm sendiri, yang dihantar bersama base image node. Kod anda dan express bersih. Tanya Scout sama ada base image yang lebih baharu atau yang berbeza akan membantu."
+        },
+        {
+          "text": "Sebagai perbandingan, imbas base image lama yang tidak lagi menerima kemas kini. Ia mempunyai berpuluh-puluh isu high dan critical, dan berjalan sebagai root. Cara membetulkan kebanyakan penemuan ialah base image yang lebih baharu dan lebih kecil."
+        }
+      ],
+      "expected": "Image anda menunjukkan beberapa isu high, semuanya di dalam npm dari base image, manakala node:18-alpine menunjukkan berpuluh-puluh, termasuk yang critical."
+    },
+    "volumes": {
+      "source": "d3dbbdc6",
+      "title": "Simpan data dengan volume",
+      "summary": "Gunakan named volume supaya data kekal lebih lama daripada container yang menulisnya.",
+      "steps": [
+        {
+          "text": "Cipta named volume."
+        },
+        {
+          "text": "Jalankan container pakai buang (--rm memadamnya apabila keluar) yang menambah satu baris pada fail dalam volume. Jalankannya dua kali. Tanda petikan tunggal itu penting: ia menghalang shell anda sendiri daripada mengisi $(hostname), jadi container yang melakukannya."
+        },
+        {
+          "text": "Baca fail itu dari satu lagi container baharu. Kedua-dua baris ada di situ, ditulis oleh container yang sudah tidak wujud."
+        },
+        {
+          "text": "Lihat di mana Docker menyimpannya.",
+          "notes": [
+            {
+              "text": "Laluan Mountpoint berada di dalam mesin maya Linux Docker Desktop, bukan pada cakera anda sendiri, jadi anda tidak akan menemuinya dalam Finder atau Explorer."
+            }
+          ]
+        }
+      ],
+      "expected": "Dua baris \"hello from <id>\" dengan id container yang berbeza."
+    },
+    "networks": {
+      "source": "1a2485cb",
+      "title": "Biarkan container berhubung",
+      "summary": "Letakkan dua container pada network yang ditentukan pengguna dan hubungi satu daripada yang lain menggunakan nama.",
+      "steps": [
+        {
+          "text": "Cipta network."
+        },
+        {
+          "text": "Mulakan Redis pada network itu, bernama \"cache\"."
+        },
+        {
+          "text": "Dari container kedua pada network yang sama, ping Redis menggunakan namanya sahaja. Docker menyediakan DNS untuk nama container."
+        },
+        {
+          "text": "Sekarang cuba localhost dan bukannya nama itu. Ia gagal: di dalam container, localhost bermaksud container itu sendiri, dan tiada Redis di dalamnya. Untuk menghubungi container lain, gunakan namanya (dalam Compose, nama service)."
+        },
+        {
+          "text": "Cuba perkara yang sama tanpa flag network. Ia gagal: network bridge lalai tidak mempunyai resolusi nama."
+        },
+        {
+          "text": "Bersihkan."
+        }
+      ],
+      "expected": "PONG pada kali pertama, kemudian \"Connection refused\" untuk localhost, dan ralat \"Could not connect\" / ralat nama tanpa network itu."
+    },
+    "compose-up": {
+      "source": "ff84e805",
+      "title": "Docker Compose: aplikasi dua service",
+      "summary": "Huraikan pangkalan data dan UI pentadbir dalam satu compose.yaml dan mulakan kedua-duanya dengan satu arahan.",
+      "steps": [
+        {
+          "text": "Kembali ke folder rumah anda, buat folder baharu, dan masuk ke dalamnya."
+        },
+        {
+          "text": "Cipta compose.yaml. Dua service, satu named volume, dan depends_on untuk menyusun urutan permulaan. Service-service itu berkongsi network secara automatik."
+        },
+        {
+          "text": "Mulakan semuanya di latar belakang."
+        },
+        {
+          "text": "Semak status dan ikuti log pangkalan data (Ctrl+C untuk berhenti mengikuti)."
+        },
+        {
+          "text": "Buka http://localhost:8082 dan log masuk: System \"PostgreSQL\", Server \"db\", Username \"dojo\", Password \"dojo\", Database \"dojo\". Cipta sebarang jadual. Nama server \"db\" berfungsi kerana Compose memberi setiap service nama DNS."
+        },
+        {
+          "text": "Turunkan dan naikkan semula. Jadual anda kekal kerana ia disimpan dalam volume pgdata."
+        },
+        {
+          "text": "Sekarang buang semuanya, termasuk volume (-v). Kali ini data itu hilang."
+        }
+      ],
+      "expected": "Adminer menunjukkan jadual anda selepas down/up, dan ia hilang selepas down -v.",
+      "files": {
+        "note": "Jalankan setiap arahan dari dalam compose-demo. Compose mencari compose.yaml dalam folder semasa.",
+        "entries": [
+          {
+            "note": "folder kerja anda, langkah 1"
+          },
+          {
+            "note": "langkah 2"
+          }
+        ]
+      }
+    },
+    "this-app": {
+      "source": "e5fa36b7",
+      "title": "Baca compose file Dojo sendiri",
+      "summary": "Aplikasi ini sendiri terdiri daripada empat container. Lihat bagaimana ia disambungkan antara satu sama lain.",
+      "steps": [
+        {
+          "text": "Inilah (versi ringkas) compose.yaml yang menjalankan halaman yang sedang anda baca."
+        },
+        {
+          "text": "Perkara untuk diperhatikan: hanya \"web\" yang publish port, jadi pangkalan data tidak boleh dihubungi dari luar. \"condition: service_healthy\" membuat API menunggu sehingga MySQL bersedia, bukan sekadar sudah bermula. Dan satu image memainkan dua peranan: arahan (command) menentukan sama ada ia menjalankan PHP-FPM atau Reverb."
+        },
+        {
+          "text": "Jika jurulatih anda berkongsi repositori itu, jalankan seluruh Dojo sendiri. --build membina image api dan web daripada kod sumber terlebih dahulu."
+        },
+        {
+          "text": "Kedua-dua image Dojo menggunakan multi-stage build dengan stage test. Jalankan ujian API dengan cara yang sama anda menjalankan ujian anda."
+        },
+        {
+          "text": "Buka http://localhost:8000 untuk melihat salinan anda sendiri. Apabila anda selesai, jalankan: docker compose down"
+        }
+      ],
+      "expected": "Anda boleh menerangkan mengapa pangkalan data tiada entri ports:, dan apa yang dilakukan oleh service_healthy.",
+      "files": {
+        "note": "Hanya jika anda clone repositori itu dalam langkah 3. Paparan ringkas:",
+        "entries": [
+          {
+            "note": "folder kerja anda"
+          },
+          {
+            "note": "fail yang ditunjukkan dalam langkah 1"
+          },
+          [],
+          {
+            "note": "API Laravel"
+          },
+          {
+            "note": "digunakan oleh api dan reverb"
+          },
+          {
+            "note": "aplikasi Vue"
+          },
+          {
+            "note": "multi-stage build"
+          },
+          {
+            "note": "menghalakan /api dan websocket"
+          }
+        ]
+      }
+    },
+    "cleanup": {
+      "source": "e1aa694c",
+      "title": "Bersihkan",
+      "summary": "Lihat berapa banyak ruang yang digunakan oleh Docker dan dapatkannya semula.",
+      "steps": [
+        {
+          "text": "Lihat penggunaan cakera oleh image, container, volume dan build cache."
+        },
+        {
+          "text": "Buang apa yang anda buat hari ini. Membuang volume akan memadam datanya secara kekal."
+        },
+        {
+          "text": "Jika mahu, buang semua container yang telah berhenti dan image yang tidak digunakan sekali gus (ia meminta pengesahan)."
+        },
+        {
+          "text": "Build tadi juga meninggalkan layer dalam cache. Ini mengosongkan build cache."
+        }
+      ],
+      "expected": "docker system df melaporkan ruang yang boleh dituntut semula lebih sedikit berbanding sebelumnya."
+    }
+  }
+}

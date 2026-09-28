@@ -48,7 +48,7 @@ class ChatController extends Controller
         Participant::touchOrFail($id);
         // Someone else's message is "not found" for you, the same as a missing one.
         $message = ChatMessage::where('participant_id', $id)->find($messageId);
-        abort_unless($message, 404, 'Message not found.');
+        abort_unless($message, 404, __('dojo.message_not_found'));
 
         $message->delete();
         Chat::broadcast();
@@ -70,8 +70,8 @@ class ChatController extends Controller
     {
         Participant::touchOrFail($id);
         $message = ChatMessage::find($messageId);
-        abort_unless($message, 404, 'Message not found.');
-        abort_if($message->participant_id === $id, 422, 'That is your own question.');
+        abort_unless($message, 404, __('dojo.message_not_found'));
+        abort_if($message->participant_id === $id, 422, __('dojo.own_question'));
 
         $where = ['message_id' => $messageId, 'participant_id' => $id];
         $changed = $on

@@ -1,13 +1,16 @@
 <script setup lang="ts">
 // Shown instead of a page that needs a participant id.
 import AppIcon from './AppIcon.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 </script>
 
 <template>
   <section class="gate">
-    <h1>Get your name badge first</h1>
-    <p class="lead">Pick an anonymous id on the start page so your progress is saved. It takes a few seconds.</p>
-    <RouterLink to="/" class="btn primary">Go to start<AppIcon name="arrow-right" /></RouterLink>
+    <h1>{{ t('gate.title') }}</h1>
+    <p class="lead">{{ t('gate.text') }}</p>
+    <RouterLink to="/" class="btn primary">{{ t('gate.go') }}<AppIcon name="arrow-right" /></RouterLink>
   </section>
 </template>
 

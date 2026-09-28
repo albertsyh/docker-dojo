@@ -31,6 +31,11 @@
         var u = new URLSearchParams(location.hash.slice(1)).get('theme') || new URLSearchParams(location.search).get('theme')
         if (u === 'light' || u === 'dark') document.documentElement.dataset.theme = u
       } catch (e) {}
+      // Language: lang= in the URL, then the saved choice. Malay is marked ms-BN (see src/prefs.ts).
+      try {
+        var l = new URLSearchParams(location.hash.slice(1)).get('lang') || new URLSearchParams(location.search).get('lang') || localStorage.getItem('docker-dojo:lang')
+        if (l === 'ms') document.documentElement.lang = 'ms-BN'
+      } catch (e) {}
     </script>
   </head>
   <body>

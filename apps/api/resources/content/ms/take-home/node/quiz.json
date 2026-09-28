@@ -1,0 +1,211 @@
+{
+  "questions": {
+    "node-latest-tag": {
+      "source": "59cd6cba",
+      "prompt": "Dockerfile anda bermula dengan `FROM node:latest`. Apakah masalahnya?",
+      "options": [
+        "Ia image Node yang paling kecil",
+        "Docker enggan build-nya",
+        "Dockerfile yang sama boleh build versi Node yang berbeza bulan depan",
+        "Ia hanya berfungsi di Apple Silicon"
+      ],
+      "explanation": "`latest` ialah versi yang paling baharu pada hari anda build. Pin versi seperti `node:24-alpine`, supaya setiap build mendapat Node yang telah anda uji."
+    },
+    "node-env-secret": {
+      "source": "823186e4",
+      "prompt": "Anda menulis `ENV API_KEY=sk-live-123` dalam Dockerfile dan push image itu. Siapa yang boleh membaca kunci itu?",
+      "options": [
+        "Sesiapa yang boleh pull image itu",
+        "Hanya aplikasi di dalam container",
+        "Tiada sesiapa: nilai ENV disulitkan",
+        "Hanya orang yang build-nya"
+      ],
+      "explanation": "Nilai ENV disimpan di dalam image. `docker history` dan `docker image inspect` menunjukkannya. Sebaliknya, hantar rahsia semasa container bermula."
+    },
+    "node-exit-137": {
+      "source": "38ec062d",
+      "prompt": "`docker stop` berjeda beberapa saat, kemudian container menunjukkan `Exited (137)`. Apakah yang berlaku?",
+      "options": [
+        "Aplikasi selesai dengan kemas",
+        "Port itu sudah digunakan",
+        "Image itu di-build untuk CPU lain",
+        "Aplikasi mengabaikan isyarat berhenti, jadi Docker mematikannya secara paksa"
+      ],
+      "explanation": "137 bermaksud dimatikan secara paksa. Node yang berjalan sebagai proses 1 mengabaikan SIGTERM melainkan kodnya mengendalikannya. Tambah pengendali `process.on('SIGTERM', ...)`, atau jalankan dengan `--init`."
+    },
+    "node-listen-localhost": {
+      "source": "ebc9c95b",
+      "prompt": "Anda menjalankan aplikasi dengan `-p 8084:3000`. Log menyatakan ia sedang mendengar, tetapi `localhost:8084` tidak dimuatkan. Aplikasi memanggil `app.listen(3000, '127.0.0.1')`. Mengapa ia gagal?",
+      "options": [
+        "Port 8084 dikhaskan oleh Docker",
+        "Di dalam container, 127.0.0.1 ialah container itu sendiri, dan trafik daripada -p tidak sampai di situ",
+        "Node tidak boleh mendengar di dalam container",
+        "Pelayar menyekat port 8084"
+      ],
+      "explanation": "Trafik yang di-publish sampai pada alamat network container. Dengar pada `0.0.0.0` di dalam container, dan hadkan siapa yang boleh sampai kepadanya melalui bahagian `-p` pula."
+    },
+    "node-bind-mount-hides": {
+      "source": "5a624393",
+      "prompt": "Dengan `volumes: [./:/app]` aplikasi menyatakan Cannot find package 'express', walaupun image telah memasangnya. Mengapa?",
+      "options": [
+        "npm install gagal tanpa memberitahu anda",
+        "express ialah devDependency",
+        "Bind mount menutup seluruh /app, termasuk node_modules image itu",
+        "Compose mengabaikan Dockerfile apabila volumes ditetapkan"
+      ],
+      "explanation": "Bind mount meletakkan folder anda di atas laluan itu. Folder anda tiada node_modules, jadi container pun tiada. Volume tambahan `- /app/node_modules` mengekalkan salinan image."
+    },
+    "node-exec-format": {
+      "source": "55ca4266",
+      "prompt": "Image yang di-build di Mac Apple Silicon gagal di server dengan `exec format error`. Apakah yang membetulkannya?",
+      "options": [
+        "Build dengan `--platform linux/amd64`, atau build dalam CI",
+        "Jalankannya dengan `--init`",
+        "Publish port yang lain",
+        "Tukar base image kepada `node:latest`"
+      ],
+      "explanation": "Image itu di-build untuk arm64 dan server ialah amd64. Build untuk CPU server."
+    },
+    "node-depends-on": {
+      "source": "030c9c3d",
+      "prompt": "Apakah yang dijamin oleh `depends_on: [db]` biasa?",
+      "options": [
+        "Pangkalan data menerima sambungan sebelum aplikasi bermula",
+        "Aplikasi dimulakan semula apabila pangkalan data dimulakan semula",
+        "Kedua-dua service berkongsi satu volume",
+        "Container db dimulakan sebelum container aplikasi"
+      ],
+      "explanation": "Bermula tidak sama dengan sedia. Postgres baharu mengambil beberapa saat untuk menyediakan dirinya. Gunakan healthcheck dengan `condition: service_healthy` untuk menunggu sehingga sedia."
+    },
+    "node-env-at-run": {
+      "source": "a428a35e",
+      "context": "Kunci itu patut sampai kepada aplikasi semasa container bermula, dan tidak pernah disimpan di dalam image.",
+      "prompt": "Isi flag itu.",
+      "explanation": "`-e` menetapkan pemboleh ubah persekitaran untuk container yang satu ini. Image kekal bebas daripada kunci itu."
+    },
+    "node-publish-local": {
+      "source": "28a1d535",
+      "context": "Anda mahu aplikasi pada port 8084, boleh dihubungi dari komputer anda sahaja, bukan dari seluruh network. Aplikasi mendengar pada port 3000.",
+      "prompt": "Isi pemetaan port itu.",
+      "explanation": "Meletakkan `127.0.0.1` di hadapan hanya publish pada alamat loopback. `8084:3000` biasa membukanya pada setiap network, dan di Linux ia juga melepasi ufw."
+    },
+    "node-service-healthy": {
+      "source": "ab212707",
+      "context": "Service db mempunyai healthcheck. Aplikasi patut menunggu sehingga ia lulus.",
+      "prompt": "Isi syarat itu.",
+      "explanation": "`service_healthy` menunggu healthcheck lulus. Nilai lalai, `service_started`, hanya menunggu container bermula."
+    },
+    "node-keep-node-modules": {
+      "source": "c18b1801",
+      "context": "Dalam pembangunan, anda bind-mount folder projek di atas /app, tetapi pakej yang dipasang oleh image mesti kekal kelihatan.",
+      "prompt": "Isi volume kedua.",
+      "explanation": "Volume pada laluan yang lebih khusus mengatasi bind mount, jadi /app/node_modules mengekalkan pakej image itu."
+    },
+    "node-build-platform": {
+      "source": "355587e9",
+      "context": "Anda menggunakan Mac Apple Silicon, dan server ialah komputer amd64 biasa.",
+      "prompt": "Isi flag itu.",
+      "explanation": "`--platform` memilih CPU yang disasarkan oleh image. Semaknya selepas itu dengan `docker image inspect --format '{{.Architecture}}'`."
+    },
+    "node-first-db-public": {
+      "source": "8301866e",
+      "prompt": "Firewall server (ufw) menyekat port 5432. Bolehkah seseorang di internet sampai ke pangkalan data ini?",
+      "options": [
+        "Tidak: ufw menyekatnya",
+        "Hanya jika mereka tahu kata laluannya",
+        "Hanya dari network Docker yang sama",
+        "Ya: port Docker yang di-publish melepasi ufw, jadi buang ports pada db"
+      ],
+      "explanation": "Docker menulis peraturan firewall sendiri untuk port yang di-publish. api sampai ke db melalui network Compose, jadi db langsung tidak memerlukan `ports`."
+    },
+    "node-first-localhost": {
+      "source": "263f447d",
+      "prompt": "api keluar dengan `ECONNREFUSED 127.0.0.1:5432`. Apakah cara membetulkannya?",
+      "options": [
+        "Tetapkan `PGHOST: db`",
+        "Publish 5432 pada api juga",
+        "Tambah `restart: always` pada api",
+        "Gunakan `postgres:17` dan bukan latest"
+      ],
+      "explanation": "localhost di dalam container api ialah container api itu sendiri. Compose memberi setiap service nama DNS, jadi pangkalan data ialah `db`."
+    },
+    "node-first-data-lost": {
+      "source": "11cd874c",
+      "prompt": "Selepas `docker compose down` dan `up` semula, setiap jadual hilang. Mengapa?",
+      "options": [
+        "down sentiasa memadam data",
+        "Postgres melupakan datanya apabila kata laluan pendek",
+        "db tiada volume, jadi data berada dalam container yang dibuang oleh down",
+        "api membuang jadual semasa bermula"
+      ],
+      "explanation": "Tanpa volume pada /var/lib/postgresql/data, data itu sebahagian daripada container. Tambah named volume, seperti dalam fail kedua."
+    },
+    "node-first-image": {
+      "source": "49bdee87",
+      "prompt": "Tiada apa-apa dalam fail itu yang berubah, tetapi selepas server pull image semula, pangkalan data tidak mahu bermula. Apakah punca yang mungkin dalam fail ini?",
+      "options": [
+        "`build: .` pada api",
+        "`image: postgres:latest` melompat ke versi major baharu",
+        "`POSTGRES_PASSWORD` terlalu pendek",
+        "depends_on dalam susunan yang salah"
+      ],
+      "explanation": "Versi major Postgres yang baharu tidak dapat membaca fail data versi lama tanpa naik taraf. Pin versinya, contohnya `postgres:17-alpine`."
+    },
+    "node-ready-race": {
+      "source": "3cbc9e78",
+      "prompt": "db mempunyai healthcheck, tetapi di server baharu web masih ranap pada kali pertama. Apakah yang tertinggal?",
+      "options": [
+        "Volume pada web",
+        "healthcheck kedua pada web",
+        "`condition: service_healthy` di bawah depends_on web",
+        "Port yang di-publish pada db"
+      ],
+      "explanation": "healthcheck hanya melaporkan. Tiada apa-apa yang menunggunya sehingga depends_on meminta `condition: service_healthy`."
+    },
+    "node-ready-who": {
+      "source": "129f8b23",
+      "prompt": "Siapa yang boleh membuka web pada port 8084?",
+      "options": [
+        "Hanya program di server itu sendiri",
+        "Sesiapa sahaja di internet",
+        "Sesiapa sahaja pada network yang sama",
+        "Tiada sesiapa, sehingga anda membukanya dalam firewall"
+      ],
+      "explanation": "`127.0.0.1:8084:3000` hanya publish pada alamat loopback. Reverse proxy atau tunnel di server kemudian menentukan apa yang boleh dilihat dari luar."
+    },
+    "node-ready-reboot": {
+      "source": "c3251320",
+      "prompt": "Server di-reboot untuk kemas kini, dan selepas itu tiada apa-apa yang berjalan. Apakah yang akan menghidupkan semula kedua-dua service dengan sendirinya?",
+      "options": [
+        "healthcheck pada web",
+        "`restart: unless-stopped` pada kedua-dua service",
+        "Volume yang lebih besar",
+        "Menjalankan `docker compose up` tanpa -d"
+      ],
+      "explanation": "Tanpa polisi restart, Docker membiarkan container berhenti selepas reboot. `unless-stopped` memulakannya semula, melainkan anda sendiri yang menghentikannya."
+    },
+    "node-ready-disk": {
+      "source": "8bbe92cc",
+      "prompt": "Beberapa bulan kemudian, cakera server penuh. Apakah dalam fail ini yang membenarkannya?",
+      "options": [
+        "healthcheck berjalan terlalu kerap",
+        "Volume shopdata tiada saiz",
+        "web publish port",
+        "Tiada had logging: fail log lalai tidak pernah digilir"
+      ],
+      "explanation": "Log driver json-file lalai menyimpan setiap baris selama-lamanya. Tambah `logging.options` dengan `max-size` dan `max-file`, dan semak dengan `docker system df`."
+    }
+  },
+  "scenarios": {
+    "node-first-deploy": {
+      "source": "4d702449",
+      "title": "Deploy pertama",
+      "intro": "API Node.js dan pangkalan data Postgresnya, seperti mula-mula diletakkan di server Linux."
+    },
+    "node-almost-ready": {
+      "source": "4b3a559d",
+      "title": "Hampir sedia untuk server",
+      "intro": "Aplikasi yang sama beberapa minggu kemudian. Seseorang telah menambah volume dan healthcheck."
+    }
+  }
+}

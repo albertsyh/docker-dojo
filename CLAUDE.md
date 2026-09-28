@@ -167,6 +167,23 @@ than one line, so the JSON stays readable. The three kinds of question:
     quiz sets `quiz_opened_at` or counts on the Live page. `progress.quiz` is the workshop's,
     and `progress.trackQuizzes` has each track's.
 
+## Languages
+
+English, and Bahasa Melayu (Brunei), a draft waiting for a native speaker's review. Terminology,
+workflow and progress are in `docs/translation-ms.md`. Docker terms, commands and anything in backticks stay English.
+- **App text:** `apps/web/src/locales/{en,ms}.ts` (vue-i18n).
+  - Every new string goes in both. `ms` is typed against `en`, and `src/__tests__/messages.test.ts` checks keys and placeholders.
+  - Content labels stay English in the data; `codeLabel()` / `noteFor()` in `src/i18n.ts` translate what is shown.
+- **Course content:** English is the source. `resources/content/ms/` holds prose-only overlays keyed by id, merged by
+  `App\Support\Translations` along the prose fields only.
+  - Missing entries fall back to English.
+  - When you change English content, the ContentTest fails for its stale translations. Update the Malay, then run
+    `php artisan content:translations --stamp=<file>`. If you can't translate it, delete that entry instead, so the page falls back to English, and say so.
+- **Choosing a language:** the API reads `?lang=` (`SetLanguage` middleware), and the web client sends it on every call when it isn't English.
+  - `Content::*($lang)` takes the language explicitly, so stats, grading and ids stay English whatever the request.
+  - The Live page maps its (English, broadcast) titles to the viewer's language by id.
+  - `lang=ms` also works in the URL, before or after the `#`, without being saved (like `theme=`).
+
 ## Copy and voice
 
 - Plain, short and friendly. Write for someone who has never used Docker.

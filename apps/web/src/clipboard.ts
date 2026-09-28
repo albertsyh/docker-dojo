@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { t } from './i18n'
 
 /** Copies text. The Clipboard API needs https or localhost; on a LAN address it falls back to a hidden textarea. */
 export async function copyText(text: string) {
@@ -32,5 +33,5 @@ export function notify(message: string) {
 /** Click-to-copy for the participant id, wherever it is shown. */
 export async function copyId(id: string) {
   await copyText(id)
-  notify(`Copied your id: ${id}`)
+  notify(t('toast.copiedId', { id }))
 }

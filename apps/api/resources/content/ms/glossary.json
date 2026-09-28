@@ -1,0 +1,326 @@
+{
+  "groups": {
+    "basics": {
+      "source": "027ea94c",
+      "title": "Asas"
+    },
+    "images": {
+      "source": "c26bab69",
+      "title": "Membina image"
+    },
+    "containers": {
+      "source": "edb9f84d",
+      "title": "Menjalankan container"
+    },
+    "production": {
+      "source": "f9b19e06",
+      "title": "Production dan keselamatan"
+    },
+    "storage": {
+      "source": "34d9a63d",
+      "title": "Storan"
+    },
+    "networking": {
+      "source": "da69f495",
+      "title": "Rangkaian"
+    },
+    "compose": {
+      "source": "e4b32b48",
+      "title": "Docker Compose"
+    },
+    "housekeeping": {
+      "source": "e1f1ce8b",
+      "title": "Pengemasan"
+    }
+  },
+  "terms": {
+    "Docker": {
+      "source": "df925e51",
+      "text": "Alat yang membungkus aplikasi bersama semua yang diperlukannya untuk berjalan, supaya ia berjalan dengan cara yang sama di mana-mana komputer."
+    },
+    "Image": {
+      "source": "56bcb571",
+      "text": "Templat baca sahaja untuk container: satu filesystem serta tetapan seperti arahan lalai. Anda build atau pull image, kemudian menjalankannya."
+    },
+    "Container": {
+      "source": "e2123c47",
+      "text": "Satu salinan image yang sedang berjalan (atau sudah berhenti). Ia ialah proses terasing dengan filesystem, network dan tetapannya sendiri. Anda boleh menjalankan banyak container daripada satu image."
+    },
+    "Docker Engine": {
+      "source": "930522d9",
+      "text": "Servis latar belakang yang sebenarnya membina image dan menjalankan container. Arahan `docker` berhubung dengannya."
+    },
+    "Docker CLI": {
+      "source": "aae0fee6",
+      "text": "Arahan `docker` yang anda taip. `docker version` menunjukkan kedua-dua client dan engine yang sedang dihubunginya."
+    },
+    "Docker Desktop": {
+      "source": "c894f21d",
+      "text": "Aplikasi untuk macOS, Windows dan Linux yang menjalankan Docker Engine di dalam mesin maya yang kecil, dengan GUI dan alat tambahan seperti Docker Scout."
+    },
+    "Registry": {
+      "source": "47ed7604",
+      "text": "Server yang menyimpan image supaya boleh dikongsi. `docker pull` memuat turun daripadanya dan `docker push` memuat naik kepadanya."
+    },
+    "Docker Hub": {
+      "source": "d14f0c8d",
+      "text": "Registry awam lalai. `nginx`, `alpine`, `node` dan `hello-world` semuanya datang dari situ."
+    },
+    "Tag": {
+      "source": "74950bef",
+      "text": "Label pada image, ditulis selepas titik bertindih, seperti `nginx:alpine` atau `my-site:1.0`. Jika anda meninggalkannya, Docker menggunakan `latest`."
+    },
+    "latest": {
+      "source": "528ab021",
+      "text": "Tag yang Docker gunakan apabila anda tidak menyatakan tag. Ia bukan \"versi yang stabil\", hanya versi yang terakhir dimuat naik, jadi ia boleh berubah tanpa anda sedari. Tetapkan versi sebaliknya, seperti `node:24-alpine`."
+    },
+    "Dockerfile": {
+      "source": "f7b9a80a",
+      "text": "Fail teks berisi arahan yang menerangkan cara build sebuah image, satu langkah bagi setiap baris."
+    },
+    "FROM": {
+      "source": "ac44a5f5",
+      "text": "Memilih base image yang menjadi asas binaan anda. Dalam multi-stage build, setiap FROM memulakan stage baharu."
+    },
+    "COPY": {
+      "source": "7c7a681b",
+      "text": "Menyalin fail daripada build context ke dalam image."
+    },
+    "RUN": {
+      "source": "82b60838",
+      "text": "Menjalankan arahan semasa build, seperti memasang pakej. Hasilnya disimpan sebagai layer baharu."
+    },
+    "CMD": {
+      "source": "d81d723d",
+      "text": "Arahan lalai yang dijalankan oleh container apabila ia bermula. Anda boleh menggantikannya pada `docker run`."
+    },
+    "Exec form": {
+      "source": "73d472a1",
+      "text": "Menulis CMD atau ENTRYPOINT sebagai senarai JSON. Docker memulakan program itu secara terus, jadi ia menerima isyarat berhenti. Bentuk biasa (`CMD node server.js`) boleh meletakkan shell di tengah-tengah yang tidak menyampaikan isyarat itu."
+    },
+    "ENTRYPOINT": {
+      "source": "b8396fa6",
+      "text": "Seperti CMD, tetapi lebih sukar digantikan. Selalunya skrip yang menyediakan sesuatu dan kemudian memulakan proses utama."
+    },
+    "EXPOSE": {
+      "source": "a25653b6",
+      "text": "Mencatatkan port yang didengar oleh aplikasi. Ia tidak publish port itu: anda masih memerlukan `-p`."
+    },
+    "WORKDIR": {
+      "source": "8b6bd11b",
+      "text": "Menetapkan folder tempat arahan seterusnya (dan container) dijalankan."
+    },
+    "ENV": {
+      "source": "0dd2db24",
+      "text": "Menetapkan pemboleh ubah persekitaran dalam image, seperti `NODE_ENV=production`."
+    },
+    "USER": {
+      "source": "e27bbc58",
+      "text": "Menetapkan pengguna yang menjalankan langkah seterusnya dan container. Berjalan sebagai pengguna biasa dan bukan root mengehadkan kerosakan jika aplikasi diserang."
+    },
+    "Base image": {
+      "source": "50ad1746",
+      "text": "Image yang dinamakan dalam FROM. Image kecil seperti `alpine` menjadikan image anda kecil, dan yang lebih baharu mempunyai lebih sedikit kelemahan yang diketahui."
+    },
+    "CPU architecture": {
+      "source": "da283b50",
+      "text": "Jenis pemproses yang disasarkan oleh sesebuah image. Mac Apple Silicon build arm64, kebanyakan server menjalankan amd64. Menjalankan yang salah akan gagal dengan `exec format error`. Pilih satu dengan `--platform linux/amd64`."
+    },
+    "Build context": {
+      "source": "e880ebd8",
+      "text": "Folder yang anda berikan kepada `docker build` (`.` di hujungnya). Hanya fail di dalamnya boleh disalin ke dalam image."
+    },
+    ".dockerignore": {
+      "source": "3967a3b3",
+      "text": "Menyenaraikan fail yang tidak dimasukkan ke dalam build context, seperti `.env`, `*.log` atau `node_modules`. Rahsia kekal di luar image dan build menjadi lebih pantas."
+    },
+    "Layer": {
+      "source": "4e35ea3e",
+      "text": "Setiap langkah Dockerfile menambah satu layer baca sahaja di atas layer sebelumnya. Layer dikongsi antara image, jadi ia disimpan sekali sahaja. Fail yang dipadam dalam layer kemudian masih menggunakan ruang."
+    },
+    "docker history": {
+      "source": "72297fbd",
+      "text": "Menyenaraikan layer sesebuah image, yang terbaharu dahulu, dengan langkah yang menghasilkan setiap satu dan saiz yang ditambahnya."
+    },
+    "Image size": {
+      "source": "73399adc",
+      "text": "`docker image ls` menunjukkan jumlah ruang cakera yang digunakan oleh setiap image. Image yang lebih kecil lebih pantas di-pull dan kurang yang boleh diserang."
+    },
+    "Build cache": {
+      "source": "7bf46fdb",
+      "text": "Docker menggunakan semula layer jika langkah dan inputnya tidak berubah. Sebaik sahaja satu langkah berubah, setiap langkah selepasnya dijalankan semula, jadi letakkan langkah yang jarang berubah di hadapan."
+    },
+    "Dependency layer": {
+      "source": "b1c4a4b1",
+      "text": "Menyalin hanya `package.json` (atau `composer.json`) dan memasang dependency sebelum menyalin kod, supaya pemasangan kekal dalam cache sehingga dependency berubah."
+    },
+    "Multi-stage build": {
+      "source": "c32e9d62",
+      "text": "Dockerfile dengan beberapa baris FROM. Anda build atau menguji dalam satu stage, dan menyalin atau memasang hanya apa yang diperlukan oleh production dalam stage terakhir. Image aplikasi ini sendiri dibina dengan cara itu."
+    },
+    "Build target": {
+      "source": "cfa9fe78",
+      "text": "Build satu stage bernama daripada Dockerfile multi-stage, seperti `docker build --target test .`. Tanpanya, Docker build stage terakhir."
+    },
+    "docker run": {
+      "source": "6e16fbf2",
+      "text": "Mencipta container daripada image dan memulakannya. Image itu di-pull dahulu jika anda belum memilikinya."
+    },
+    "Detached mode": {
+      "source": "e74557c7",
+      "text": "Menjalankan container di latar belakang dan mengembalikan terminal anda."
+    },
+    "Port mapping": {
+      "source": "a175f587",
+      "text": "Menyambungkan port pada mesin anda kepada port dalam container. `-p 8080:80` bermaksud port 8080 anda disalurkan ke port 80 container."
+    },
+    "Environment variable": {
+      "source": "7ea682a5",
+      "text": "Tetapan yang dihantar ke dalam container, seperti kata laluan atau mod. Tetapkan dengan `-e NAME=value`, `ENV` dalam Dockerfile, atau `environment:` dalam Compose."
+    },
+    "docker ps": {
+      "source": "ae393897",
+      "text": "Menyenaraikan container yang sedang berjalan. Tambah `-a` untuk memasukkan yang sudah berhenti."
+    },
+    "docker logs": {
+      "source": "2a40dcdf",
+      "text": "Menunjukkan apa yang dicetak oleh container. Tambah `-f` untuk terus mengikuti output baharu."
+    },
+    "docker exec": {
+      "source": "393eaedc",
+      "text": "Menjalankan arahan di dalam container yang sedang berjalan. `docker exec -it web sh` membuka shell."
+    },
+    "--rm": {
+      "source": "56b3ee7e",
+      "text": "Memadam container sebaik sahaja ia keluar. Berguna untuk arahan sekali guna."
+    },
+    "Writable layer": {
+      "source": "6747c5d3",
+      "text": "Layer nipis di atas image tempat container menyimpan perubahannya. Ia dipadam bersama container, sebab itulah suntingan hilang."
+    },
+    "Restart policy": {
+      "source": "10bf115c",
+      "text": "Memberitahu Docker sama ada perlu memulakan semula container apabila ia berhenti atau mesin dihidupkan semula, seperti `restart: unless-stopped`."
+    },
+    "SIGTERM": {
+      "source": "64169cfe",
+      "text": "Isyarat sopan \"sila berhenti\". `docker stop` menghantarnya, menunggu beberapa saat, kemudian mematikan container dengan SIGKILL. Aplikasi yang berkelakuan baik akan menyelesaikan permintaannya dan keluar apabila menerima SIGTERM."
+    },
+    "Process 1": {
+      "source": "34b5cf13",
+      "text": "Program pertama dalam container, iaitu yang dimulakan oleh CMD. Linux tidak memberinya tindakan lalai \"keluar apabila menerima SIGTERM\", jadi aplikasi yang berjalan sebagai proses 1 mesti mengendalikan isyarat itu sendiri, atau berjalan di belakang `--init`."
+    },
+    "Exit code 137": {
+      "source": "8faa6ed8",
+      "text": "Container itu telah dimatikan secara paksa (128 + 9, untuk SIGKILL). Selepas `docker stop`, ia biasanya bermaksud aplikasi mengabaikan SIGTERM. Exit code 0 bermaksud ia berhenti dengan bersih."
+    },
+    "Dev dependencies": {
+      "source": "2ee5e076",
+      "text": "Alat yang hanya diperlukan semasa pembangunan atau pengujian, seperti test runner dan formatter. `npm install --omit=dev` dan `composer install --no-dev` tidak memasukkannya ke dalam production."
+    },
+    "NODE_ENV": {
+      "source": "f37d4236",
+      "text": "Pemboleh ubah persekitaran yang dibaca oleh library Node.js. `production` mematikan ciri debug dan menghidupkan caching dalam library seperti express."
+    },
+    "Lock file": {
+      "source": "7d560ba3",
+      "text": "`package-lock.json` atau `composer.lock`. Ia menetapkan versi tepat setiap pakej, jadi setiap build memasang perkara yang sama. Gunakan `npm ci` untuk memasang daripadanya."
+    },
+    "Vulnerability": {
+      "source": "4f4dcd82",
+      "text": "Isu keselamatan yang diketahui umum dalam versi tertentu sesebuah pakej. Setiap satu diberi id seperti CVE-2024-12345 dan tahap keterukan."
+    },
+    "Docker Scout": {
+      "source": "2fd3dcfb",
+      "text": "Pengimbas image Docker. Ia menyenaraikan pakej dalam image, memadankannya dengan kelemahan yang diketahui, dan mencadangkan base image yang lebih baik."
+    },
+    "Log rotation": {
+      "source": "1ebfd3b5",
+      "text": "Memulakan fail log baharu apabila fail semasa menjadi besar, dan memadam yang paling lama. Log lalai Docker tidak pernah digilir, jadi tetapkan `logging.options` dalam Compose pada server."
+    },
+    "Volume": {
+      "source": "59024386",
+      "text": "Storan yang diurus oleh Docker dan berada di luar mana-mana container. Data di dalamnya kekal apabila container dibuang."
+    },
+    "Named volume": {
+      "source": "7e602821",
+      "text": "Volume yang anda beri nama, seperti `notes`, supaya mana-mana container boleh mount dengan `-v notes:/data`."
+    },
+    "Bind mount": {
+      "source": "dec3f4c6",
+      "text": "Mount folder daripada mesin anda ke dalam container. Perubahan kelihatan di kedua-dua belah serta-merta, yang berguna semasa pembangunan."
+    },
+    "Anonymous volume": {
+      "source": "84011b81",
+      "text": "Volume tanpa nama, dicipta untuk satu laluan dalam satu container. Digunakan untuk memastikan folder daripada image (seperti node_modules) kekal kelihatan di bawah bind mount."
+    },
+    "Mount": {
+      "source": "f6a2398c",
+      "text": "Menjadikan volume atau folder muncul pada satu laluan di dalam container."
+    },
+    "Network": {
+      "source": "b1ae7481",
+      "text": "Rangkaian persendirian yang boleh disertai oleh container supaya mereka boleh berhubung antara satu sama lain."
+    },
+    "Bridge network": {
+      "source": "d28034e0",
+      "text": "Jenis network lalai, pada satu mesin. Network terbina dalam bernama `bridge` tidak mempunyai carian nama; network yang anda cipta mempunyainya."
+    },
+    "Service discovery": {
+      "source": "f72d005f",
+      "text": "Pada network yang dicipta pengguna, container boleh mencapai satu sama lain melalui nama, seperti `cache` atau `db`, dan bukan melalui alamat IP."
+    },
+    "localhost in a container": {
+      "source": "75cd26fe",
+      "text": "Di dalam container, localhost ialah container itu sendiri, bukan mesin anda dan bukan container lain. Aplikasi yang hanya mendengar pada 127.0.0.1 tidak boleh dicapai melalui `-p`. Dengar pada `0.0.0.0`, dan capai container lain melalui nama."
+    },
+    "Published port": {
+      "source": "b60cf91c",
+      "text": "Port container yang dibuka pada mesin anda. `-p 8084:3000` biasa membukanya pada setiap rangkaian yang disambungkan oleh mesin itu, dan pada Linux, peraturan firewall Docker sendiri melepasi ufw. Letakkan `127.0.0.1:` di hadapan untuk mengekalkannya setempat."
+    },
+    "Docker Compose": {
+      "source": "5e8ccdac",
+      "text": "Alat yang menjalankan aplikasi berbilang container daripada satu fail, dengan satu arahan."
+    },
+    "compose.yaml": {
+      "source": "302e0196",
+      "text": "Fail yang menerangkan service, network dan volume bagi sebuah aplikasi Compose."
+    },
+    "Service": {
+      "source": "3a911855",
+      "text": "Satu entri di bawah `services:` dalam compose.yaml. Compose menjalankan satu atau lebih container bagi setiap service."
+    },
+    "Project": {
+      "source": "940f463e",
+      "text": "Kumpulan container, network dan volume yang dicipta oleh Compose. Dinamakan sempena folder secara lalai."
+    },
+    "docker compose up": {
+      "source": "55d78bf7",
+      "text": "Mencipta dan memulakan semua yang ada dalam compose.yaml. Tambah `-d` untuk berjalan di latar belakang dan `--build` untuk build semula image."
+    },
+    "docker compose down": {
+      "source": "2ce944ff",
+      "text": "Menghentikan dan membuang container dan network. Volume dikekalkan melainkan anda menambah `-v`."
+    },
+    "depends_on": {
+      "source": "90bc31c9",
+      "text": "Memulakan satu service selepas yang lain. Dengan sendirinya, ia tidak menunggu service yang lain itu bersedia."
+    },
+    "Healthcheck": {
+      "source": "45082334",
+      "text": "Arahan yang dijalankan oleh Docker untuk memeriksa sama ada container benar-benar bersedia. Dengan `condition: service_healthy`, depends_on menunggunya."
+    },
+    "docker system df": {
+      "source": "54eb7f3f",
+      "text": "Menunjukkan jumlah ruang cakera yang digunakan oleh image, container, volume dan build cache."
+    },
+    "Prune": {
+      "source": "c862834b",
+      "text": "Membuang perkara yang tidak digunakan sekali gus, seperti `docker system prune` atau `docker builder prune`. Ia bertanya dahulu, dan apa yang dipadamnya hilang untuk selamanya."
+    },
+    "Dangling image": {
+      "source": "c4d38141",
+      "text": "Image lama yang sudah tiada tag, biasanya digantikan oleh build yang lebih baharu. Selamat untuk di-prune."
+    }
+  }
+}

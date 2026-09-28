@@ -51,11 +51,11 @@ class Participant extends Model
     /** 404 for unknown ids, and record activity for the "active now" count. */
     public static function touchOrFail(string $id): self
     {
-        abort_unless(self::isValidId($id), 404, 'Unknown participant.');
+        abort_unless(self::isValidId($id), 404, __('dojo.unknown_participant'));
         // Not update()'s row count: MySQL reports 0 affected rows when the timestamp
         // is unchanged (two requests in the same second), which isn't "not found".
         $participant = self::find($id);
-        abort_unless($participant, 404, 'Unknown participant.');
+        abort_unless($participant, 404, __('dojo.unknown_participant'));
         $participant->forceFill(['last_seen_at' => now()])->save();
 
         return $participant;

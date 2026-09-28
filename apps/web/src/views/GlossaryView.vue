@@ -3,6 +3,9 @@ import { computed, ref } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
 import RichText from '../components/RichText.vue'
 import { exerciseLabel, state } from '../store'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const query = ref('')
 
@@ -31,38 +34,38 @@ const matches = computed(() => groups.value.reduce((sum, g) => sum + g.terms.len
 <template>
   <div class="page">
     <header>
-      <h1>Glossary</h1>
-      <p class="lead">The words you will meet in the exercises, in plain language. Keep it open in another tab while you work.</p>
+      <h1>{{ t('glossary.title') }}</h1>
+      <p class="lead">{{ t('glossary.lead') }}</p>
     </header>
 
     <div class="tools">
       <label class="search">
         <AppIcon name="search" />
-        <span class="sr-only">Search the glossary</span>
-        <input v-model="query" type="search" placeholder="Search terms, like volume or -p" autocomplete="off" spellcheck="false" />
+        <span class="sr-only">{{ t('glossary.search') }}</span>
+        <input v-model="query" type="search" :placeholder="t('glossary.placeholder')" autocomplete="off" spellcheck="false" />
       </label>
-      <nav v-if="!query.trim()" class="topics" aria-label="Glossary topics">
+      <nav v-if="!query.trim()" class="topics" :aria-label="t('glossary.topics')">
         <RouterLink v-for="g in glossary" :key="g.id" :to="{ hash: `#${g.id}` }">{{ g.title }}</RouterLink>
       </nav>
       <p class="count muted" aria-live="polite">
-        <template v-if="query.trim()">{{ matches }} of {{ total }} terms match</template>
-        <template v-else>{{ total }} terms</template>
+        <template v-if="query.trim()">{{ t('glossary.matches', { matches, total }) }}</template>
+        <template v-else>{{ t('glossary.total', total) }}</template>
       </p>
     </div>
 
     <section v-for="g in groups" :id="g.id" :key="g.id" class="group" :aria-labelledby="`${g.id}-title`">
       <h2 :id="`${g.id}-title`">{{ g.title }}</h2>
       <dl>
-        <div v-for="t in g.terms" :key="t.term" class="entry">
+        <div v-for="term in g.terms" :key="term.term" class="entry">
           <dt>
-            <span class="term">{{ t.term }}</span>
-            <code v-if="t.aka" class="aka">{{ t.aka }}</code>
+            <span class="term">{{ term.term }}</span>
+            <code v-if="term.aka" class="aka">{{ term.aka }}</code>
           </dt>
           <dd>
-            <p><RichText :text="t.text" /></p>
-            <p v-if="t.seenIn?.some((id) => exercises.has(id))" class="used muted">
-              Used in
-              <template v-for="(id, i) in t.seenIn.filter((id) => exercises.has(id))" :key="id">
+            <p><RichText :text="term.text" /></p>
+            <p v-if="term.seenIn?.some((id) => exercises.has(id))" class="used muted">
+              {{ t('glossary.usedIn') }}
+              <template v-for="(id, i) in term.seenIn.filter((id) => exercises.has(id))" :key="id">
                 <template v-if="i > 0">, </template>
                 <RouterLink :to="`/exercises/${id}`">{{ exercises.get(id) }}</RouterLink>
               </template>
@@ -74,7 +77,7 @@ const matches = computed(() => groups.value.reduce((sum, g) => sum + g.terms.len
 
     <div v-if="!groups.length" class="callout">
       <AppIcon name="info" />
-      <span>No terms match "{{ query.trim() }}". <button type="button" class="link" @click="query = ''">Clear the search</button></span>
+      <span>{{ t('glossary.noMatch', { query: query.trim() }) }} <button type="button" class="link" @click="query = ''">{{ t('glossary.clear') }}</button></span>
     </div>
   </div>
 </template>

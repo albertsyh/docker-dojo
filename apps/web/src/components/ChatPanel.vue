@@ -6,6 +6,9 @@ import RichText from './RichText.vue'
 import { chat, CHAT_MAX, deleteChat, postChat, toggleMeToo } from '../chat'
 import { exerciseLabel, state } from '../store'
 import type { ChatMessage } from '../api'
+import { useI18n } from 'vue-i18n'
+
+const { t, locale } = useI18n()
 
 /** The chat list and the box to ask in. Used by the /chat page and by the pet's popup. */
 defineProps<{ compact?: boolean }>()
@@ -91,16 +94,16 @@ watch(
   { immediate: true },
 )
 
-const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+const time = (iso: string) => new Date(iso).toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' })
 </script>
 
 <template>
   <div class="chat" :class="{ compact }">
-    <ol ref="list" class="messages" aria-label="Questions" aria-live="polite" @scroll="onScroll">
-      <li v-if="chat.loaded && !chat.messages.length" class="empty muted">No questions yet. If something is not working, ask here: someone else is probably stuck too.</li>
+    <ol ref="list" class="messages" :aria-label="t('chat.list')" aria-live="polite" @scroll="onScroll">
+      <li v-if="chat.loaded && !chat.messages.length" class="empty muted">{{ t('chat.empty') }}</li>
       <li v-for="m in chat.messages" :key="m.id" class="message" :class="{ mine: m.mine }">
         <p class="meta">
-          <strong>{{ m.mine ? 'You' : m.author }}</strong>
+          <strong>{{ m.mine ? t('chat.you') : m.author }}</strong>
           <time :datetime="m.createdAt" class="muted">{{ time(m.createdAt) }}</time>
           <RouterLink v-if="m.exercise && exerciseLabel(m.exercise)" :to="`/exercises/${m.exercise}`" class="about">{{ exerciseLabel(m.exercise) }}</RouterLink>
         </p>
@@ -114,13 +117,13 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-di
             :aria-pressed="!!m.meToo"
             @click="act(() => toggleMeToo(m))"
           >
-            Me too<span v-if="m.meTooCount" class="count">{{ m.meTooCount }}</span>
+            {{ t('chat.meToo') }}<span v-if="m.meTooCount" class="count">{{ m.meTooCount }}</span>
           </button>
-          <span v-else-if="m.meTooCount" class="muted small">{{ m.meTooCount }} {{ m.meTooCount === 1 ? 'person has' : 'people have' }} this too</span>
+          <span v-else-if="m.meTooCount" class="muted small">{{ t('chat.othersToo', m.meTooCount) }}</span>
           <!-- Both labels share one grid cell so the button keeps its width. -->
           <button v-if="m.mine" type="button" class="btn small ghost swap delete" :class="{ confirm: confirming === m.id }" @click="onDelete(m)">
-            <span :aria-hidden="confirming === m.id"><AppIcon name="trash" />Delete</span>
-            <span :aria-hidden="confirming !== m.id"><AppIcon name="trash" />Yes, delete</span>
+            <span :aria-hidden="confirming === m.id"><AppIcon name="trash" />{{ t('chat.delete') }}</span>
+            <span :aria-hidden="confirming !== m.id"><AppIcon name="trash" />{{ t('chat.confirmDelete') }}</span>
           </button>
         </div>
       </li>
@@ -129,27 +132,27 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-di
     <div v-if="error" class="callout error" role="alert"><AppIcon name="alert" /><span>{{ error }}</span></div>
 
     <form v-if="state.progress" class="composer" @submit.prevent="send">
-      <label class="sr-only" for="chat-body">Your question</label>
+      <label class="sr-only" for="chat-body">{{ t('chat.yourQuestion') }}</label>
       <textarea
         id="chat-body"
         ref="input"
         v-model="body"
         rows="2"
-        placeholder="Ask a question. Wrap commands in `backticks`."
+        :placeholder="t('chat.placeholder')"
         :maxlength="CHAT_MAX + 50"
         @keydown="onKey"
       />
       <div class="row">
         <label class="about-pick">
-          <span class="muted">About</span>
+          <span class="muted">{{ t('chat.about') }}</span>
           <select v-model="about">
-            <option value="">Nothing in particular</option>
+            <option value="">{{ t('chat.nothingInParticular') }}</option>
             <template v-if="takeHome.length">
-              <optgroup label="Workshop">
+              <optgroup :label="t('chat.workshop')">
                 <option v-for="(e, i) in exercises" :key="e.id" :value="e.id">{{ i + 1 }}. {{ e.title }}</option>
               </optgroup>
-              <optgroup v-for="t in takeHome" :key="t.id" :label="t.title">
-                <option v-for="(e, i) in t.exercises" :key="e.id" :value="e.id">{{ t.label }} {{ i + 1 }}. {{ e.title }}</option>
+              <optgroup v-for="track in takeHome" :key="track.id" :label="track.title">
+                <option v-for="(e, i) in track.exercises" :key="e.id" :value="e.id">{{ track.label }} {{ i + 1 }}. {{ e.title }}</option>
               </optgroup>
             </template>
             <template v-else>
@@ -157,14 +160,14 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-di
             </template>
           </select>
         </label>
-        <span v-if="left < 100" class="left" :class="{ over: left < 0 }" aria-live="polite">{{ left }} left</span>
-        <button type="submit" class="btn small primary" :disabled="busy || !body.trim() || left < 0"><AppIcon name="send" />Send</button>
+        <span v-if="left < 100" class="left" :class="{ over: left < 0 }" aria-live="polite">{{ t('chat.left', { n: left }) }}</span>
+        <button type="submit" class="btn small primary" :disabled="busy || !body.trim() || left < 0"><AppIcon name="send" />{{ t('chat.send') }}</button>
       </div>
-      <p class="muted hint">Enter sends, Shift+Enter for a new line. Others see you as "{{ state.progress.id.split('-').slice(0, 2).join(' ') }}".</p>
+      <p class="muted hint">{{ t('chat.hint', { name: state.progress.id.split('-').slice(0, 2).join(' ') }) }}</p>
     </form>
-    <p v-else class="join muted">
-      <RouterLink to="/">Get your name badge</RouterLink> to ask a question or say "Me too".
-    </p>
+    <i18n-t v-else keypath="chat.join" tag="p" class="join muted" scope="global">
+      <template #link><RouterLink to="/">{{ t('chat.joinLink') }}</RouterLink></template>
+    </i18n-t>
   </div>
 </template>
 

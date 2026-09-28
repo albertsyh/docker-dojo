@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Exercise } from '../api'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ files: NonNullable<Exercise['files']> }>()
 
@@ -17,8 +20,8 @@ const rows = computed(() => {
 </script>
 
 <template>
-  <aside class="files" aria-label="Files in your working folder">
-    <h2>Files in your folder</h2>
+  <aside class="files" :aria-label="t('files.label')">
+    <h2>{{ t('files.title') }}</h2>
     <p v-if="files.note" class="muted note">{{ files.note }}</p>
     <ul class="tree">
       <li v-for="(row, i) in rows" :key="i" :class="{ nested: row.depth > 0 }" :style="{ '--depth': row.depth }">

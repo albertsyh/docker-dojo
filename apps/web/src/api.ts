@@ -1,3 +1,6 @@
+import { t } from './i18n'
+import { prefs, type Lang } from './prefs'
+
 export type Step = {
   text: string
   code?: string
@@ -50,6 +53,8 @@ export type ReferenceGroup = { id: string; title: string; intro?: string; links:
 export type TakeHomeTrack = { id: string; title: string; label: string; summary: string; exercises: Exercise[]; quiz: QuizSummary }
 
 export type Content = {
+  /** The language the prose is in. Ids, code and answers are the same in every language. */
+  language: Lang
   exercises: Exercise[]
   quiz: QuizSummary
   takeHome: TakeHomeTrack[]
@@ -118,15 +123,18 @@ export class ApiError extends Error {
   }
 }
 
+// Content, quiz text and messages come in the viewer's language. English needs no parameter.
+const withLang = (path: string) => (prefs.lang === 'en' ? path : `${path}${path.includes('?') ? '&' : '?'}lang=${prefs.lang}`)
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`/api${withLang(path)}`, {
     method,
     headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    const message = res.status === 429 ? 'Too many requests. Wait a few seconds and try again.' : data.message || `Request failed (${res.status})`
+    const message = res.status === 429 ? t('errors.tooMany') : data.message || t('errors.failed', { status: res.status })
     throw new ApiError(res.status, message)
   }
   return data as T
@@ -154,6 +162,9 @@ export const api = {
   setMeToo: (id: string, messageId: number, on: boolean) => request<ChatList>(on ? 'PUT' : 'DELETE', `${p(id)}/chat/${messageId}/me-too`),
   /** No track means the workshop quiz. */
   quizPaper: (id: string, track?: string) => request<QuizPaper>('GET', quizPath(id, track)),
+  /** The same paper's questions in the current language, for switching mid-quiz. */
+  quizQuestions: (id: string, questionIds: string[], track?: string) =>
+    request<Omit<QuizPaper, 'token'>>('GET', `${p(id)}/quiz-questions${track ? `/${encodeURIComponent(track)}` : ''}?${questionIds.map((q) => `ids[]=${encodeURIComponent(q)}`).join('&')}`),
   submitQuiz: (id: string, paper: QuizPaper, answers: Answer[], track?: string) =>
     request<QuizResult>('POST', quizPath(id, track), { token: paper.token, questions: paper.questions.map((q) => q.id), answers }),
 }

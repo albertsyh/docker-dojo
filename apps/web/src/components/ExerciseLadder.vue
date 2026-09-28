@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { StatsExercise } from '../api'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // One row per exercise on the Live page: how many are on it now, and how many have done it.
 defineProps<{
@@ -19,8 +22,8 @@ const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0)
 <template>
   <div class="ladder-head" aria-hidden="true">
     <span />
-    <span class="here-head" :title="`Has the exercise open (checked in within the last ${hereWindowMinutes} min)`"><i />Here now</span>
-    <span>Done</span>
+    <span class="here-head" :title="t('live.hereNowTitle', { minutes: hereWindowMinutes })"><i />{{ t('live.hereNow') }}</span>
+    <span>{{ t('common.done') }}</span>
   </div>
   <ol class="ladder" :class="{ quiet }">
     <li v-for="ex in rows" :key="ex.id" :class="{ current: ex.id === current }" :aria-current="ex.id === current ? 'step' : undefined">
@@ -28,11 +31,11 @@ const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0)
       <span class="ex-name">{{ ex.title }}</span>
       <span class="track" aria-hidden="true"><span :style="{ transform: `scaleX(${pct(ex.completed, participants) / 100})` }" /></span>
       <span class="ex-here">
-        <span v-if="ex.here" class="here-pill"><i aria-hidden="true" />{{ ex.here }}<span class="sr-only"> here now</span></span>
+        <span v-if="ex.here" class="here-pill"><i aria-hidden="true" />{{ ex.here }}<span class="sr-only">{{ ' ' + t('live.hereSr') }}</span></span>
       </span>
       <span class="ex-count">
         <template v-if="ex.completed">{{ ex.completed }}<span class="muted"> · {{ pct(ex.completed, participants) }}%</span></template>
-        <span v-else class="none">0<span class="sr-only"> done</span></span>
+        <span v-else class="none">0<span class="sr-only">{{ ' ' + t('live.doneSr') }}</span></span>
       </span>
     </li>
   </ol>

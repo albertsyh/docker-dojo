@@ -1,0 +1,506 @@
+{
+  "questions": {
+    "image-vs-container": {
+      "source": "fd3f723d",
+      "prompt": "Apakah itu container?",
+      "options": [
+        "Nama lain untuk image",
+        "Salinan image yang sedang berjalan",
+        "Fail yang anda gunakan untuk membina image",
+        "Image yang hanya berjalan di Windows"
+      ],
+      "explanation": "Image ialah templat. Container ialah salinannya yang sedang berjalan."
+    },
+    "port-mapping": {
+      "source": "8028c0c9",
+      "prompt": "Dalam `docker run -p 8080:80 nginx`, apakah 8080?",
+      "options": [
+        "Port di dalam container",
+        "Port di komputer anda",
+        "Bilangan worker nginx",
+        "Versi image"
+      ],
+      "explanation": "Formatnya HOST:CONTAINER. Port 8080 di komputer anda dihalakan ke port 80 di dalam container."
+    },
+    "detached": {
+      "source": "a0c284c0",
+      "prompt": "Apakah fungsi `-d` dalam `docker run`?",
+      "options": [
+        "Memadam container apabila ia berhenti",
+        "Menjalankan container di latar belakang",
+        "Menghidupkan log debug",
+        "Hanya memuat turun image"
+      ],
+      "explanation": "-d bermaksud detached. Terminal anda boleh digunakan semula. Flag yang memadam container yang sudah berhenti ialah --rm."
+    },
+    "ephemeral": {
+      "source": "6ae8df88",
+      "prompt": "Anda mengubah satu fail di dalam container. Kemudian anda membuang container itu dan memulakan yang baharu daripada image yang sama. Adakah perubahan anda masih ada?",
+      "options": [
+        "Ya, semua container berkongsi fail",
+        "Ya, jika tag image sama",
+        "Tidak, ia dibuang bersama container yang lama",
+        "Hanya jika anda menggunakan -it"
+      ],
+      "explanation": "Setiap container mempunyai failnya sendiri, dan fail itu dibuang bersamanya. Gunakan volume untuk menyimpan data."
+    },
+    "volume": {
+      "source": "5327f93f",
+      "prompt": "Bagaimanakah anda menyimpan fail pangkalan data selepas container dibuang?",
+      "options": [
+        "Gunakan named volume",
+        "Gunakan arahan EXPOSE",
+        "Jalankan docker commit selepas setiap perubahan",
+        "Gunakan container yang lebih besar"
+      ],
+      "explanation": "Volume berada di luar container, jadi ia kekal apabila container dibuang."
+    },
+    "layer-cache": {
+      "source": "83662b89",
+      "prompt": "Anda hanya mengubah index.html dan membina semula. Mengapakah `FROM nginx:alpine` tidak dimuat turun lagi?",
+      "options": [
+        "Docker menggunakan semula layer yang tidak berubah",
+        "nginx sudah terbina dalam Docker",
+        "Kerana flag -t",
+        "Ia dimuat turun lagi, cuma dengan cepat"
+      ],
+      "explanation": "Setiap langkah Dockerfile menghasilkan satu layer. Docker menggunakan semula layer sehingga langkah pertama yang berubah."
+    },
+    "build-context": {
+      "source": "d2ba9d7a",
+      "prompt": "Dalam `docker build -t my-site:1.0 .`, apakah maksud `.` yang terakhir?",
+      "options": [
+        "Nama image",
+        "Folder yang Docker gunakan untuk build",
+        "Singkatan bagi \"latest\"",
+        "Alamat registry"
+      ],
+      "explanation": "`.` ialah build context: folder semasa. COPY hanya boleh menggunakan fail di dalamnya."
+    },
+    "dns": {
+      "source": "50afebaf",
+      "prompt": "Dua container berada pada user-defined network yang sama. Bagaimanakah satu container boleh mencapai yang lain?",
+      "options": [
+        "Hanya melalui port di localhost",
+        "Melalui nama container atau nama servisnya",
+        "Mereka tidak boleh mencapai satu sama lain",
+        "Hanya melalui alamat IP yang tetap"
+      ],
+      "explanation": "User-defined network dan Compose mempunyai DNS terbina dalam. Nama boleh digunakan sebagai hostname."
+    },
+    "compose-down-v": {
+      "source": "f3d8b0c8",
+      "prompt": "Apakah yang ditambah oleh `-v` pada `docker compose down`?",
+      "options": [
+        "Tiada apa-apa, kedua-duanya sama",
+        "Ia juga memadam named volume dan datanya",
+        "Ia menunjukkan lebih banyak output",
+        "Ia menghentikan container tetapi menyimpannya"
+      ],
+      "explanation": "down membuang container dan network. down -v juga memadam volume, dan data itu hilang buat selama-lamanya."
+    },
+    "healthy": {
+      "source": "d4a8f694",
+      "prompt": "Mengapakah perlu menambah `condition: service_healthy` pada depends_on?",
+      "options": [
+        "Ia menjadikan pangkalan data lebih pantas",
+        "Ia menunggu sehingga pangkalan data sedia, bukan sekadar sudah bermula",
+        "Ia membuka port pangkalan data",
+        "Volume memerlukannya untuk berfungsi"
+      ],
+      "explanation": "MySQL mengambil masa beberapa saat untuk menerima sambungan selepas ia bermula. Health check menunggu perkara itu."
+    },
+    "deleted-file": {
+      "source": "865f4173",
+      "prompt": "Satu langkah RUN mencipta fail 50 MB. Langkah RUN seterusnya memadamnya. Berapakah saiz image?",
+      "options": [
+        "50 MB lebih kecil, fail itu sudah hilang",
+        "Masih 50 MB lebih besar, layer pertama menyimpan fail itu",
+        "Ia bergantung pada base image",
+        "Build gagal"
+      ],
+      "explanation": "Layer adalah baca sahaja. Memadam dalam langkah kemudian hanya menyembunyikan fail itu. Cipta dan padamnya dalam langkah RUN yang sama."
+    },
+    "dependency-order": {
+      "source": "55d7e2eb",
+      "prompt": "Mengapakah package.json disalin dan npm install dijalankan sebelum `COPY . .`?",
+      "options": [
+        "npm memerlukan fail dalam susunan itu",
+        "Ia menjadikan image lebih kecil",
+        "Supaya perubahan kod tidak menjalankan semula npm install",
+        "Supaya node_modules tidak disalin"
+      ],
+      "explanation": "npm install kekal dalam cache sehingga package.json berubah. Perubahan kod hanya membina semula langkah selepas `COPY . .`."
+    },
+    "dockerignore": {
+      "source": "3cd0be3e",
+      "prompt": "Apakah fungsi fail .dockerignore?",
+      "options": [
+        "Menghalang fail yang sepadan daripada sampai ke build",
+        "Memadam fail daripada container yang sedang berjalan",
+        "Menyembunyikan image daripada `docker image ls`",
+        "Melangkau langkah Dockerfile yang gagal"
+      ],
+      "explanation": "Fail yang sepadan tidak pernah dihantar ke build, jadi `COPY . .` tidak boleh menyalin rahsia seperti .env ke dalam image."
+    },
+    "multi-stage-target": {
+      "source": "754fc6c9",
+      "prompt": "Sebuah Dockerfile mempunyai stage `test` dan stage `production` (yang terakhir). Apakah yang dilakukan oleh `docker build --target test .`?",
+      "options": [
+        "Build setiap stage",
+        "Build sehingga stage test dan berhenti di situ",
+        "Menjalankan image production dalam mod ujian",
+        "Push image ke registry ujian"
+      ],
+      "explanation": "`--target` memilih stage untuk build. Tanpanya, Docker build stage terakhir dan melangkau stage yang tidak diperlukan."
+    },
+    "scout": {
+      "source": "bd7ea151",
+      "prompt": "Docker Scout menemui banyak isu tahap tinggi dalam image anda. Apakah yang biasanya membetulkan kebanyakannya?",
+      "options": [
+        "Membuang baris CMD",
+        "Menambah fail .dockerignore",
+        "Menjalankan container dengan -d",
+        "Bertukar kepada base image yang lebih baharu atau lebih kecil"
+      ],
+      "explanation": "Kebanyakan isu yang diketahui berada dalam pakej base image. Base image yang lebih baharu atau lebih ramping menyingkirkannya."
+    },
+    "ps-all": {
+      "source": "ba57d87b",
+      "prompt": "Arahan manakah yang turut menyenaraikan container yang sudah berhenti?",
+      "options": [
+        "`docker ps`",
+        "`docker images`",
+        "`docker ps -a`",
+        "`docker logs`"
+      ],
+      "explanation": "`docker ps` hanya menunjukkan container yang sedang berjalan. `-a` menambah yang sudah berhenti."
+    },
+    "exec-shell": {
+      "source": "09ed9e63",
+      "prompt": "Sebuah container bernama web sedang berjalan. Bagaimanakah anda membuka shell di dalamnya?",
+      "options": [
+        "`docker exec -it web sh`",
+        "`docker run -it web sh`",
+        "`docker attach web sh`",
+        "`docker shell web`"
+      ],
+      "explanation": "`docker exec` menjalankan arahan dalam container yang sudah berjalan. `docker run` akan memulakan container baharu."
+    },
+    "history": {
+      "source": "30f7eea5",
+      "prompt": "Arahan manakah yang menunjukkan layer sesebuah image dan saiz setiap satunya?",
+      "options": [
+        "`docker image ls`",
+        "`docker inspect`",
+        "`docker system df`",
+        "`docker history`"
+      ],
+      "explanation": "`docker history` menyenaraikan satu baris bagi setiap layer, dengan langkah yang menghasilkannya dan saiznya."
+    },
+    "run-detached-port": {
+      "source": "9641c724",
+      "context": "Anda mahu menjalankan nginx di latar belakang, menamakannya web, dan membukanya di http://localhost:8080. Di dalam container, nginx mendengar pada port 80.",
+      "prompt": "Isi dua tempat kosong.",
+      "explanation": "`-d` menjalankannya di latar belakang. `-p` ialah port anda dahulu, kemudian port container: `8080:80`."
+    },
+    "exec-into": {
+      "source": "8cf26eea",
+      "context": "Sebuah container bernama web sudah berjalan. Anda mahukan shell interaktif di dalamnya.",
+      "prompt": "Isi arahan dan shell.",
+      "explanation": "`docker exec -it web sh` menjalankan shell dalam container yang sedang berjalan. Image Alpine mempunyai `sh`, bukan `bash`."
+    },
+    "build-tag": {
+      "source": "c711d135",
+      "context": "Anda berada dalam folder yang mempunyai Dockerfile. Anda mahu build image bernama my-site dengan tag 2.0, dan menghantar folder semasa sebagai build context.",
+      "prompt": "Isi flag dan build context.",
+      "explanation": "`-t` memberi nama dan tag kepada image. `.` di hujung ialah build context: folder semasa."
+    },
+    "dependency-layer": {
+      "source": "2dd53ed8",
+      "context": "Anda sedang menulis Dockerfile untuk aplikasi Node.js. npm install lambat, jadi ia hanya patut dijalankan semula apabila dependency anda berubah, bukan apabila anda mengedit kod.",
+      "prompt": "Isi dua tempat kosong.",
+      "explanation": "Salin `package.json` sahaja dahulu dan pasang. Layer pemasangan kekal dalam cache sehingga ia berubah. Kemudian `COPY . .` membawa masuk kod."
+    },
+    "same-run-cleanup": {
+      "source": "36df3ab1",
+      "context": "Dockerfile ini memuat turun satu arkib, membukanya, dan memadam arkib itu. Arkib itu tidak boleh mengambil ruang dalam image akhir.",
+      "prompt": "Isi tempat kosong supaya semuanya berlaku dalam satu layer.",
+      "explanation": "Merangkai dengan `&&` mengekalkannya sebagai satu langkah RUN, jadi arkib itu dipadam sebelum layer disimpan."
+    },
+    "ignore-logs": {
+      "source": "a1dac177",
+      "context": "Folder projek anda mempunyai fail .env yang mengandungi rahsia, folder node_modules, dan banyak fail log yang berakhir dengan .log. Tiada satu pun daripadanya patut sampai ke build.",
+      "prompt": "Isi corak yang mengecualikan setiap fail log.",
+      "explanation": "`*.log` sepadan dengan setiap fail yang berakhir dengan .log, sama seperti dalam .gitignore."
+    },
+    "build-target": {
+      "source": "27c3bb27",
+      "context": "Dockerfile anda mempunyai tiga stage: base, test dan production. Anda mahu build stage test sahaja dan memberinya tag my-app:test.",
+      "prompt": "Isi flag.",
+      "explanation": "`--target` build sehingga stage yang dinamakan dan berhenti di situ."
+    },
+    "production-stage": {
+      "source": "860d076b",
+      "context": "Dalam stage production, anda mahu library Node dalam mod production, hanya dependency runtime dipasang, dan aplikasi tidak berjalan sebagai root.",
+      "prompt": "Isi tiga tempat kosong.",
+      "explanation": "`NODE_ENV=production` menukar library kepada mod production, `--omit=dev` melangkau dev dependency, dan `USER node` melepaskan root."
+    },
+    "named-volume": {
+      "source": "34bed640",
+      "context": "Anda mahu Postgres menyimpan datanya dalam named volume bernama pgdata. Postgres menyimpan datanya di /var/lib/postgresql/data di dalam container.",
+      "prompt": "Isi nama volume dan laluan.",
+      "explanation": "`-v name:/path` memasang named volume pada laluan itu, jadi data kekal lebih lama daripada container."
+    },
+    "user-network": {
+      "source": "4844e133",
+      "context": "Anda mahu dua container mencapai satu sama lain melalui nama. Mula-mula anda mencipta network bernama app-net, kemudian anda memulakan Redis padanya.",
+      "prompt": "Isi dua tempat kosong.",
+      "explanation": "Container pada network yang anda cipta boleh mencapai satu sama lain melalui nama, seperti `cache`."
+    },
+    "wait-for-healthy": {
+      "source": "a621bdb9",
+      "context": "Dalam compose.yaml ini, api mesti menunggu sehingga pangkalan data menjawab, bukan sekadar sehingga containernya bermula. db sudah mempunyai healthcheck.",
+      "prompt": "Isi syaratnya.",
+      "explanation": "`service_healthy` menunggu healthcheck lulus. `service_started` hanya menunggu container bermula."
+    },
+    "compose-ports": {
+      "source": "957c3366",
+      "context": "Hanya service web yang patut boleh dicapai dari komputer anda, di http://localhost:8000. Di dalam containernya, web server mendengar pada port 80.",
+      "prompt": "Isi kunci dan pemetaannya.",
+      "explanation": "`ports:` publish port ke komputer anda, port hos dahulu. api tidak mempunyainya, jadi hanya container lain boleh mencapainya."
+    },
+    "compose-build": {
+      "source": "d129be44",
+      "context": "Anda mengubah Dockerfile bagi satu service. Anda mahu Compose build semula image dan memulakan semuanya di latar belakang.",
+      "prompt": "Isi flag.",
+      "explanation": "Tanpa `--build`, Compose menggunakan semula image yang dibinanya kali terakhir."
+    },
+    "compose-down-volumes": {
+      "source": "f1fc43a2",
+      "context": "Anda mahu menghentikan aplikasi dan juga memadam named volume miliknya, supaya pangkalan data bermula kosong pada kali seterusnya.",
+      "prompt": "Isi flag.",
+      "explanation": "`-v` juga membuang named volume. Datanya hilang buat selama-lamanya."
+    },
+    "shop-browser": {
+      "source": "e2753f1e",
+      "prompt": "Alamat manakah yang membuka kedai itu dalam pelayar anda?",
+      "options": [
+        "http://localhost:80",
+        "http://localhost:8080",
+        "http://api:8080",
+        "http://localhost:3306"
+      ],
+      "explanation": "`\"8080:80\"` publish port 80 container web pada port 8080 di komputer anda."
+    },
+    "shop-db-host": {
+      "source": "f14e6171",
+      "prompt": "Bagaimanakah container api mencari pangkalan data?",
+      "options": [
+        "Di localhost:3306",
+        "Di alamat IP laptop anda",
+        "Melalui nama `db`, yang Compose selesaikan pada network projek",
+        "Tidak boleh, kerana db tidak mempunyai `ports:`"
+      ],
+      "explanation": "Compose meletakkan setiap service pada satu network di mana nama service ialah hostname. `ports:` hanya untuk komputer anda."
+    },
+    "shop-restart-data": {
+      "source": "a624727a",
+      "prompt": "Anda menjalankan `docker compose down`, kemudian `docker compose up -d`. Apakah yang berlaku kepada pangkalan data kedai?",
+      "options": [
+        "Ia kosong semula",
+        "Hanya jadual yang kekal",
+        "Compose bertanya sama ada mahu menyimpannya",
+        "Datanya masih ada, dalam volume dbdata"
+      ],
+      "explanation": "`down` membuang container tetapi menyimpan named volume. Hanya `down -v` akan memadam dbdata."
+    },
+    "shop-cache-started": {
+      "source": "bcad81fa",
+      "prompt": "Apakah yang ditunggu oleh `condition: service_started` bagi cache?",
+      "options": [
+        "Hanya container cache bermula",
+        "Redis menjawab PING",
+        "api menjadi sihat",
+        "10 cubaan semula dengan selang 5 saat"
+      ],
+      "explanation": "cache tidak mempunyai healthcheck, jadi Compose hanya boleh menunggu containernya bermula, bukan menunggu Redis sedia."
+    },
+    "shop-reachable": {
+      "source": "4a55fb2c",
+      "prompt": "Servis manakah yang boleh anda capai terus dari komputer anda sendiri?",
+      "options": [
+        "Keempat-empatnya",
+        "Hanya web",
+        "web dan db",
+        "Tiada satu pun"
+      ],
+      "explanation": "Hanya web mempunyai `ports:`. Yang lain hanya boleh dicapai dari container pada network projek."
+    },
+    "notes-target": {
+      "source": "d2cdc71a",
+      "prompt": "Apakah fungsi `target: production` di bawah `build:`?",
+      "options": [
+        "Pull image yang bertag production",
+        "Menjalankan aplikasi dengan NODE_ENV=production",
+        "Build stage bernama production dalam Dockerfile",
+        "Melangkau build cache"
+      ],
+      "explanation": "`target` ialah versi Compose bagi `docker build --target`: ia memilih stage Dockerfile untuk build."
+    },
+    "notes-localhost-port": {
+      "source": "cd16953a",
+      "prompt": "Baris port ialah `\"127.0.0.1:3000:3000\"`. Siapakah yang boleh membuka aplikasi itu?",
+      "options": [
+        "Hanya server itu sendiri, contohnya reverse proxy yang berjalan padanya",
+        "Sesiapa sahaja di internet",
+        "Tiada sesiapa, port itu tidak di-publish",
+        "Hanya container lain"
+      ],
+      "explanation": "Mengikat pada 127.0.0.1 publish port pada alamat loopback sahaja, jadi komputer lain tidak boleh menyambung secara terus."
+    },
+    "notes-memory-limit": {
+      "source": "b4cd9c97",
+      "prompt": "Aplikasi itu menggunakan lebih daripada 256 MB memori. Apakah yang berlaku?",
+      "options": [
+        "Docker memberinya lebih banyak memori secara automatik",
+        "Tiada apa-apa, had itu hanya panduan",
+        "Ia dihentikan kerana kehabisan memori, dan restart: unless-stopped memulakannya semula",
+        "Compose memulakan salinan kedua"
+      ],
+      "explanation": "Had memori dikuatkuasakan: proses itu dimatikan. Polisi restart kemudian menghidupkan semula container itu."
+    },
+    "notes-image-name": {
+      "source": "5aacbc0a",
+      "prompt": "Apakah fungsi `image: notes-app:1.4` di sebelah `build:`?",
+      "options": [
+        "Ia memberi image yang dibina nama dan tag itu",
+        "Compose pull notes-app:1.4 dan bukannya build",
+        "Ia menjalankan dua container, satu bagi setiap image",
+        "Ia diabaikan apabila ada bahagian build:"
+      ],
+      "explanation": "Dengan kedua-dua kunci, Compose build daripada Dockerfile dan memberi hasilnya tag notes-app:1.4."
+    },
+    "notes-code-change": {
+      "source": "a46a2f92",
+      "prompt": "Anda mengedit server.js di server. Apakah yang membuatkan aplikasi yang sedang berjalan menggunakan perubahan itu?",
+      "options": [
+        "`docker compose restart`",
+        "`docker compose up -d --build`",
+        "`docker compose logs -f`",
+        "Tiada apa-apa, ia mengambilnya sendiri"
+      ],
+      "explanation": "Kod disalin ke dalam image semasa build, jadi anda perlu build semula. `restart` menggunakan semula image lama."
+    },
+    "dev-bind-mount": {
+      "source": "ca49a345",
+      "prompt": "Apakah fungsi `- .:/app` di bawah volumes?",
+      "options": [
+        "Menyalin folder itu ke dalam image semasa build",
+        "Mencipta named volume bernama app",
+        "Memasang folder projek anda ke dalam container, jadi suntingan kelihatan serta-merta",
+        "Tiada apa-apa, volume hanya berfungsi untuk pangkalan data"
+      ],
+      "explanation": "Path di sebelah kiri menjadikannya bind mount: container melihat fail anda secara langsung, dan itulah yang membolehkan live reload berfungsi."
+    },
+    "dev-command": {
+      "source": "7e4246a4",
+      "prompt": "Apakah fungsi `command: npm run dev`?",
+      "options": [
+        "Dijalankan sekali semasa image dibina",
+        "Menggantikan CMD lalai image apabila container bermula",
+        "Menambah proses kedua di sebelah CMD",
+        "Dijalankan di komputer anda sebelum Compose bermula"
+      ],
+      "explanation": "`command:` mengatasi CMD image bagi service ini sahaja."
+    },
+    "dev-api-url": {
+      "source": "c82a533f",
+      "prompt": "Mengapakah `http://api:8000` berfungsi dari dalam web tetapi tidak dalam pelayar anda?",
+      "options": [
+        "Nama api hanya diselesaikan pada network Compose",
+        "Pelayar menyekat port 8000",
+        "api memerlukan healthcheck dahulu",
+        "Ia juga berfungsi dalam pelayar"
+      ],
+      "explanation": "Nama service ialah nama DNS di dalam network projek. Pelayar anda berjalan di komputer anda, di luar network itu, dan api juga tidak mempunyai `ports:`."
+    },
+    "dev-node-modules": {
+      "source": "bd786d5d",
+      "prompt": "Mengapakah ada named volume di /app/node_modules?",
+      "options": [
+        "Untuk berkongsi pakej dengan projek lain",
+        "Untuk menjadikan npm install lebih pantas di komputer anda",
+        "Kerana node_modules mesti sentiasa menjadi volume",
+        "Supaya bind mount folder anda tidak menyembunyikan pakej yang dipasang di dalam container"
+      ],
+      "explanation": "Bind mount `.:/app` menutupi /app. Volume yang lebih khusus pada /app/node_modules memastikan pakej container itu sendiri kekal kelihatan."
+    },
+    "blog-proxy-db": {
+      "source": "14158a4f",
+      "prompt": "Bolehkah container proxy mencapai db melalui nama?",
+      "options": [
+        "Ya, semua service berkongsi satu network",
+        "Tidak, mereka tidak berada pada network yang sama",
+        "Ya, melalui port 80",
+        "Hanya selepas db menjadi sihat"
+      ],
+      "explanation": "proxy hanya berada pada front dan db hanya berada pada back. Container hanya boleh berhubung melalui network yang kedua-duanya sertai."
+    },
+    "blog-two-networks": {
+      "source": "a4a0b5a1",
+      "prompt": "Mengapakah blog berada pada kedua-dua network?",
+      "options": [
+        "Ia perlu berhubung dengan proxy dan dengan pangkalan data",
+        "Dua network menjadikannya lebih pantas",
+        "WordPress memerlukan dua network",
+        "Supaya ia boleh publish dua port"
+      ],
+      "explanation": "blog berada di tengah: proxy mencapainya pada front, dan ia mencapai db pada back. db kekal tersembunyi daripada proxy."
+    },
+    "blog-down-v": {
+      "source": "65b023a4",
+      "prompt": "Anda menjalankan `docker compose down -v`. Apakah yang berlaku kepada catatan blog?",
+      "options": [
+        "Ia disimpan dalam image",
+        "Ia disandarkan secara automatik",
+        "Ia dipadam bersama volume dbdata",
+        "Ia berpindah ke proxy"
+      ],
+      "explanation": "`-v` membuang named volume, dan catatan itu berada dalam fail pangkalan data pada dbdata."
+    },
+    "blog-containers": {
+      "source": "abcb41b4",
+      "prompt": "Berapa banyak container yang dimulakan oleh `docker compose up -d` di sini?",
+      "options": [
+        "Satu",
+        "Dua",
+        "Lima, termasuk network dan volume",
+        "Tiga"
+      ],
+      "explanation": "Satu container bagi setiap service: proxy, blog dan db. Network dan volume bukan container."
+    }
+  },
+  "scenarios": {
+    "shop": {
+      "source": "52af2558",
+      "title": "Kedai dalam talian",
+      "intro": "Sebuah kedai dengan web server di hadapan, API, pangkalan data MySQL dan cache Redis."
+    },
+    "notes": {
+      "source": "8f20b71a",
+      "title": "Aplikasi Node.js dalam production",
+      "intro": "Satu service Node.js, dibina daripada Dockerfile multi-stage dan dijalankan di sebuah server."
+    },
+    "dev": {
+      "source": "61024886",
+      "title": "Persediaan pembangunan",
+      "intro": "Frontend dengan live reload semasa anda mengedit, yang berhubung dengan API."
+    },
+    "blog": {
+      "source": "1e3ad7ce",
+      "title": "Blog dengan dua network",
+      "intro": "Proxy, blog dan pangkalan datanya, dibahagikan kepada dua network."
+    }
+  }
+}

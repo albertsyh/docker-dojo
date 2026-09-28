@@ -2,12 +2,18 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import AppIcon from './AppIcon.vue'
 import { copyText } from '../clipboard'
+import { codeLabel } from '../i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ code: string; label?: string }>()
 const copied = ref(false)
 
 // Shell commands get a "$" prompt per line. It is drawn with CSS, so it is never copied.
+// The label in the content is always English; only what is shown is translated.
 const isShell = computed(() => props.label === 'terminal' || props.label === 'inside the container')
+const shown = computed(() => (props.label ? codeLabel(props.label) : t('code.code')))
 const lines = computed(() => props.code.split('\n'))
 let timer: number | undefined
 
@@ -24,10 +30,10 @@ onBeforeUnmount(() => clearTimeout(timer))
 <template>
   <div class="code" :class="{ shell: isShell }">
     <div class="code-head">
-      <span class="code-label"><AppIcon :name="isShell ? 'terminal' : 'file'" />{{ label ?? 'code' }}</span>
-      <button class="copy swap" type="button" @click="copy" :aria-label="copied ? 'Copied' : `Copy ${label ?? 'code'} to clipboard`">
-        <span :aria-hidden="copied"><AppIcon name="copy" />Copy</span>
-        <span :aria-hidden="!copied"><AppIcon name="check" />Copied</span>
+      <span class="code-label"><AppIcon :name="isShell ? 'terminal' : 'file'" />{{ shown }}</span>
+      <button class="copy swap" type="button" @click="copy" :aria-label="copied ? t('code.copied') : t('code.copyLabel', { label: shown })">
+        <span :aria-hidden="copied"><AppIcon name="copy" />{{ t('code.copy') }}</span>
+        <span :aria-hidden="!copied"><AppIcon name="check" />{{ t('code.copied') }}</span>
       </button>
     </div>
     <pre><code><template v-if="isShell"><span v-for="(line, i) in lines" :key="i" class="line">{{ line }}</span></template><template v-else>{{ code }}</template></code></pre>

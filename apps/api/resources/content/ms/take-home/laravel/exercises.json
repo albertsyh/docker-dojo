@@ -1,0 +1,344 @@
+{
+  "exercises": {
+    "laravel-naive-dockerfile": {
+      "source": "943bdd63",
+      "title": "Dockerfile yang berfungsi, dan sebab itulah masalahnya",
+      "summary": "Cipta aplikasi Laravel sebenar tanpa memasang PHP, dan masukkan ia ke dalam container seperti yang dilakukan oleh banyak cubaan pertama. Ia berjalan, tetapi ia bergantung pada \"latest\" dan membawa rahsia anda bersama. Cari rahsia itu, kemudian betulkan.",
+      "steps": [
+        {
+          "text": "Pergi ke folder rumah anda, cipta folder untuk trek ini, dan masuk ke dalamnya. Setiap latihan bawa pulang Laravel menggunakannya."
+        },
+        {
+          "text": "Cipta aplikasi Laravel baharu dalam folder ini. Anda tidak memerlukan PHP atau Composer di komputer anda: image composer rasmi menjalankan create-project, dan -v .:/app membolehkannya menulis ke dalam folder ini. Ia mengambil masa satu atau dua minit.",
+          "notes": [
+            {
+              "text": "Fail-fail itu akan dimiliki oleh root. Tambah --user 1000:1000 selepas --rm (id -u dan id -g anda) supaya fail itu dimiliki oleh anda."
+            }
+          ]
+        },
+        {
+          "text": "Cipta Dockerfile seperti rupa banyak cubaan pertama. Ia boleh di-build dan berjalan, jadi tiada apa-apa yang memberi amaran tentang kesilapannya.",
+          "notes": [
+            {
+              "text": "Simpan sebagai Dockerfile, bukan Dockerfile.txt (pilih \"All files\" dalam Notepad), atau gunakan VS Code."
+            }
+          ]
+        },
+        {
+          "text": "Build dan jalankan, kemudian buka http://localhost:8085. Anda melihat halaman alu-aluan Laravel. Build pertama memuat turun image php yang penuh, yang besar saiznya."
+        },
+        {
+          "text": "Kesilapan pertama: \"latest\" ialah versi PHP yang paling baharu pada hari anda membuat build. Semak versi mana yang anda dapat dan berapa besar image itu. Rakan sepasukan yang membuat build bulan depan boleh mendapat PHP yang berbeza daripada Dockerfile yang sama."
+        },
+        {
+          "text": "Kesilapan kedua: rahsia. Kata laluan ENV disimpan dalam sejarah image, malah output build sudah memberi amaran (SecretsUsedInArgOrEnv). Lebih teruk lagi, COPY . . menyalin fail .env anda, bersama APP_KEY yang menyulitkan sesi dan cookie anda. Sesiapa yang melakukan pull image itu boleh membaca kedua-duanya."
+        },
+        {
+          "text": "Betulkan build. Cipta .dockerignore, supaya .env dan folder vendor tempatan anda tidak pernah sampai ke dalam image.",
+          "notes": [
+            {
+              "text": "Simpan sebagai .dockerignore, bukan .dockerignore.txt (pilih \"All files\" dalam Notepad), atau gunakan VS Code."
+            }
+          ]
+        },
+        {
+          "text": "Gantikan Dockerfile. Ia menetapkan image PHP yang kecil, tiada rahsia ENV, dan memasang pakej PHP di dalam image dengan Composer, yang disalin masuk daripada image rasminya."
+        },
+        {
+          "text": "Build semula, dan hantar .env semasa container bermula dengan --env-file. Halaman alu-aluan masih berfungsi, sejarah image tiada kata laluan, image tiada .env, dan ia beberapa ratus MB lebih kecil.",
+          "notes": [
+            {
+              "text": "--env-file membaca fail itu semasa container bermula. Nilai-nilainya tiada dalam image yang anda push, tetapi sesiapa yang boleh menjalankan docker inspect di server itu masih boleh membacanya."
+            }
+          ]
+        },
+        {
+          "text": "Buang container itu. Simpan folder dan image untuk latihan seterusnya."
+        }
+      ],
+      "expected": "Image pertama menyenaraikan ENV DB_PASSWORD=secret123 dalam docker history dan mengandungi .env. Image yang di-build semula tiada kedua-duanya, jauh lebih kecil, dan halaman alu-aluan masih dimuatkan di localhost:8085.",
+      "files": {
+        "note": "Jalankan setiap arahan dari dalam takehome-laravel.",
+        "entries": [
+          {
+            "note": "folder kerja anda untuk seluruh trek, aplikasi Laravel baharu"
+          },
+          {
+            "note": "dicipta oleh create-project, menyimpan APP_KEY"
+          },
+          {
+            "note": "langkah 7"
+          },
+          {
+            "note": "langkah 3, digantikan dalam langkah 8"
+          }
+        ]
+      }
+    },
+    "laravel-stop-signals": {
+      "source": "32000487",
+      "title": "Berhenti dengan bersih",
+      "summary": "docker stop meminta aplikasi anda menamatkan kerjanya, dan PHP mengabaikan permintaan itu apabila ia berjalan sebagai proses 1. Letakkan proses init yang kecil di hadapannya.",
+      "steps": [
+        {
+          "text": "Mulakan aplikasi itu semula, dan buka http://localhost:8085 supaya anda tahu ia sudah bermula."
+        },
+        {
+          "text": "Hentikannya dan semak bagaimana ia berakhir. docker stop menghantar SIGTERM, menunggu beberapa saat, kemudian mematikan container itu secara paksa. Kod keluar 137 bermaksud ia dimatikan secara paksa."
+        },
+        {
+          "text": "Build sudah memberi amaran tentang ini (JSONArgsRecommended): CMD yang ditulis sebagai teks biasa mungkin berjalan melalui shell. Tulisnya dalam bentuk senarai, supaya Docker memulakan PHP secara terus."
+        },
+        {
+          "text": "Build semula dan cuba lagi. Masih 137. Bentuk senarai membuang shell, tetapi PHP kini proses 1, dan Linux tidak menggunakan peraturan biasa \"keluar apabila menerima SIGTERM\" untuk proses 1. PHP hanya berhenti jika ia sendiri mengendalikan isyarat itu, dan yang ini tidak."
+        },
+        {
+          "text": "Beri ia sedikit masa untuk bermula, kemudian hentikannya."
+        },
+        {
+          "text": "Penyelesaiannya: --init meletakkan proses 1 yang kecil di hadapan PHP yang menghantar isyarat itu seterusnya. Ia berhenti serta-merta, dengan kod keluar 143, yang bermaksud \"ditamatkan oleh SIGTERM\", cara yang sopan. Dalam Compose, yang sama ialah init: true."
+        },
+        {
+          "text": "Beri ia sedikit masa, kemudian hentikannya dan semak.",
+          "notes": [
+            {
+              "text": "Dalam production, Laravel biasanya berjalan pada php-fpm (seperti api Dojo ini sendiri) atau FrankenPHP. Image php-fpm rasmi sudah menetapkan isyarat berhenti yang betul, dan supervisor atau proses init masih membantu apabila anda memulakan lebih daripada satu program."
+            }
+          ]
+        },
+        {
+          "text": "Buang container itu."
+        }
+      ],
+      "expected": "Exited (137) selepas jeda, dua kali: sekali dengan bentuk shell, sekali dengan bentuk senarai. Dengan --init: Exited (143) serta-merta.",
+      "files": {
+        "note": "Masih di dalam takehome-laravel.",
+        "entries": [
+          {
+            "note": "langkah 3, CMD dalam bentuk senarai"
+          },
+          []
+        ]
+      }
+    },
+    "laravel-listen-address": {
+      "source": "7fc66f61",
+      "title": "Siapa yang boleh menghubungi aplikasi anda",
+      "summary": "php artisan serve mendengar pada 127.0.0.1 melainkan diberitahu sebaliknya, dan di dalam container tiada sesiapa yang boleh menghubunginya. Port yang di-publish juga boleh dihubungi oleh lebih ramai orang daripada yang anda sangka.",
+      "steps": [
+        {
+          "text": "Jalankan image itu dengan arahannya digantikan oleh php artisan serve biasa, tanpa --host. Apa-apa selepas nama image menggantikan CMD. Log mengatakan server sedang berjalan, namun http://localhost:8085 gagal."
+        },
+        {
+          "text": "Sebabnya: log menyebut 127.0.0.1:8000. Di dalam container, 127.0.0.1 ialah container itu sendiri. Trafik daripada -p sampai pada alamat network container itu, di mana tiada apa-apa yang mendengar. Itulah sebabnya Dockerfile menyebut --host=0.0.0.0, yang bermaksud semua alamat."
+        },
+        {
+          "text": "Sisi yang satu lagi: -p 8085:8000 membuka 8085 pada setiap network yang disambungkan ke komputer anda, jadi sesiapa pada Wi-Fi yang sama boleh menghubunginya. Pada server Linux lebih teruk: Docker menulis peraturan firewallnya sendiri, jadi ufw atau firewalld tidak menyekat port yang di-publish. Begitulah pangkalan data yang terdedah ditemui dan dihapuskan. Publish ke komputer anda sendiri sahaja dengan meletakkan 127.0.0.1 di hadapan. docker ps kemudian menunjukkan 127.0.0.1:8085->8000.",
+          "notes": [
+            {
+              "text": "Pangkalan data hampir tidak pernah memerlukan port yang di-publish. Container lain menghubunginya melalui network Compose menggunakan nama service. Jangan letak ports langsung pada service db."
+            }
+          ]
+        },
+        {
+          "text": "Buka http://localhost:8085 untuk menyemak ia berfungsi, kemudian buang container itu."
+        }
+      ],
+      "expected": "Tanpa --host, log menyebut 127.0.0.1:8000 dan halaman tidak dimuatkan. Dengan CMD image itu sendiri ia dimuatkan, dan docker ps menunjukkan 127.0.0.1:8085->8000/tcp."
+    },
+    "laravel-bind-mount": {
+      "source": "24ed0833",
+      "title": "Sunting kod tanpa build semula",
+      "summary": "Bind mount meletakkan folder anda di dalam container, jadi suntingan muncul serta-merta. Ia juga boleh menyembunyikan folder vendor yang dipasang oleh image, dan itulah yang dialami oleh rakan sepasukan yang baru membuat clone.",
+      "steps": [
+        {
+          "text": "Cipta compose.yaml untuk pembangunan. Baris volumes memasang folder ini di atas /app dalam container, jadi container membaca fail anda secara terus."
+        },
+        {
+          "text": "Mula-mula, lihat apa yang dilihat oleh rakan sepasukan. vendor ada dalam .gitignore, jadi clone baharu projek itu tiada vendor. Namakan semula folder anda, kemudian mulakan stack."
+        },
+        {
+          "text": "Beri ia beberapa saat, kemudian semak. Aplikasi itu sudah keluar, dan log mengatakan ia gagal membuka vendor/autoload.php. Image memang memasang vendor, tetapi bind mount meletakkan folder anda di atas seluruh /app, dan folder anda tiada vendor."
+        },
+        {
+          "text": "Tambah baris volume kedua untuk /app/vendor. Ia memastikan salinan image itu kelihatan di bawah bind mount."
+        },
+        {
+          "text": "Mulakan semula dan buka http://localhost:8085. Ia berfungsi, tanpa folder vendor di komputer anda.",
+          "notes": [
+            {
+              "text": "Fail yang dicipta oleh container dalam bind mount (log, cache dalam storage/) dimiliki oleh pengguna container itu. Apabila pengguna itu bukan anda, anda mendapat \"permission denied\" pada storage/ dari satu arah atau yang lain. Jalankan service itu sebagai pengguna anda sendiri dengan user: \"1000:1000\", atau jadikan storage/ boleh ditulis untuk pengguna container itu."
+            },
+            {
+              "text": "Simpan projek yang anda bind-mount di dalam WSL (contohnya \\\\wsl$\\Ubuntu\\home\\you), bukan pada pemacu Windows, di mana ia jauh lebih perlahan. Buka projek itu dalam VS Code dengan sambungan WSL."
+            },
+            {
+              "text": "Skrip shell yang disimpan dengan hujung baris Windows (CRLF) gagal dalam container Linux dengan mesej \"no such file or directory\" yang mengelirukan. Tambah fail .gitattributes dengan baris *.sh text eol=lf pada mana-mana repo yang mempunyai skrip seperti itu."
+            }
+          ]
+        },
+        {
+          "text": "Sekarang bahagian yang menarik. Tambah route pada routes/web.php, simpan, dan buka http://localhost:8085/hello. Ia berfungsi tanpa build semula atau mula semula. Tukar mesejnya, simpan, dan muat semula: mesej baharu dipaparkan."
+        },
+        {
+          "text": "Ingat kelemahannya: /app/vendor kini volume yang disimpan oleh Compose. Selepas anda mengubah composer.json, build semula dan minta volume baharu dengan -V, jika tidak pakej lama kekal. Hentikannya, dan kembalikan folder vendor anda."
+        }
+      ],
+      "expected": "Dengan vendor dinamakan semula dan hanya bind mount, aplikasi itu keluar dan log menyebut vendor/autoload.php. Dengan baris /app/vendor ia berjalan, dan /hello menjawab {\"message\":\"Hello from laravel-shop\"} tanpa build semula.",
+      "files": {
+        "note": "Masih di dalam takehome-laravel. Compose mencari compose.yaml dalam folder semasa.",
+        "entries": [
+          {
+            "note": "langkah 1, satu baris ditambah dalam langkah 4"
+          },
+          {
+            "note": "langkah 6"
+          },
+          {
+            "note": "dinamakan semula kepada vendor-off dalam langkah 2, dikembalikan dalam langkah 7"
+          },
+          []
+        ]
+      }
+    },
+    "laravel-compose-ready": {
+      "source": "ba5dda06",
+      "title": "Tunggu pangkalan data",
+      "summary": "Pindahkan aplikasi itu ke MySQL dengan Compose. Temui dua ranap klasik, localhost dan pangkalan data yang belum sedia, dan pastikan stack itu hidup semula selepas ranap.",
+      "steps": [
+        {
+          "text": "Tambah pemacu MySQL pada Dockerfile. docker-php-ext-install ialah alat bantu yang disertakan dengan image php rasmi."
+        },
+        {
+          "text": "Gantikan compose.yaml. Aplikasi itu menjalankan migrationnya, kemudian bermula. environment mengatasi tetapan pangkalan data daripada .env. exec dalam arahan itu membuatkan PHP menggantikan shell, supaya isyarat berhenti sampai kepadanya."
+        },
+        {
+          "text": "Mulakannya. Kali pertama, ini juga memuat turun MySQL."
+        },
+        {
+          "text": "Beri ia beberapa saat, kemudian semak. Aplikasi itu sudah keluar, dan lognya menyebut SQLSTATE[HY000] [2002] No such file or directory. Bagi pemacu MySQL PHP, localhost bermaksud fail socket di dalam container ini, dan tiada pangkalan data di dalamnya."
+        },
+        {
+          "text": "Halakan DB_HOST kepada nama service sebagai gantinya. Compose memberi setiap service nama DNS pada network stack itu."
+        },
+        {
+          "text": "Mulakan dari awal, seperti server baharu. Ini memadam volume dbdata, yang di sini hanya menyimpan pangkalan data kosong."
+        },
+        {
+          "text": "Beri ia beberapa saat, kemudian baca log aplikasi itu. Ia ranap lagi, dengan Connection refused: nama itu berfungsi, tetapi MySQL masih sedang menyediakan dirinya. depends_on hanya menunggu container db bermula, bukan menunggu pangkalan data sedia."
+        },
+        {
+          "text": "Betulkan dengan cara yang betul. healthcheck bertanya kepada MySQL sama ada ia sudah hidup, dan condition: service_healthy membuatkan aplikasi itu menunggunya. restart: unless-stopped menghidupkan semula container selepas ranap atau reboot. Had logging menghalang fail log daripada terus membesar sehingga cakera penuh."
+        },
+        {
+          "text": "Mulakan dari awal sekali lagi. Kali ini up menunggu sehingga db sihat sebelum ia memulakan aplikasi itu. MySQL baharu boleh mengambil masa sehingga setengah minit."
+        },
+        {
+          "text": "Beri ia beberapa saat, kemudian semak. db menunjukkan (healthy), log aplikasi menunjukkan migration sedang berjalan, dan http://localhost:8085 berfungsi."
+        },
+        {
+          "text": "Ranapkan aplikasi itu dengan sengaja, kemudian semak lagi. Polisi restart memulakannya semula dalam beberapa saat."
+        },
+        {
+          "text": "Hentikan stack itu. down biasa mengekalkan volume dbdata."
+        }
+      ],
+      "expected": "Dua kegagalan dahulu: [2002] No such file or directory untuk localhost, kemudian Connection refused semasa MySQL sedang bermula. Dengan healthcheck: db (healthy), migration berjalan, halaman dimuatkan, dan selepas kill 1 aplikasi itu Up semula.",
+      "files": {
+        "note": "Masih di dalam takehome-laravel.",
+        "entries": [
+          {
+            "note": "langkah 1, menambah pdo_mysql"
+          },
+          {
+            "note": "digantikan dalam langkah 2, kemudian disunting dalam langkah 5 dan 8"
+          },
+          {
+            "note": "masih digunakan, melalui env_file"
+          }
+        ]
+      }
+    },
+    "laravel-platform": {
+      "source": "000350b5",
+      "title": "Build untuk CPU server",
+      "summary": "Image di-build untuk satu jenis pemproses. Build pada Mac Apple Silicon dan deploy ke server biasa, dan ia tidak akan bermula.",
+      "steps": [
+        {
+          "text": "Build image itu dan tanya CPU mana yang menjadi sasarannya. Pada Mac Apple Silicon ia menyebut arm64. Pada kebanyakan komputer Windows dan Intel ia menyebut amd64."
+        },
+        {
+          "text": "Kebanyakan server ialah amd64. Image arm64 gagal di sana dengan \"exec format error\", dan tiada apa-apa lagi dalam mesej itu yang menerangkan sebabnya. Build untuk CPU server dengan --platform.",
+          "notes": [
+            {
+              "text": "Pada Apple Silicon, build ini berjalan di bawah emulasi, jadi ia lebih perlahan. Itu perkara biasa."
+            }
+          ]
+        },
+        {
+          "text": "Docker Desktop malah boleh menjalankan image untuk CPU yang lain, dengan mengemulasikannya. uname -m mencetak x86_64, iaitu amd64. Server Linux biasa tidak boleh melakukan ini melainkan seseorang telah menyediakan emulasi.",
+          "notes": [
+            {
+              "text": "Tabiat paling selamat: build image keluaran dalam CI atau di server itu sendiri. docker buildx build --platform linux/amd64,linux/arm64 membina kedua-duanya sekali gus, tetapi perlu push hasilnya ke registry."
+            }
+          ]
+        },
+        {
+          "text": "Buang image tambahan itu."
+        }
+      ],
+      "expected": "Seni bina anda sendiri dahulu (arm64 atau amd64), kemudian amd64 untuk laravel-shop:amd64, dan x86_64 daripada uname -m."
+    },
+    "laravel-production-dockerfile": {
+      "source": "99af9f68",
+      "title": "Projek akhir: Dockerfile yang sesuai untuk production",
+      "summary": "Gabungkan semuanya. Betulkan baki Dockerfile itu sendiri, bandingkan dengan jawapan contoh, kemudian bersihkan seluruh trek.",
+      "steps": [
+        {
+          "text": "Dockerfile anda sudah ditetapkan versinya dan tiada rahsia, tetapi tiga kesilapan daripada kursus ini masih ada di dalamnya. Sebelum anda membaca seterusnya, cuba namakan dan betulkannya sendiri. Petunjuk: perubahan kod memasang semula setiap pakej; phpunit dan alat dev yang lain masuk ke dalam image; dan aplikasi itu berjalan sebagai root."
+        },
+        {
+          "text": "Inilah satu jawapan. Mula-mula, tambah fail log lama pada .dockerignore."
+        },
+        {
+          "text": "Kemudian Dockerfile. Stage pertama memasang pakej dengan composer.json dan composer.lock disalin dahulu, supaya pakej itu di-cache, dan --no-dev meninggalkan alat dev. Stage kedua bermula daripada image PHP yang bersih dan menyalin masuk hanya aplikasi dan pakejnya, dimiliki oleh www-data, pengguna web biasa, yang kemudiannya digunakan untuk menjalankan aplikasi itu."
+        },
+        {
+          "text": "Mulakan stack dengan image baharu. Halaman di http://localhost:8085 berfungsi seperti sebelumnya, whoami menjawab www-data, dan phpunit tiada dalam image.",
+          "notes": [
+            {
+              "text": "Image production sebenar juga menjalankan php artisan optimize untuk cache config dan route, dan dihidangkan melalui php-fpm di belakang nginx (seperti api Dojo ini sendiri) atau FrankenPHP, bukan artisan serve."
+            }
+          ]
+        },
+        {
+          "text": "Semak berapa banyak ruang cakera yang digunakan oleh trek ini. Image, build cache, volume dan log semuanya bertambah secara senyap di server."
+        },
+        {
+          "text": "Bersihkan seluruh trek. Ini memadam volume dbdata dan datanya buat selama-lamanya, dan membuang image trek ini.",
+          "notes": [
+            {
+              "text": "php:latest yang besar dari latihan pertama masih ada dalam build cache. docker builder prune mengosongkan cache itu, dan docker system prune juga mengosongkan container yang sudah berhenti, network yang tidak digunakan dan image dangling. Kedua-duanya memadam secara kekal, jadi baca apa yang disenaraikan sebelum anda menjawab ya."
+            }
+          ]
+        },
+        {
+          "text": "Padam folder takehome-laravel apabila anda tidak memerlukannya lagi."
+        }
+      ],
+      "expected": "whoami mencetak www-data, ls vendor/phpunit gagal dengan \"No such file or directory\", dan halaman masih dimuatkan. Selepas pembersihan, docker system df menunjukkan penggunaan yang lebih sedikit.",
+      "files": {
+        "note": "Masih di dalam takehome-laravel.",
+        "entries": [
+          {
+            "note": "langkah 2"
+          },
+          {
+            "note": "langkah 3, versi akhir"
+          },
+          []
+        ]
+      }
+    }
+  }
+}

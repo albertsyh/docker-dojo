@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { api, ApiError } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import { copyId } from '../clipboard'
 import { coreCompleted, join, leave, nextExercise, resume, state, totalMinutes } from '../store'
+import { useI18n } from 'vue-i18n'
+
+const { t, tm, rt } = useI18n()
 
 const router = useRouter()
 const busy = ref(false)
 const error = ref('')
 const resumeId = ref('')
 
-const TOPICS = ['Containers', 'Images and layers', 'The build cache', '.dockerignore', 'Multi-stage builds', 'Vulnerability scans', 'Volumes', 'Networks', 'Docker Compose']
+const topics = computed(() => (tm('home.topics') as unknown as Parameters<typeof rt>[0][]).map((m) => rt(m)))
 
 // A suggested id is only shown, never saved, until the student presses Start,
 // so rerolling doesn't inflate the tracker's "joined" count.
@@ -48,7 +51,7 @@ async function start() {
   } catch (e) {
     if (e instanceof ApiError && e.status === 409) {
       await reroll()
-      error.value = 'Someone grabbed that id a moment ago, so here is a fresh one. Press Start again.'
+      error.value = t('home.idTaken')
     } else {
       error.value = e instanceof Error ? e.message : String(e)
     }
@@ -74,64 +77,64 @@ async function run(fn: () => Promise<void>) {
 <template>
   <div class="home">
     <section class="hero">
-      <h1>Learn Docker by doing it.</h1>
+      <h1>{{ t('home.title') }}</h1>
       <p class="lead">
-        {{ state.content?.exercises.length }} short hands-on exercises, about {{ totalMinutes }} minutes, then a
-        {{ state.content?.quiz.questionCount }}-question quiz. Copy each command, run it on your own machine, and tick it off.
+        {{ t('home.lead', { count: state.content?.exercises.length ?? 0, minutes: totalMinutes, questions: state.content?.quiz.questionCount ?? 0 }) }}
       </p>
-      <ul class="topics" aria-label="What you will cover">
-        <li v-for="t in TOPICS" :key="t">{{ t }}</li>
+      <ul class="topics" :aria-label="t('home.topicsLabel')">
+        <li v-for="topic in topics" :key="topic">{{ topic }}</li>
       </ul>
     </section>
 
     <!-- Returning student -->
     <section v-if="state.progress" class="start" aria-labelledby="start-title">
-      <button type="button" class="badge copyable" :aria-label="`Copy your id, ${state.progress.id}`" @click="copyId(state.progress.id)">
-        <span class="badge-band">Hello, I'm</span>
+      <button type="button" class="badge copyable" :aria-label="t('nav.copyId', { id: state.progress.id })" @click="copyId(state.progress.id)">
+        <span class="badge-band">{{ t('home.badgeBand') }}</span>
         <span class="badge-name">{{ state.progress.id }}</span>
-        <span class="badge-hint"><AppIcon name="copy" />Click to copy</span>
+        <span class="badge-hint"><AppIcon name="copy" />{{ t('home.clickToCopy') }}</span>
       </button>
       <div class="start-body">
-        <h2 id="start-title">Welcome back</h2>
+        <h2 id="start-title">{{ t('home.welcomeBack') }}</h2>
         <p class="muted">
-          {{ coreCompleted.size }} of {{ state.content?.exercises.length }} exercises done.
-          Keep your id if you want to continue on another device.
+          {{ t('home.progress', { done: coreCompleted.size, total: state.content?.exercises.length ?? 0 }) }}
         </p>
         <div class="row">
           <RouterLink v-if="nextExercise" :to="`/exercises/${nextExercise.id}`" class="btn primary">
-            Continue: {{ nextExercise.title }}<AppIcon name="arrow-right" />
+            {{ t('home.continue', { title: nextExercise.title }) }}<AppIcon name="arrow-right" />
           </RouterLink>
-          <RouterLink v-else to="/quiz" class="btn primary">Take the quiz<AppIcon name="arrow-right" /></RouterLink>
-          <button class="btn ghost" type="button" @click="leave">Start over with a new id</button>
+          <RouterLink v-else to="/quiz" class="btn primary">{{ t('home.takeQuiz') }}<AppIcon name="arrow-right" /></RouterLink>
+          <button class="btn ghost" type="button" @click="leave">{{ t('home.startOver') }}</button>
         </div>
-        <p v-if="state.content?.takeHome.length" class="muted take-home">
-          After the workshop, keep going with a
-          <template v-for="(t, i) in state.content.takeHome" :key="t.id"><template v-if="i"> or </template><RouterLink :to="`/take-home/${t.id}`">{{ t.label }}</RouterLink></template>
-          take-home track.
-        </p>
+        <i18n-t v-if="state.content?.takeHome.length" keypath="home.takeHome" tag="p" class="muted take-home" scope="global">
+          <template #tracks
+            ><template v-for="(track, i) in state.content.takeHome" :key="track.id"
+              ><template v-if="i">{{ t('home.or') }}</template><RouterLink :to="`/take-home/${track.id}`">{{ track.label }}</RouterLink></template
+            ></template
+          >
+        </i18n-t>
       </div>
     </section>
 
     <!-- New student: pick an id, then start -->
     <section v-else class="start" aria-labelledby="start-title">
       <div class="badge" :class="{ rolling }" aria-live="polite">
-        <div class="badge-band">Hello, I'm</div>
+        <div class="badge-band">{{ t('home.badgeBand') }}</div>
         <div class="badge-name">{{ suggested || ' ' }}</div>
       </div>
       <div class="start-body">
-        <h2 id="start-title">Get your name badge</h2>
-        <p class="muted">No sign-up. This anonymous id saves your progress. Not keen on it? Roll another.</p>
+        <h2 id="start-title">{{ t('home.getBadge') }}</h2>
+        <p class="muted">{{ t('home.getBadgeText') }}</p>
         <div class="row">
           <button class="btn primary" type="button" :disabled="busy || rolling || !suggested" @click="start">
-            Start with this id<AppIcon name="arrow-right" />
+            {{ t('home.startWithId') }}<AppIcon name="arrow-right" />
           </button>
-          <button class="btn" type="button" :disabled="busy || rolling" @click="reroll"><AppIcon name="dice" />Roll again</button>
+          <button class="btn" type="button" :disabled="busy || rolling" @click="reroll"><AppIcon name="dice" />{{ t('home.rollAgain') }}</button>
         </div>
         <form class="resume" @submit.prevent="run(() => resume(resumeId))">
-          <label for="resume-id" class="muted">Already started on another device?</label>
+          <label for="resume-id" class="muted">{{ t('home.resumeLabel') }}</label>
           <div class="row">
-            <input id="resume-id" v-model="resumeId" type="text" placeholder="your-participant-id" autocomplete="off" spellcheck="false" />
-            <button class="btn" type="submit" :disabled="busy || !resumeId.trim()">Continue</button>
+            <input id="resume-id" v-model="resumeId" type="text" :placeholder="t('home.resumePlaceholder')" autocomplete="off" spellcheck="false" />
+            <button class="btn" type="submit" :disabled="busy || !resumeId.trim()">{{ t('home.continueButton') }}</button>
           </div>
         </form>
       </div>
@@ -140,19 +143,21 @@ async function run(fn: () => Promise<void>) {
     <div v-if="error" class="callout error" role="alert"><AppIcon name="alert" /><span>{{ error }}</span></div>
 
     <section class="before" aria-labelledby="before-title">
-      <h2 id="before-title">Before you begin</h2>
+      <h2 id="before-title">{{ t('home.before') }}</h2>
       <ul class="checklist">
         <li>
           <AppIcon name="check" />
-          <span>Docker installed and running: <a href="https://docs.docker.com/get-started/get-docker/" target="_blank" rel="noopener">Docker Desktop</a> on macOS or Windows, Docker Engine on Linux.</span>
+          <i18n-t keypath="home.checkDocker" tag="span" scope="global">
+            <template #desktop><a href="https://docs.docker.com/get-started/get-docker/" target="_blank" rel="noopener">Docker Desktop</a></template>
+          </i18n-t>
         </li>
         <li>
           <AppIcon name="check" />
-          <span>A terminal next to this window. Commands work in macOS and Linux terminals and in Windows PowerShell (not Command Prompt).</span>
+          <span>{{ t('home.checkTerminal') }}</span>
         </li>
         <li>
           <AppIcon name="check" />
-          <span>Curiosity. This page itself runs in four Docker containers, and near the end you'll see how.</span>
+          <span>{{ t('home.checkCurious') }}</span>
         </li>
       </ul>
     </section>

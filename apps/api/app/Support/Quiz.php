@@ -38,9 +38,9 @@ class Quiz
     }
 
     /** A fresh paper for this participant, without answers. */
-    public static function paper(string $participantId, string $track = Content::CORE): array
+    public static function paper(string $participantId, string $track = Content::CORE, string $lang = Content::ENGLISH): array
     {
-        $quiz = Content::quiz($track);
+        $quiz = Content::quiz($track, $lang);
         $seen = self::seenCounts($participantId, $track);
         $pool = collect($quiz['questions']);
 
@@ -67,10 +67,34 @@ class Quiz
         $questions = [...$questions, ...$advanced];
 
         $ids = array_column($questions, 'id');
-        $scenarioIds = array_unique(array_column($advanced, 'scenario'));
 
         return [
             'token' => self::sign($participantId, $ids, $track),
+            ...self::publicPaper($quiz, $questions),
+        ];
+    }
+
+    /**
+     * The questions of a paper already drawn, in another language, without answers. Lets a student
+     * switch language mid-quiz without drawing a new paper. Null if an id isn't in this quiz.
+     */
+    public static function questions(array $questionIds, string $track = Content::CORE, string $lang = Content::ENGLISH): ?array
+    {
+        $quiz = Content::quiz($track, $lang);
+        $byId = collect($quiz['questions'])->keyBy('id');
+        if (collect($questionIds)->contains(fn ($id) => ! $byId->has($id))) {
+            return null;
+        }
+
+        return self::publicPaper($quiz, array_map(fn ($id) => $byId[$id], $questionIds));
+    }
+
+    /** Questions as a student may see them, and the compose files the advanced ones are about. */
+    private static function publicPaper(array $quiz, array $questions): array
+    {
+        $scenarioIds = array_unique(array_filter(array_column($questions, 'scenario')));
+
+        return [
             'questions' => array_map(self::publicQuestion(...), $questions),
             'scenarios' => collect($quiz['scenarios'])
                 ->whereIn('id', $scenarioIds)
@@ -93,9 +117,10 @@ class Quiz
      * an option index for multiple choice, a list of strings for blanks.
      * Returns null for an answer that doesn't fit its question.
      */
-    public static function grade(array $questionIds, array $answers, string $track = Content::CORE): ?array
+    public static function grade(array $questionIds, array $answers, string $track = Content::CORE, string $lang = Content::ENGLISH): ?array
     {
-        $byId = collect(Content::quiz($track)['questions'])->keyBy('id');
+        // Only the explanations are in the chosen language. Answers and blanks are the same in every one.
+        $byId = collect(Content::quiz($track, $lang)['questions'])->keyBy('id');
         $results = [];
         foreach ($questionIds as $i => $id) {
             $question = $byId[$id] ?? null;

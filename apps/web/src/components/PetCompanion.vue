@@ -2,6 +2,9 @@
 import { computed } from 'vue'
 import { chat, toggleChat, unread } from '../chat'
 import { animationFor, currentPet, pet, petReact } from '../pets'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const current = computed(currentPet)
 
@@ -10,7 +13,10 @@ function onClick() {
   toggleChat()
   if (chat.open) petReact('wave')
 }
-const label = computed(() => `${current.value.name}. ${chat.open ? 'Close' : 'Open'} the questions chat${unread.value ? `, ${unread.value} new` : ''}.`)
+const label = computed(() => {
+  const action = t(chat.open ? 'pet.close' : 'pet.open')
+  return unread.value ? t('pet.labelUnread', { name: current.value.name, action, n: unread.value }) : t('pet.label', { name: current.value.name, action })
+})
 
 const style = computed(() => {
   const a = animationFor(pet.row)
@@ -26,7 +32,7 @@ const style = computed(() => {
 
 <template>
   <!-- Pets are from OpenPets (openpets.dev). Credited in the footer and README. -->
-  <button class="pet" type="button" :aria-label="label" :aria-expanded="chat.open" :title="`Hi, I'm ${current.name}! Ask a question.`" @click="onClick">
+  <button class="pet" type="button" :aria-label="label" :aria-expanded="chat.open" :title="t('pet.title', { name: current.name })" @click="onClick">
     <span :key="`${pet.id}-${pet.seq}`" class="sprite" :style="style" />
     <span v-if="unread" class="unread" aria-hidden="true">{{ unread > 9 ? '9+' : unread }}</span>
   </button>

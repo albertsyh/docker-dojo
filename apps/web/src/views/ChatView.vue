@@ -2,6 +2,9 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 import ChatPanel from '../components/ChatPanel.vue'
 import { chat, loadChat } from '../chat'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // While this page shows, new messages count as read (and the pet's popup stays closed).
 onMounted(() => {
@@ -15,8 +18,8 @@ onBeforeUnmount(() => (chat.onPage = false))
 <template>
   <div class="page">
     <header>
-      <h1>Chat</h1>
-      <p class="lead">Stuck, or curious? Ask here. The trainer reads these, and "Me too" shows which questions are most common. You can delete your own messages.</p>
+      <h1>{{ t('chat.title') }}</h1>
+      <p class="lead">{{ t('chat.lead') }}</p>
     </header>
     <ChatPanel />
   </div>

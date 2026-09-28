@@ -2,6 +2,11 @@
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { choosePet, pet, PETS, togglePicker } from '../pets'
 import AppIcon from './AppIcon.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t, te } = useI18n()
+// pets.json is generated in English (scripts/build-pets.ts), so descriptions are translated by pet id.
+const describe = (p: { id: string; description: string }) => (te(`pet.descriptions.${p.id}`) ? t(`pet.descriptions.${p.id}`) : p.description)
 
 const list = ref<HTMLElement | null>(null)
 
@@ -20,8 +25,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 <template>
   <section class="picker" role="dialog" aria-labelledby="pet-picker-title">
     <header>
-      <h2 id="pet-picker-title">Choose your pet</h2>
-      <button class="btn small ghost close" type="button" aria-label="Close" @click="togglePicker"><AppIcon name="x" /></button>
+      <h2 id="pet-picker-title">{{ t('pet.choose') }}</h2>
+      <button class="btn small ghost close" type="button" :aria-label="t('common.close')" @click="togglePicker"><AppIcon name="x" /></button>
     </header>
     <div ref="list" class="options" role="radiogroup" aria-labelledby="pet-picker-title">
       <button
@@ -37,12 +42,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         <img :src="p.thumb" alt="" width="48" height="52" />
         <span class="text">
           <strong>{{ p.name }}</strong>
-          <span class="muted">{{ p.description }}</span>
+          <span class="muted">{{ describe(p) }}</span>
         </span>
         <AppIcon v-if="pet.id === p.id" name="check" class="chosen" />
       </button>
     </div>
-    <p class="muted credit">Pets by <a href="https://openpets.dev" target="_blank" rel="noopener">OpenPets</a></p>
+    <i18n-t keypath="pet.credit" tag="p" class="muted credit" scope="global">
+      <template #link><a href="https://openpets.dev" target="_blank" rel="noopener">OpenPets</a></template>
+    </i18n-t>
   </section>
 </template>
 

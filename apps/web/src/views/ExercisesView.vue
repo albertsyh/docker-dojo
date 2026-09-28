@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import AppIcon from '../components/AppIcon.vue'
 import JoinGate from '../components/JoinGate.vue'
 import JourneyList from '../components/JourneyList.vue'
 import { completed, coreCompleted, state, totalMinutes } from '../store'
 import type { TakeHomeTrack } from '../api'
+
+const { t } = useI18n()
 
 const doneIn = (track: TakeHomeTrack) => track.exercises.filter((e) => completed.value.has(e.id)).length
 const minutesIn = (track: TakeHomeTrack) => track.exercises.reduce((sum, e) => sum + e.minutes, 0)
@@ -13,32 +16,28 @@ const minutesIn = (track: TakeHomeTrack) => track.exercises.reduce((sum, e) => s
   <JoinGate v-if="!state.progress" />
   <div v-else-if="state.content" class="page">
     <header>
-      <h1>Exercises</h1>
+      <h1>{{ t('exercises.title') }}</h1>
       <p class="lead">
-        {{ coreCompleted.size }} of {{ state.content.exercises.length }} done · about {{ totalMinutes }} minutes in total.
-        Work top to bottom: later exercises build on earlier ones.
+        {{ t('exercises.lead', { done: coreCompleted.size, total: state.content.exercises.length, minutes: totalMinutes }) }}
       </p>
     </header>
 
     <JourneyList :exercises="state.content.exercises" :quiz="state.content.quiz" :quiz-progress="state.progress.quiz" quiz-to="/quiz" />
 
     <section v-if="state.content.takeHome.length" class="take-home" aria-labelledby="take-home-title">
-      <h2 id="take-home-title">Take-home tracks</h2>
-      <p class="muted intro">
-        For after the workshop, at your own pace. Each track uses one app from start to finish, covers the mistakes that
-        only show up later, and ends with its own quiz. Pick the stack you work in.
-      </p>
+      <h2 id="take-home-title">{{ t('exercises.takeHomeTitle') }}</h2>
+      <p class="muted intro">{{ t('exercises.takeHomeIntro') }}</p>
       <ul class="tracks">
         <li v-for="track in state.content.takeHome" :key="track.id">
           <RouterLink :to="`/take-home/${track.id}`" class="track">
             <span class="track-head">
               <strong>{{ track.title }}</strong>
               <span class="tag">{{ track.label }}</span>
-              <span v-if="doneIn(track) === track.exercises.length" class="tag ok"><AppIcon name="check" />Done</span>
+              <span v-if="doneIn(track) === track.exercises.length" class="tag ok"><AppIcon name="check" />{{ t('common.done') }}</span>
             </span>
             <span class="muted summary">{{ track.summary }}</span>
             <span class="muted meta">
-              {{ track.exercises.length }} exercises · about {{ minutesIn(track) }} minutes · {{ doneIn(track) }} of {{ track.exercises.length }} done
+              {{ t('exercises.trackMeta', { count: track.exercises.length, minutes: minutesIn(track), done: doneIn(track) }) }}
             </span>
           </RouterLink>
         </li>

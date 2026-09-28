@@ -7,6 +7,9 @@ import ExerciseLadder from '../components/ExerciseLadder.vue'
 import { getEcho } from '../realtime'
 import { routeParam } from '../routeParams'
 import { state } from '../store'
+import { useI18n } from 'vue-i18n'
+
+const { t, locale } = useI18n()
 
 // /live?embed: exercise progress only, for an iframe on the session's own site. App.vue drops the chrome.
 const route = useRoute()
@@ -115,7 +118,15 @@ const param = (name: string) => routeParam(route, name)
 const focusId = computed(() => param('exercise'))
 // A take-home exercise in ?exercise swaps the list for that track's own.
 const focusTrack = computed(() => stats.value?.takeHome.find((t) => t.exercises.some((e) => e.id === focusId.value)) ?? null)
-const numbered = <T,>(list: T[]) => list.map((ex, i) => ({ ...ex, n: i + 1 }))
+// The stats are one broadcast for everyone, so their titles are English. Show each viewer's own
+// language instead, from the content they loaded, by id.
+const titles = computed(() => {
+  const c = state.content
+  const all = [...(c?.exercises ?? []), ...(c?.takeHome.flatMap((track) => track.exercises) ?? [])]
+  return new Map([...all.map((e) => [e.id, e.title] as const), ...(c?.takeHome.map((track) => [track.id, track.title] as const) ?? [])])
+})
+const titled = <T extends { id: string; title: string }>(item: T): T => ({ ...item, title: titles.value.get(item.id) ?? item.title })
+const numbered = <T extends { id: string; title: string }>(list: T[]) => list.map((ex, i) => ({ ...titled(ex), n: i + 1 }))
 const rows = computed(() => {
   const all = numbered(focusTrack.value?.exercises ?? stats.value?.exercises ?? [])
   const at = all.findIndex((ex) => ex.id === focusId.value)
@@ -134,9 +145,9 @@ const width = (n: number) => `${pct(n, stats.value?.participants ?? 0)}%`
   <div class="sizer" :style="sizerStyle">
   <div ref="stage" class="tracker" :style="stageStyle">
     <header class="head">
-      <h1 v-if="!embed">Live</h1>
+      <h1 v-if="!embed">{{ t('live.title') }}</h1>
       <span class="status" :class="connection" role="status">
-        <i aria-hidden="true" />{{ connection === 'live' ? 'Live' : connection === 'connecting' ? 'Connecting…' : 'Offline, refreshing every 30s' }}
+        <i aria-hidden="true" />{{ t(`live.status.${connection}`) }}
       </span>
     </header>
 
@@ -144,27 +155,29 @@ const width = (n: number) => `${pct(n, stats.value?.participants ?? 0)}%`
 
     <template v-if="stats">
       <!-- Written as sentences so the room can read it from the back. -->
-      <p class="headline" aria-live="polite">
-        <strong>{{ stats.participants }}</strong> in the room.
-        <strong>{{ stats.activeNow }}</strong> active in the last {{ stats.activeWindowMinutes }} minutes.
-      </p>
+      <i18n-t keypath="live.headline" tag="p" class="headline" aria-live="polite" scope="global">
+        <template #participants><strong>{{ stats.participants }}</strong></template>
+        <template #active><strong>{{ stats.activeNow }}</strong></template>
+        <template #minutes>{{ stats.activeWindowMinutes }}</template>
+      </i18n-t>
 
       <div v-if="!stats.participants" class="callout">
         <AppIcon name="info" />
-        <span>Nobody has joined yet. Ask everyone to open <strong>{{ origin }}</strong> and get their name badge.</span>
+        <i18n-t keypath="live.nobody" tag="span" scope="global">
+          <template #url><strong>{{ origin }}</strong></template>
+        </i18n-t>
       </div>
 
       <div v-else class="grid" :class="{ solo: embed }">
         <section aria-labelledby="ex-title">
-          <h2 id="ex-title">{{ focusTrack ? focusTrack.title : 'Exercises' }}</h2>
-          <p v-if="focusTrack" class="muted sub">A take-home track, done after the workshop.</p>
+          <h2 id="ex-title">{{ focusTrack ? titled(focusTrack).title : t('live.exercises') }}</h2>
+          <p v-if="focusTrack" class="muted sub">{{ t('live.takeHomeSub') }}</p>
           <p v-else-if="anyDone" class="muted sub">
-            {{ stats.exerciseCompletionPct }}% of all exercises done · {{ stats.finishedAllExercises }}
-            {{ stats.finishedAllExercises === 1 ? 'person has' : 'people have' }} finished every one
+            {{ t('live.progress', { pct: stats.exerciseCompletionPct, finished: t('live.finished', stats.finishedAllExercises) }) }}
           </p>
-          <p v-else class="muted sub empty">Nobody has ticked off an exercise yet. Each bar fills in as people mark that exercise done.</p>
-          <p v-if="rows.focused" class="muted sub">Showing {{ rows.list[0].n }} to {{ rows.list[rows.list.length - 1].n }} of {{ rows.total }}.</p>
-          <p v-else-if="focusId" class="muted sub">There is no exercise called "{{ focusId }}", so this shows them all.</p>
+          <p v-else class="muted sub empty">{{ t('live.empty') }}</p>
+          <p v-if="rows.focused" class="muted sub">{{ t('live.showing', { from: rows.list[0].n, to: rows.list[rows.list.length - 1].n, total: rows.total }) }}</p>
+          <p v-else-if="focusId" class="muted sub">{{ t('live.unknown', { id: focusId }) }}</p>
           <ExerciseLadder
             :rows="rows.list"
             :participants="stats.participants"
@@ -172,49 +185,49 @@ const width = (n: number) => `${pct(n, stats.value?.participants ?? 0)}%`
             :current="rows.focused ? focusId : null"
             :quiet="focusTrack ? !focusTrack.exercises.some((e) => e.completed > 0) : !anyDone"
           />
-          <p class="muted small note">Here now: has that exercise page open, checked in within the last {{ stats.hereWindowMinutes }} min.</p>
+          <p class="muted small note">{{ t('live.hereNote', { minutes: stats.hereWindowMinutes }) }}</p>
         </section>
 
         <section v-if="!embed" aria-labelledby="quiz-title" class="quiz">
-          <h2 id="quiz-title">Quiz</h2>
-          <p v-if="quizGroups" class="quiz-line">
-            <strong>{{ quizGroups.passed }}</strong> passed,
-            <strong>{{ quizGroups.tryingAgain }}</strong> trying again,
-            <strong>{{ quizGroups.takingNow }}</strong> taking it now,
-            <strong>{{ quizGroups.notStarted }}</strong> not started.
-          </p>
+          <h2 id="quiz-title">{{ t('live.quiz') }}</h2>
+          <i18n-t v-if="quizGroups" keypath="live.quizLine" tag="p" class="quiz-line" scope="global">
+            <template #passed><strong>{{ quizGroups.passed }}</strong></template>
+            <template #trying><strong>{{ quizGroups.tryingAgain }}</strong></template>
+            <template #taking><strong>{{ quizGroups.takingNow }}</strong></template>
+            <template #notStarted><strong>{{ quizGroups.notStarted }}</strong></template>
+          </i18n-t>
           <div v-if="quizGroups" class="stacked" aria-hidden="true">
             <span class="passed" :style="{ width: width(quizGroups.passed) }" />
             <span class="tried" :style="{ width: width(quizGroups.tryingAgain) }" />
             <span class="taking" :style="{ width: width(quizGroups.takingNow) }" />
           </div>
           <ul class="legend">
-            <li><i class="passed" />Passed</li>
-            <li><i class="tried" />Submitted, not passed yet</li>
-            <li><i class="taking" />Taking it now (active in the last {{ stats.activeWindowMinutes }} min)</li>
-            <li><i class="not-yet" />Not started</li>
+            <li><i class="passed" />{{ t('live.legendPassed') }}</li>
+            <li><i class="tried" />{{ t('live.legendTried') }}</li>
+            <li><i class="taking" />{{ t('live.legendTaking', { minutes: stats.activeWindowMinutes }) }}</li>
+            <li><i class="not-yet" />{{ t('live.legendNotYet') }}</li>
           </ul>
-          <p v-if="stats.quiz.averageBestPct !== null" class="muted">Average best score: {{ stats.quiz.averageBestPct }}%</p>
+          <p v-if="stats.quiz.averageBestPct !== null" class="muted">{{ t('live.average', { pct: stats.quiz.averageBestPct }) }}</p>
         </section>
       </div>
 
       <!-- Self-paced tracks: their own lists, never part of the workshop's figures above. -->
       <section v-if="!embed && stats.participants && stats.takeHome.length" class="take-home" aria-labelledby="take-home-title">
-        <h2 id="take-home-title">Take-home tracks</h2>
-        <p class="muted sub">Done at home, after the workshop. They are not counted in the figures above.</p>
-        <div v-for="t in stats.takeHome" :key="t.id" class="take-home-track">
-          <h3>{{ t.title }} <span class="tag">{{ t.label }}</span></h3>
+        <h2 id="take-home-title">{{ t('live.takeHome') }}</h2>
+        <p class="muted sub">{{ t('live.takeHomeIntro') }}</p>
+        <div v-for="track in stats.takeHome" :key="track.id" class="take-home-track">
+          <h3>{{ titled(track).title }} <span class="tag">{{ track.label }}</span></h3>
           <ExerciseLadder
-            :rows="numbered(t.exercises)"
+            :rows="numbered(track.exercises)"
             :participants="stats.participants"
             :here-window-minutes="stats.hereWindowMinutes"
-            :quiet="!t.exercises.some((e) => e.completed > 0)"
+            :quiet="!track.exercises.some((e) => e.completed > 0)"
           />
         </div>
       </section>
-      <p class="muted small">Last update {{ new Date(stats.updatedAt).toLocaleTimeString() }}</p>
+      <p class="muted small">{{ t('live.lastUpdate', { time: new Date(stats.updatedAt).toLocaleTimeString(locale) }) }}</p>
     </template>
-    <p v-else-if="!error" class="muted">Loading…</p>
+    <p v-else-if="!error" class="muted">{{ t('common.loading') }}</p>
   </div>
   </div>
   </div>

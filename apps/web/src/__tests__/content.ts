@@ -2,6 +2,7 @@ import type { Content } from '../api'
 
 /** A small, fixed stand-in for GET /api/content. */
 export const content: Content = {
+  language: 'en',
   exercises: [
     { id: 'hello-docker', title: 'Hello, Docker', minutes: 2, summary: 'First run.', steps: [{ text: 'Run it.', code: 'docker version', label: 'terminal' }], expected: 'Output.' },
     { id: 'volumes', title: 'Keep data with volumes', minutes: 5, summary: 'Volumes.', steps: [{ text: 'Make one.' }], expected: 'Data.' },

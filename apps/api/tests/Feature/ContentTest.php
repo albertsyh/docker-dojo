@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Support\Content;
 use App\Support\Quiz;
+use App\Support\Translations;
 use Tests\TestCase;
 
 /**
@@ -124,6 +125,22 @@ class ContentTest extends TestCase
 
         foreach ($all as $text) {
             $this->assertStringNotContainsString('—', $text, "Em-dash in: $text");
+        }
+    }
+
+    /**
+     * Translations (resources/content/<lang>/) hold only prose that follows the English: same
+     * steps, notes and options, the same `code`, no em-dashes. And none is out of date: when the
+     * English changes, update the translation, then php artisan content:translations --stamp=<file>.
+     */
+    public function test_translations_follow_the_english(): void
+    {
+        foreach (array_diff(Content::LANGUAGES, [Content::ENGLISH]) as $lang) {
+            foreach (Content::files() as $file) {
+                $report = Translations::check($file, Content::english($file), Content::translation($file, $lang));
+                $this->assertSame([], $report['problems'], "$lang/$file");
+                $this->assertSame([], $report['stale'], "$lang/$file: the English changed since this was translated. Update the translation, then run php artisan content:translations --stamp=$file");
+            }
         }
     }
 

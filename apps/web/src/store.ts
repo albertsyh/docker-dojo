@@ -1,6 +1,8 @@
-import { computed, reactive } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { api, ApiError, type Content, type Exercise, type Progress, type TakeHomeTrack } from './api'
+import { t } from './i18n'
 import { petReact } from './pets'
+import { prefs } from './prefs'
 
 const STORAGE_KEY = 'docker-dojo:participant'
 
@@ -66,6 +68,21 @@ export function exerciseLabel(exerciseId: string): string | null {
 /** Where a track's quiz lives: /quiz for the workshop, /take-home/<id>/quiz for a track. */
 export const quizRoute = (track: TakeHomeTrack | null) => (track ? `/take-home/${track.id}/quiz` : '/quiz')
 
+// A new language fetches the content again. The old content stays on screen until it arrives.
+watch(
+  () => prefs.lang,
+  async (lang) => {
+    if (!state.content) return
+    try {
+      const content = await api.content()
+      // Switched again meanwhile? Then a later request brings the right one.
+      if (prefs.lang === lang) state.content = content
+    } catch {
+      /* keep showing the language we have */
+    }
+  },
+)
+
 export async function boot() {
   try {
     state.content = await api.content()
@@ -91,7 +108,7 @@ export async function resume(id: string) {
     state.progress = await api.progress(id.trim().toLowerCase())
     storeId(state.progress.id)
   } catch (e) {
-    if (e instanceof ApiError && e.status === 404) throw new Error('No participant with that id.')
+    if (e instanceof ApiError && e.status === 404) throw new Error(t('errors.noParticipant'))
     throw e
   }
 }

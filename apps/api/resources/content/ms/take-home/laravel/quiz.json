@@ -1,0 +1,211 @@
+{
+  "scenarios": {
+    "laravel-first-deploy": {
+      "source": "ade6e5cb",
+      "title": "Deploy pertama",
+      "intro": "Aplikasi Laravel dan MySQL, seperti kali pertama diletakkan pada server Linux. Fail ini di-commit ke repositori git projek itu."
+    },
+    "laravel-almost-ready": {
+      "source": "20278a8d",
+      "title": "Hampir sedia untuk server",
+      "intro": "Aplikasi yang sama beberapa minggu kemudian. Rahsia sudah dipindahkan ke fail .env, dan seseorang telah menambah volume dan healthcheck."
+    }
+  },
+  "questions": {
+    "laravel-dotenv-copied": {
+      "source": "d174c5f1",
+      "prompt": "Sebuah Dockerfile Laravel mempunyai `COPY . .` dan tiada .dockerignore. Apakah yang masuk ke dalam image yang sepatutnya tidak masuk?",
+      "options": [
+        "Tiada apa-apa: Docker melangkau fail tersembunyi",
+        "Hanya folder tests",
+        "Fail .env anda, bersama APP_KEY dan kata laluan",
+        "Fail composer.lock"
+      ],
+      "explanation": "COPY . . menyalin segala-galanya, termasuk .env. Letakkan .env dalam .dockerignore, dan hantar ia semasa container dijalankan dengan `--env-file .env` atau `env_file` dalam Compose."
+    },
+    "laravel-latest-tag": {
+      "source": "4dcc976a",
+      "prompt": "Dockerfile anda bermula dengan `FROM php:latest`. Apakah masalahnya?",
+      "options": [
+        "Dockerfile yang sama boleh di-build dengan versi PHP yang berbeza bulan depan",
+        "Ia tiada Composer",
+        "Ia tidak boleh menjalankan Laravel",
+        "Docker enggan membinanya"
+      ],
+      "explanation": "`latest` ialah versi yang paling baharu pada hari anda membuat build. Tetapkan versi, seperti `php:8.4-cli-alpine`."
+    },
+    "laravel-serve-host": {
+      "source": "42d31bea",
+      "prompt": "Dalam container, `php artisan serve` mengatakan ia sedang berjalan, tetapi `localhost:8085` tidak dimuatkan, dengan `-p 8085:8000`. Apakah yang tertinggal?",
+      "options": [
+        "`--port=8085`",
+        "`--host=0.0.0.0`, kerana secara lalai ia mendengar pada 127.0.0.1, iaitu container itu sendiri",
+        "Baris EXPOSE",
+        "Polisi restart"
+      ],
+      "explanation": "Trafik daripada -p sampai pada alamat network container itu. artisan serve hanya mendengar pada 127.0.0.1 melainkan anda memberi `--host=0.0.0.0`."
+    },
+    "laravel-exit-137": {
+      "source": "e6843e40",
+      "prompt": "`CMD [\"php\", \"artisan\", \"serve\", ...]` dalam bentuk exec, namun `docker stop` masih berakhir dengan `Exited (137)` selepas jeda. Apakah yang membetulkannya?",
+      "options": [
+        "Kembali kepada bentuk shell",
+        "Masa tunggu berhenti yang lebih panjang",
+        "Publish port lain",
+        "Menjalankan dengan `--init` (atau `init: true` dalam Compose)"
+      ],
+      "explanation": "PHP ialah proses 1 dan mengabaikan SIGTERM. `--init` meletakkan proses 1 yang kecil di hadapan yang menghantar isyarat itu seterusnya, jadi container berhenti dengan 143, secara bersih."
+    },
+    "laravel-localhost-socket": {
+      "source": "3aa5a4d7",
+      "prompt": "Dengan `DB_HOST=localhost`, aplikasi itu menyebut `SQLSTATE[HY000] [2002] No such file or directory`. Apakah maksudnya?",
+      "options": [
+        "Nama pangkalan data salah",
+        "Fail migration tiada",
+        "PHP mencari fail socket MySQL di dalam container aplikasi, di mana tiada pangkalan data",
+        "MySQL kehabisan ruang cakera"
+      ],
+      "explanation": "Bagi pemacu MySQL PHP, localhost bermaksud fail socket pada mesin yang sama. Dalam Compose, gunakan nama service pangkalan data, seperti `DB_HOST=mysql`."
+    },
+    "laravel-vendor-hidden": {
+      "source": "2524b084",
+      "prompt": "Rakan sepasukan membuat clone repo dan menjalankan compose file pembangunan dengan `./:/app`. Aplikasi itu gagal membuka `vendor/autoload.php`, walaupun image sudah menjalankan composer install. Mengapa?",
+      "options": [
+        "Bind mount menutup /app, dan clone mereka tiada folder vendor",
+        "composer install gagal tanpa memberitahu anda",
+        "vendor ada dalam .dockerignore, jadi image tiada vendor",
+        "PHP tidak boleh membaca bind mount"
+      ],
+      "explanation": "vendor ada dalam .gitignore, dan bind mount menyembunyikan salinan image. Volume tambahan `- /app/vendor` memastikan vendor image itu kelihatan."
+    },
+    "laravel-exec-format": {
+      "source": "b18a8de2",
+      "prompt": "Image yang di-build pada Mac Apple Silicon gagal di server dengan `exec format error`. Apakah yang membetulkannya?",
+      "options": [
+        "Menjalankan `composer install` sekali lagi",
+        "Menambah `--init`",
+        "Build dengan `--platform linux/amd64`, atau dalam CI",
+        "Bertukar kepada `php:latest`"
+      ],
+      "explanation": "Image itu di-build untuk arm64 dan server itu amd64. Build untuk CPU server."
+    },
+    "laravel-env-file-flag": {
+      "source": "74cd10dd",
+      "context": "Image itu tiada .env di dalamnya. Aplikasi itu sepatutnya membaca fail .env anda semasa container bermula.",
+      "prompt": "Isi flag itu.",
+      "explanation": "`--env-file` membaca fail itu semasa container bermula. Nilai-nilainya tidak pernah menjadi sebahagian daripada image."
+    },
+    "laravel-init-flag": {
+      "source": "c34f8c74",
+      "context": "PHP berjalan sebagai proses 1 dan mengabaikan docker stop. Anda mahu proses init yang kecil di hadapannya yang menghantar isyarat itu seterusnya.",
+      "prompt": "Isi flag itu.",
+      "explanation": "`--init` menambah init kecil sebagai proses 1. Dalam Compose, tulis `init: true` pada service itu."
+    },
+    "laravel-db-host": {
+      "source": "aa856502",
+      "context": "Dalam compose file ini, service pangkalan data bernama mysql. Aplikasi itu berjalan dalam service lain dalam fail yang sama.",
+      "prompt": "Isi host itu.",
+      "explanation": "Compose memberi setiap service nama DNS pada network stack itu. localhost ialah container aplikasi itu sendiri."
+    },
+    "laravel-no-dev": {
+      "source": "4787b75d",
+      "context": "Image production tidak sepatutnya mengandungi phpunit atau alat lain yang disenaraikan di bawah require-dev.",
+      "prompt": "Isi pilihan Composer itu.",
+      "explanation": "`--no-dev` hanya memasang pakej di bawah require. Image lebih kecil dan kurang alat yang boleh diserang."
+    },
+    "laravel-keep-vendor": {
+      "source": "bf4815a8",
+      "context": "Dalam pembangunan anda bind-mount projek itu di atas /app, tetapi pakej yang dipasang oleh image mesti kekal kelihatan.",
+      "prompt": "Isi volume kedua.",
+      "explanation": "Volume pada laluan yang lebih khusus menang ke atas bind mount, jadi /app/vendor mengekalkan pakej image itu."
+    },
+    "laravel-first-host": {
+      "source": "b6021a66",
+      "prompt": "Aplikasi itu gagal dengan `[2002] No such file or directory`. Apakah penyelesaiannya?",
+      "options": [
+        "Publish 3306 pada app juga",
+        "Tetapkan `DB_HOST: mysql`",
+        "Tambah `restart: always`",
+        "Gunakan `mysql:8.4`"
+      ],
+      "explanation": "localhost membuatkan PHP mencari socket di dalam container aplikasi. Pangkalan data ialah service yang bernama mysql."
+    },
+    "laravel-first-public-db": {
+      "source": "2afc9ec4",
+      "prompt": "Firewall server (ufw) menyekat port 3306. Bolehkah seseorang di internet menghubungi MySQL?",
+      "options": [
+        "Ya: port yang di-publish oleh Docker melepasi ufw, jadi buang ports pada mysql",
+        "Tidak: ufw menyekatnya",
+        "Hanya dengan kata laluan root",
+        "Hanya dari container lain"
+      ],
+      "explanation": "Docker menulis peraturan firewallnya sendiri untuk port yang di-publish. Aplikasi itu menghubungi mysql melalui network Compose, jadi mysql tidak memerlukan `ports` langsung."
+    },
+    "laravel-first-git": {
+      "source": "1e6b1232",
+      "prompt": "Fail ini ada dalam repositori git. Apakah masalah keselamatannya?",
+      "options": [
+        "depends_on dalam susunan yang salah",
+        "Port 8000 terlalu biasa",
+        "`build: .` boleh menjalankan apa-apa kod",
+        "APP_KEY dan kata laluan boleh dibaca oleh sesiapa yang mempunyai akses kepada repo itu, selama-lamanya"
+      ],
+      "explanation": "Apa-apa yang di-commit kekal dalam sejarah. Simpan rahsia dalam fail .env yang tidak di-commit, dan gunakan `env_file`, seperti dalam fail kedua."
+    },
+    "laravel-first-data": {
+      "source": "b3bb6bbe",
+      "prompt": "Selepas `docker compose down` dan `up` semula, pangkalan data kosong. Mengapa?",
+      "options": [
+        "MySQL memadam data setiap kali bermula",
+        "Service mysql tiada volume, jadi data itu berada dalam container yang dibuang oleh down",
+        "APP_KEY berubah",
+        "Migration membuang segala-galanya"
+      ],
+      "explanation": "Tanpa volume pada /var/lib/mysql, data itu sebahagian daripada container. Tambah named volume, seperti dalam fail kedua."
+    },
+    "laravel-ready-race": {
+      "source": "d6ad3276",
+      "prompt": "mysql mempunyai healthcheck, tetapi pada server baharu migration pertama aplikasi itu masih gagal dengan Connection refused. Apakah yang tertinggal?",
+      "options": [
+        "Volume pada app",
+        "`condition: service_healthy` di bawah depends_on app",
+        "Port yang di-publish pada mysql",
+        "Healthcheck kedua pada app"
+      ],
+      "explanation": "Healthcheck hanya melaporkan. Tiada apa-apa yang menunggunya sehingga depends_on meminta `condition: service_healthy`."
+    },
+    "laravel-ready-init": {
+      "source": "f7f6087b",
+      "prompt": "Apakah fungsi `init: true` pada app?",
+      "options": [
+        "Menjalankan migration dahulu",
+        "Mencipta pangkalan data pada permulaan pertama",
+        "Menghantar isyarat docker stop kepada PHP, supaya aplikasi itu berhenti dengan bersih dan bukannya dimatikan secara paksa",
+        "Build image sebelum bermula"
+      ],
+      "explanation": "PHP sebagai proses 1 mengabaikan SIGTERM. Proses init menghantarnya seterusnya, jadi `docker compose down` tidak menunggu lalu mematikan aplikasi itu secara paksa."
+    },
+    "laravel-ready-reboot": {
+      "source": "12feeffd",
+      "prompt": "Server itu reboot untuk kemas kini, dan selepas itu tiada apa-apa yang berjalan. Apakah yang akan menghidupkan semula kedua-dua service dengan sendirinya?",
+      "options": [
+        "Healthcheck pada app",
+        "Membuang init: true",
+        "Volume yang lebih besar",
+        "`restart: unless-stopped` pada kedua-dua service"
+      ],
+      "explanation": "Tanpa polisi restart, Docker membiarkan container berhenti selepas reboot. `unless-stopped` memulakannya semula, melainkan anda sendiri yang menghentikannya."
+    },
+    "laravel-ready-who": {
+      "source": "5a1c0bc0",
+      "prompt": "Siapakah yang boleh membuka aplikasi itu pada port 8085?",
+      "options": [
+        "Sesiapa sahaja di internet",
+        "Sesiapa sahaja pada network yang sama",
+        "Hanya program pada server itu sendiri",
+        "Tiada sesiapa, sehingga anda membukanya dalam firewall"
+      ],
+      "explanation": "`127.0.0.1:8085:8000` publish pada alamat loopback sahaja. Reverse proxy atau tunnel pada server itu kemudian menentukan apa yang boleh dilihat dari luar."
+    }
+  }
+}

@@ -1,0 +1,351 @@
+{
+  "exercises": {
+    "node-naive-dockerfile": {
+      "source": "2930cc83",
+      "title": "Dockerfile yang berfungsi, dan mengapa itulah masalahnya",
+      "summary": "Build aplikasi Node.js daripada Dockerfile pertama yang biasa. Ia berjalan dengan baik, tetapi ia terapung pada \"latest\" dan menghantar rahsia. Cari kedua-duanya, kemudian betulkannya.",
+      "steps": [
+        {
+          "text": "Pergi ke folder rumah anda, buat folder untuk trek ini, dan masuk ke dalamnya. Setiap latihan bawa pulang Node menggunakannya."
+        },
+        {
+          "text": "Cipta package.json. express menjalankan aplikasi. prettier ialah alat untuk pembangunan sahaja, yang penting dalam latihan terakhir."
+        },
+        {
+          "text": "Cipta server.js. Ia menjawab dengan ucapan, dan memberitahu sama ada ia dapat melihat kunci API."
+        },
+        {
+          "text": "Cipta Dockerfile seperti rupa banyak percubaan pertama. Ia boleh di-build dan berjalan, jadi tiada apa-apa yang memberi amaran tentang dua kesilapan di dalamnya.",
+          "notes": [
+            {
+              "text": "Simpan sebagai Dockerfile, bukan Dockerfile.txt (pilih \"All files\" dalam Notepad), atau gunakan VS Code."
+            }
+          ]
+        },
+        {
+          "text": "Build dan jalankannya, kemudian buka http://localhost:8084. Build pertama memuat turun image node penuh, yang besar."
+        },
+        {
+          "text": "Kesilapan pertama: \"latest\" ialah versi yang paling baharu pada hari anda build. Semak Node yang anda dapat dan berapa besar image itu. Rakan sepasukan yang build bulan depan boleh mendapat versi major yang berbeza daripada Dockerfile yang sama."
+        },
+        {
+          "text": "Kesilapan kedua: kunci itu. Nilai ENV disimpan di dalam image, jadi sesiapa yang pull image itu boleh membacanya. Output build pun sudah memberi amaran: SecretsUsedInArgOrEnv."
+        },
+        {
+          "text": "Betulkan kedua-duanya. Pin base image yang kecil dan khusus, dan padam baris ENV itu."
+        },
+        {
+          "text": "Build semula dan mulakannya lagi, kali ini dengan menghantar kunci itu menggunakan -e semasa container bermula. Halaman itu masih menunjukkan hasKey: true, tetapi sejarah image tidak lagi mengandungi kunci itu, dan image itu beberapa ratus MB lebih kecil.",
+          "notes": [
+            {
+              "text": "Nilai yang dihantar dengan -e tiada dalam image yang anda push, tetapi sesiapa yang boleh menjalankan docker inspect di server itu masih boleh membacanya. Di server sebenar, simpan rahsia dalam fail env yang hanya boleh dibaca oleh pengguna deploy, atau dalam stor rahsia platform anda."
+            }
+          ]
+        },
+        {
+          "text": "Buang container itu. Anda simpan folder dan image itu untuk latihan seterusnya."
+        }
+      ],
+      "expected": "Image pertama menyenaraikan ENV API_KEY=sk-live-123 dalam docker history. Image yang dibina semula tidak, jauh lebih kecil, dan halaman di localhost:8084 masih menunjukkan \"hasKey\": true.",
+      "files": {
+        "note": "Jalankan setiap arahan dari dalam takehome-node.",
+        "entries": [
+          {
+            "note": "folder kerja anda untuk seluruh trek"
+          },
+          {
+            "note": "langkah 2"
+          },
+          {
+            "note": "langkah 3"
+          },
+          {
+            "note": "langkah 4, dibetulkan dalam langkah 8"
+          }
+        ]
+      }
+    },
+    "node-stop-signals": {
+      "source": "fda69250",
+      "title": "Berhenti dengan kemas",
+      "summary": "docker stop meminta aplikasi anda menyelesaikan kerjanya, dan secara lalai Node mengabaikan permintaan itu. Kendalikan isyarat itu supaya aplikasi anda ditutup tepat pada masanya.",
+      "steps": [
+        {
+          "text": "Mulakan aplikasi itu semula daripada image yang anda build."
+        },
+        {
+          "text": "Hentikannya dan perhatikan berapa lama masa yang diambil, kemudian semak bagaimana ia berakhir. docker stop menghantar SIGTERM, menunggu beberapa saat, kemudian mematikan container itu secara paksa. Kod keluar 137 bermaksud ia dimatikan secara paksa."
+        },
+        {
+          "text": "Sebabnya: di dalam container, aplikasi anda ialah proses nombor 1, dan Linux tidak mengenakan peraturan biasa \"keluar apabila menerima SIGTERM\" pada proses 1. Node hanya berhenti jika kodnya meminta begitu. Aplikasi yang dimatikan secara paksa tidak dapat menyelesaikan permintaan atau menutup sambungan pangkalan datanya. Tambah pengendali dalam server.js."
+        },
+        {
+          "text": "Build semula dan jalankannya, kemudian buka http://localhost:8084 supaya anda tahu ia sudah bermula."
+        },
+        {
+          "text": "Hentikannya sekali lagi. Kali ini ia berhenti serta-merta, dengan kod keluar 0, dan log berakhir dengan \"Stopping\".",
+          "notes": [
+            {
+              "text": "Untuk aplikasi yang tidak dapat anda ubah, docker run --init (atau init: true dalam Compose) meletakkan proses 1 yang kecil di hadapannya untuk meneruskan isyarat itu. Tulis juga CMD dalam bentuk [\"node\", \"server.js\"]: bentuk biasa CMD node server.js boleh menjadikan shell sebagai proses 1, dan shell juga tidak meneruskan isyarat itu."
+            }
+          ]
+        },
+        {
+          "text": "Buang container itu."
+        }
+      ],
+      "expected": "Sebelum dibetulkan: Exited (137) selepas jeda. Selepas dibetulkan: Exited (0) serta-merta, dan \"Stopping\" di hujung docker logs.",
+      "files": {
+        "note": "Masih di dalam takehome-node.",
+        "entries": [
+          {
+            "note": "langkah 3, kini mengendalikan SIGTERM"
+          },
+          [],
+          []
+        ]
+      }
+    },
+    "node-listen-address": {
+      "source": "e2e53e28",
+      "title": "Siapa yang boleh sampai ke aplikasi anda",
+      "summary": "Aplikasi yang mendengar pada 127.0.0.1 di dalam container tidak dapat dihubungi, walaupun dengan -p. Dan port yang di-publish boleh dihubungi oleh lebih ramai orang daripada yang anda sangka.",
+      "steps": [
+        {
+          "text": "Banyak dev server mendengar pada 127.0.0.1 secara lalai. Buat aplikasi anda begitu juga: tambah '127.0.0.1' pada app.listen."
+        },
+        {
+          "text": "Build semula dan jalankannya. Log menyatakan \"Listening on port 3000\", tetapi http://localhost:8084 gagal dengan respons kosong atau yang diputuskan."
+        },
+        {
+          "text": "Sebabnya: di dalam container, 127.0.0.1 ialah container itu sendiri. Trafik daripada -p sampai pada alamat network container itu, dan tiada apa-apa yang mendengar di situ. Dengar pada 0.0.0.0, yang bermaksud setiap alamat."
+        },
+        {
+          "text": "Build semula dan jalankan. Sekarang localhost:8084 berfungsi."
+        },
+        {
+          "text": "Sisi yang satu lagi: -p 8084:3000 membuka 8084 pada setiap network yang disambungkan ke komputer anda, jadi sesiapa sahaja pada Wi-Fi yang sama boleh sampai kepadanya. Di server Linux keadaannya lebih teruk: Docker menulis peraturan firewall sendiri, jadi ufw atau firewalld tidak menyekat port yang di-publish. Beginilah pangkalan data yang terdedah ditemui dan dihapuskan. Publish ke komputer anda sahaja dengan meletakkan 127.0.0.1 di hadapan. docker ps kemudian menunjukkan 127.0.0.1:8084->3000.",
+          "notes": [
+            {
+              "text": "Pangkalan data hampir tidak pernah memerlukan port yang di-publish. Container lain sampai kepadanya melalui network Compose menggunakan nama service. Jangan letakkan ports langsung pada service db."
+            }
+          ]
+        },
+        {
+          "text": "Buang container itu."
+        }
+      ],
+      "expected": "Dengan 127.0.0.1 dalam app.listen, halaman itu tidak dimuatkan. Dengan 0.0.0.0 ia dimuatkan, dan docker ps menunjukkan 127.0.0.1:8084->3000/tcp untuk container terakhir.",
+      "files": {
+        "note": "Masih di dalam takehome-node.",
+        "entries": [
+          {
+            "note": "langkah 1 dan 3"
+          },
+          [],
+          []
+        ]
+      }
+    },
+    "node-bind-mount": {
+      "source": "e8a5735d",
+      "title": "Sunting kod tanpa build semula",
+      "summary": "Bind mount meletakkan folder anda di dalam container, jadi suntingan muncul serta-merta. Ia juga boleh menyembunyikan apa yang dipasang oleh image di situ.",
+      "steps": [
+        {
+          "text": "Cipta compose.yaml untuk pembangunan. Baris volumes memasang folder ini di atas /app dalam container, dan node --watch memulakan semula aplikasi apabila fail berubah."
+        },
+        {
+          "text": "Mulakannya dan baca log. Aplikasi itu ranap: Cannot find package 'express'."
+        },
+        {
+          "text": "Sebabnya: image memasang express ke dalam /app/node_modules, dan bind mount meletakkan folder anda di atas seluruh /app. Folder anda tiada node_modules, jadi container itu pun sudah tiada. Tambah baris volume kedua untuk /app/node_modules. Ia memastikan salinan image kekal kelihatan."
+        },
+        {
+          "text": "Mulakannya semula dan buka http://localhost:8084. Ia berfungsi."
+        },
+        {
+          "text": "Sekarang sunting server.js: tukar \"Hello\" kepada \"Hi\" dan simpan. Muat semula halaman itu. Perubahan itu muncul tanpa build semula, kerana container membaca fail anda secara terus.",
+          "notes": [
+            {
+              "text": "Jika tiada apa-apa yang berubah, editor anda mungkin menyimpan dengan menulis fail baharu dan menukarnya, yang boleh terlepas daripada pemerhati fail. VS Code menyimpan di tempat yang sama dan berfungsi."
+            },
+            {
+              "text": "Suntingan mungkin tidak dikesan, dan semuanya lebih perlahan, apabila projek berada pada pemacu Windows. Simpan projek yang anda bind-mount di dalam WSL (contohnya \\\\wsl$\\Ubuntu\\home\\you), dan bukanya dalam VS Code dengan sambungan WSL."
+            },
+            {
+              "text": "Skrip shell yang disimpan dengan hujung baris Windows (CRLF) gagal dalam container Linux dengan mesej \"no such file or directory\" yang mengelirukan. Tambah fail .gitattributes dengan baris *.sh text eol=lf pada mana-mana repo yang mempunyainya."
+            },
+            {
+              "text": "Fail yang dicipta oleh container dalam bind mount dimiliki oleh pengguna container itu, selalunya root. Jika anda mendapat \"permission denied\" pada fail anda sendiri, tetapkan user: \"1000:1000\" (id -u dan id -g anda) pada service itu."
+            }
+          ]
+        },
+        {
+          "text": "Ingat perangkapnya: /app/node_modules kini ialah volume yang disimpan oleh Compose. Selepas anda mengubah package.json, build semula dan minta volume baharu dengan -V, atau pakej lama akan kekal. Hentikannya apabila anda selesai."
+        }
+      ],
+      "expected": "Permulaan pertama: Cannot find package 'express' dalam log. Dengan baris /app/node_modules: halaman dimuatkan, dan menukar \"Hello\" kepada \"Hi\" muncul selepas muat semula, dengan \"Restarting 'server.js'\" dalam log.",
+      "files": {
+        "note": "Masih di dalam takehome-node. Compose mencari compose.yaml dalam folder semasa.",
+        "entries": [
+          {
+            "note": "langkah 1, satu baris ditambah dalam langkah 3"
+          },
+          {
+            "note": "disunting dalam langkah 5"
+          },
+          [],
+          []
+        ]
+      }
+    },
+    "node-compose-ready": {
+      "source": "693cb03c",
+      "title": "Tunggu pangkalan data",
+      "summary": "Sambungkan aplikasi kepada Postgres dengan Compose. Temui dua keranapan klasik, localhost dan pangkalan data yang belum sedia, dan buat stack itu hidup semula selepas ranap.",
+      "steps": [
+        {
+          "text": "Tambah klien Postgres pada package.json."
+        },
+        {
+          "text": "Gantikan server.js. Ia menyambung ke pangkalan data apabila bermula, dan menunjukkan masa pangkalan data."
+        },
+        {
+          "text": "Gantikan compose.yaml. Aplikasi mencari pangkalan data melalui PGHOST, dan depends_on memulakan db dahulu."
+        },
+        {
+          "text": "Mulakannya."
+        },
+        {
+          "text": "Tunggu beberapa saat, kemudian semak. Aplikasi itu sudah keluar, dan lognya menyatakan ECONNREFUSED 127.0.0.1:5432. localhost di dalam container aplikasi ialah container aplikasi itu sendiri, dan tiada pangkalan data di dalamnya."
+        },
+        {
+          "text": "Halakan PGHOST kepada nama service. Compose memberi setiap service nama DNS pada network stack itu."
+        },
+        {
+          "text": "Mula dari awal, seperti server baharu. Ini memadam volume shopdata, yang di sini hanya menyimpan pangkalan data kosong. Aplikasi ranap lagi, kali ini kerana Postgres masih menyediakan dirinya semasa aplikasi cuba menyambung. depends_on hanya menunggu container db bermula, bukan menunggu pangkalan data sedia."
+        },
+        {
+          "text": "Tunggu beberapa saat, kemudian baca log aplikasi. Kali ini nama itu berfungsi: ralat menunjukkan alamat container db, atau menyatakan the database system is starting up. Postgres cuma belum sedia.",
+          "notes": [
+            {
+              "text": "Jika ia kebetulan berjaya menyambung, jalankan dua langkah terakhir sekali lagi. Ini perlumbaan, dan pangkalan data baharu biasanya kalah."
+            }
+          ]
+        },
+        {
+          "text": "Betulkannya dengan betul. healthcheck bertanya kepada Postgres sama ada ia menerima sambungan, dan condition: service_healthy membuat aplikasi menunggu perkara itu. restart: unless-stopped menghidupkan semula container selepas ranap atau reboot. Had logging menghalang fail log daripada terus membesar sehingga cakera penuh."
+        },
+        {
+          "text": "Mula dari awal sekali lagi. Kali ini db menunjukkan (healthy) sebelum aplikasi bermula, dan http://localhost:8084 menunjukkan masa pangkalan data."
+        },
+        {
+          "text": "Ranapkan aplikasi dengan sengaja, kemudian semak lagi. Polisi restart memulakannya semula dalam beberapa saat."
+        },
+        {
+          "text": "Hentikan stack itu. down biasa menyimpan volume shopdata."
+        }
+      ],
+      "expected": "Dua kegagalan dahulu: ECONNREFUSED 127.0.0.1:5432, kemudian kegagalan pada alamat container db sendiri semasa Postgres masih bermula. Dengan healthcheck: db (healthy), aplikasi bersambung, halaman menunjukkan databaseTime, dan selepas kill 1 aplikasi Up semula.",
+      "files": {
+        "note": "Masih di dalam takehome-node.",
+        "entries": [
+          {
+            "note": "langkah 1, menambah pg"
+          },
+          {
+            "note": "langkah 2"
+          },
+          {
+            "note": "diganti dalam langkah 3, kemudian disunting dalam langkah 5 dan 7"
+          },
+          []
+        ]
+      }
+    },
+    "node-platform": {
+      "source": "7d0dce65",
+      "title": "Build untuk CPU server",
+      "summary": "Sesebuah image di-build untuk satu jenis pemproses. Build di Mac Apple Silicon dan deploy ke server biasa, dan ia tidak akan bermula.",
+      "steps": [
+        {
+          "text": "Build image itu dan tanya CPU mana yang disasarkannya. Di Mac Apple Silicon ia menyatakan arm64. Di kebanyakan komputer Windows dan Intel ia menyatakan amd64."
+        },
+        {
+          "text": "Kebanyakan server ialah amd64. Image arm64 gagal di situ dengan \"exec format error\", dan tiada apa-apa lagi dalam mesej itu yang menerangkan sebabnya. Build untuk CPU server dengan --platform.",
+          "notes": [
+            {
+              "text": "Di Apple Silicon, build ini berjalan di bawah emulasi, jadi ia lebih perlahan. Itu perkara biasa."
+            }
+          ]
+        },
+        {
+          "text": "Docker Desktop malah boleh menjalankan image untuk CPU yang satu lagi, dengan mengemulasikannya. Node melaporkan x64, iaitu amd64. Server Linux biasa tidak boleh melakukan ini melainkan seseorang telah menyediakan emulasi.",
+          "notes": [
+            {
+              "text": "Tabiat paling selamat: build image keluaran dalam CI atau di server itu sendiri. docker buildx build --platform linux/amd64,linux/arm64 membina kedua-duanya serentak, tetapi perlu push hasilnya ke registry."
+            }
+          ]
+        },
+        {
+          "text": "Buang image tambahan itu."
+        }
+      ],
+      "expected": "Seni bina anda sendiri dahulu (arm64 atau amd64), kemudian amd64 untuk node-shop:amd64, dan x64 daripada node -p process.arch."
+    },
+    "node-production-dockerfile": {
+      "source": "dce30477",
+      "title": "Projek akhir: Dockerfile yang layak untuk production",
+      "summary": "Gabungkan semuanya. Betulkan selebihnya Dockerfile itu sendiri, bandingkan dengan jawapan contoh, kemudian bersihkan seluruh trek.",
+      "steps": [
+        {
+          "text": "Dockerfile anda sudah di-pin dan tiada rahsia, tetapi tiga kesilapan dari kursus masih ada di dalamnya. Sebelum anda membaca seterusnya, cuba namakan dan betulkannya sendiri. Petunjuk: perubahan kod memasang semula setiap pakej; prettier masuk ke dalam image; dan aplikasi berjalan sebagai root."
+        },
+        {
+          "text": "Inilah satu jawapan. Pertama, .dockerignore, supaya node_modules, rahsia dan sejarah git tidak pernah sampai ke build.",
+          "notes": [
+            {
+              "text": "Simpan sebagai .dockerignore, bukan .dockerignore.txt (pilih \"All files\" dalam Notepad), atau gunakan VS Code."
+            }
+          ]
+        },
+        {
+          "text": "Kemudian Dockerfile: dependency dahulu supaya ia di-cache, --omit=dev untuk meninggalkan prettier, NODE_ENV=production, dan USER node supaya aplikasi tidak berjalan sebagai root. Aplikasi ini tiada langkah build, jadi ia hanya memerlukan satu stage. Aplikasi yang ada langkah build (TypeScript, Vite) di-build dalam satu stage dan menyalin hasilnya ke stage akhir yang bersih, seperti dalam latihan multi-stage kursus ini."
+        },
+        {
+          "text": "Mulakan stack dengan image baharu. Halaman di http://localhost:8084 berfungsi seperti sebelumnya, whoami menjawab node, dan prettier tiada dalam image."
+        },
+        {
+          "text": "Semak berapa banyak ruang cakera yang digunakan oleh trek ini. Image, build cache, volume dan log semuanya bertambah secara senyap di server."
+        },
+        {
+          "text": "Bersihkan seluruh trek. Ini memadam volume shopdata dan datanya buat selama-lamanya, dan membuang image trek ini.",
+          "notes": [
+            {
+              "text": "node:latest yang besar dari latihan pertama masih ada dalam build cache. docker builder prune mengosongkan cache itu, dan docker system prune juga membuang container yang sudah berhenti, network yang tidak digunakan dan dangling image. Kedua-duanya memadam secara kekal, jadi baca apa yang disenaraikannya sebelum anda menjawab ya."
+            }
+          ]
+        },
+        {
+          "text": "Padam folder takehome-node apabila anda tidak lagi memerlukannya."
+        }
+      ],
+      "expected": "whoami mencetak node, ls node_modules/prettier gagal dengan \"No such file or directory\", dan halaman masih menunjukkan databaseTime. Selepas pembersihan, docker system df menunjukkan kurang ruang yang digunakan.",
+      "files": {
+        "note": "Masih di dalam takehome-node.",
+        "entries": [
+          {
+            "note": "langkah 2"
+          },
+          {
+            "note": "langkah 3, versi akhir"
+          },
+          [],
+          [],
+          []
+        ]
+      }
+    }
+  }
+}

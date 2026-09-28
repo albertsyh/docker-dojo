@@ -6,6 +6,10 @@ import FilesPanel from '../components/FilesPanel.vue'
 import JoinGate from '../components/JoinGate.vue'
 import { usePresence } from '../presence'
 import { completed, quizRoute, setDone, state, trackOf } from '../store'
+import { noteFor } from '../i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ id: string }>()
 
@@ -43,26 +47,26 @@ async function toggle() {
   <JoinGate v-if="!state.progress" />
   <div v-else-if="!exercise" class="callout">
     <AppIcon name="info" />
-    <span>That exercise doesn't exist. <RouterLink to="/exercises">Back to the list</RouterLink></span>
+    <span>{{ t('exercise.missing') }} <RouterLink to="/exercises">{{ t('exercise.backToList') }}</RouterLink></span>
   </div>
   <article v-else class="layout" :class="{ 'has-files': exercise.files }">
     <header class="intro">
-      <RouterLink :to="backTo" class="back"><AppIcon name="arrow-left" />{{ track ? track.title : 'All exercises' }}</RouterLink>
+      <RouterLink :to="backTo" class="back"><AppIcon name="arrow-left" />{{ track ? track.title : t('common.allExercises') }}</RouterLink>
       <!-- Where you are in the course: one segment per exercise, each a shortcut. -->
-      <nav class="stepper" aria-label="Exercises">
+      <nav class="stepper" :aria-label="t('exercise.stepper')">
         <RouterLink
           v-for="(ex, i) in list"
           :key="ex.id"
           :to="`/exercises/${ex.id}`"
           class="seg"
           :class="{ done: completed.has(ex.id), current: i === index }"
-          :aria-label="`Exercise ${i + 1}: ${ex.title}${completed.has(ex.id) ? ' (done)' : ''}`"
+          :aria-label="t('exercise.stepLabel', { n: i + 1, title: ex.title }) + (completed.has(ex.id) ? ` ${t('common.doneSr')}` : '')"
           :aria-current="i === index ? 'page' : undefined"
         />
       </nav>
       <p class="meta muted">
         <span v-if="track" class="tag">{{ track.label }}</span>
-        Exercise {{ index + 1 }} of {{ list.length }} · {{ exercise.minutes }} min
+        {{ t('exercise.meta', { n: index + 1, total: list.length, minutes: exercise.minutes }) }}
       </p>
       <h1>{{ exercise.title }}</h1>
       <p class="lead">{{ exercise.summary }}</p>
@@ -77,7 +81,7 @@ async function toggle() {
           <div class="step-body">
             <p>{{ step.text }}</p>
             <p v-for="note in step.notes" :key="note.for" class="note">
-              <span class="tag">{{ note.for }}</span>
+              <span class="tag">{{ noteFor(note.for) }}</span>
               <span>{{ note.text }}</span>
             </p>
             <CodeBlock v-if="step.code" :code="step.code" :label="step.label" />
@@ -89,20 +93,20 @@ async function toggle() {
       <section class="expected" aria-labelledby="expected-title">
         <AppIcon name="eye" />
         <div>
-          <h2 id="expected-title">You should see</h2>
+          <h2 id="expected-title">{{ t('exercise.expected') }}</h2>
           <p>{{ exercise.expected }}</p>
         </div>
       </section>
 
       <div class="actions">
         <button class="btn swap big" :class="isDone ? 'done' : 'primary'" type="button" :disabled="busy" :aria-pressed="isDone" @click="toggle">
-          <span :aria-hidden="isDone"><AppIcon name="check" />Mark as done</span>
-          <span :aria-hidden="!isDone"><AppIcon name="check" />Done (press to undo)</span>
+          <span :aria-hidden="isDone"><AppIcon name="check" />{{ t('exercise.markDone') }}</span>
+          <span :aria-hidden="!isDone"><AppIcon name="check" />{{ t('exercise.doneUndo') }}</span>
         </button>
         <span class="spacer" />
-        <RouterLink v-if="prev" :to="`/exercises/${prev.id}`" class="btn ghost"><AppIcon name="arrow-left" />Previous</RouterLink>
-        <RouterLink v-if="next" :to="`/exercises/${next.id}`" class="btn" :class="{ primary: isDone }">Next<AppIcon name="arrow-right" /></RouterLink>
-        <RouterLink v-else :to="quizRoute(track)" class="btn" :class="{ primary: isDone }">Take the quiz<AppIcon name="arrow-right" /></RouterLink>
+        <RouterLink v-if="prev" :to="`/exercises/${prev.id}`" class="btn ghost"><AppIcon name="arrow-left" />{{ t('exercise.previous') }}</RouterLink>
+        <RouterLink v-if="next" :to="`/exercises/${next.id}`" class="btn" :class="{ primary: isDone }">{{ t('exercise.next') }}<AppIcon name="arrow-right" /></RouterLink>
+        <RouterLink v-else :to="quizRoute(track)" class="btn" :class="{ primary: isDone }">{{ t('exercise.takeQuiz') }}<AppIcon name="arrow-right" /></RouterLink>
       </div>
       <div v-if="error" class="callout error" role="alert"><AppIcon name="alert" /><span>{{ error }}</span></div>
     </div>

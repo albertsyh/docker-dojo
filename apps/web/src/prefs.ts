@@ -6,8 +6,16 @@ import { reactive } from 'vue'
 export type Theme = 'light' | 'dark'
 export const TEXT_SCALES = [1, 1.15, 1.3] as const
 
+/** English is the default. Malay is standard Malay as written in Brunei; Docker terms stay English. */
+export type Lang = 'en' | 'ms'
+export const LANGUAGES: { code: Lang; name: string; html: string }[] = [
+  { code: 'en', name: 'English', html: 'en' },
+  { code: 'ms', name: 'Bahasa Melayu', html: 'ms-BN' },
+]
+
 const THEME_KEY = 'docker-dojo:theme'
 const SCALE_KEY = 'docker-dojo:text-scale'
+const LANG_KEY = 'docker-dojo:lang'
 const root = document.documentElement
 const systemDark = window.matchMedia('(prefers-color-scheme: dark)')
 
@@ -33,10 +41,40 @@ function effectiveTheme(): Theme {
   return systemDark.matches ? 'dark' : 'light'
 }
 
+const isLang = (value: unknown): value is Lang => LANGUAGES.some((l) => l.code === value)
+const savedLang = (): Lang => {
+  const saved = read(LANG_KEY)
+  return isLang(saved) ? saved : 'en'
+}
+// A lang= in the URL (after the # wins, like theme=) is read up front, so the first content
+// request is already in that language. App.vue keeps it in step as the URL changes.
+function urlLang(): Lang | null {
+  const value = new URLSearchParams(location.hash.slice(1)).get('lang') ?? new URLSearchParams(location.search).get('lang')
+  return isLang(value) ? value : null
+}
+
 export const prefs = reactive({
   theme: effectiveTheme(),
   scale: Math.max(0, TEXT_SCALES.indexOf(Number(read(SCALE_KEY)) as (typeof TEXT_SCALES)[number])),
+  lang: urlLang() ?? savedLang(),
 })
+
+function applyLang(lang: Lang) {
+  prefs.lang = lang
+  root.lang = LANGUAGES.find((l) => l.code === lang)!.html
+}
+applyLang(prefs.lang)
+
+/** The viewer's own choice: saved, like the theme. */
+export function setLang(lang: Lang) {
+  write(LANG_KEY, lang)
+  applyLang(lang)
+}
+
+/** A lang= in the URL (for an embed) applies without being saved. Without one, the saved choice applies. */
+export function setUrlLang(lang: string | null) {
+  applyLang(isLang(lang) ? lang : savedLang())
+}
 
 // Until the viewer picks a theme, keep following the system setting.
 systemDark.addEventListener('change', () => (prefs.theme = effectiveTheme()))

@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AppIcon from './AppIcon.vue'
+import { codeLabel } from '../i18n'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 /** A code block with typing gaps where the code says {{1}}, {{2}}... */
 const props = defineProps<{
@@ -32,8 +36,8 @@ const width = (value: string) => `${Math.max(7, value.length + 2)}ch`
 <template>
   <div class="code">
     <div class="code-head">
-      <span class="code-label"><AppIcon :name="label === 'terminal' ? 'terminal' : 'file'" />{{ label }}</span>
-      <span class="hint">{{ count }} {{ count === 1 ? 'blank' : 'blanks' }}</span>
+      <span class="code-label"><AppIcon :name="label === 'terminal' ? 'terminal' : 'file'" />{{ codeLabel(label) }}</span>
+      <span class="hint">{{ t('code.blanks', count) }}</span>
     </div>
     <pre><code><template v-for="(part, i) in parts" :key="i"><template v-if="'text' in part">{{ part.text }}</template><input
       v-else
@@ -44,7 +48,7 @@ const width = (value: string) => `${Math.max(7, value.length + 2)}ch`
       :value="modelValue[part.blank]"
       :style="{ width: width(modelValue[part.blank] ?? '') }"
       :disabled="disabled"
-      :aria-label="`Blank ${part.blank + 1} of ${count}`"
+      :aria-label="t('code.blankLabel', { n: part.blank + 1, total: count })"
       autocomplete="off"
       autocapitalize="off"
       spellcheck="false"

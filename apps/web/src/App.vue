@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppIcon from './components/AppIcon.vue'
 import DisplayControls from './components/DisplayControls.vue'
+import LanguagePicker from './components/LanguagePicker.vue'
 import PetCompanion from './components/PetCompanion.vue'
 import PetPicker from './components/PetPicker.vue'
 import ChatPopup from './components/ChatPopup.vue'
@@ -10,9 +11,12 @@ import { chat, unread } from './chat'
 import ToastHost from './components/ToastHost.vue'
 import { copyId } from './clipboard'
 import { pet } from './pets'
-import { setUrlTheme } from './prefs'
+import { setUrlLang, setUrlTheme } from './prefs'
 import { routeParam } from './routeParams'
 import { coreCompleted, state } from './store'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // Small screens fold the nav into a menu. It closes when you navigate or press Esc.
 const menuOpen = ref(false)
@@ -28,6 +32,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 const embed = computed(() => route.query.embed !== undefined)
 // ?theme=light|dark (or after the #) sets the theme for this view only, to match the host page.
 watch(() => routeParam(route, 'theme'), setUrlTheme, { immediate: true })
+// lang=en|ms, the same way. prefs.ts reads it before the first request, so this only follows changes.
+watch(() => routeParam(route, 'lang'), setUrlLang)
 
 const exerciseCount = computed(() => state.content?.exercises.length ?? 0)
 // The quiz counts as one more step on the journey, done once it's passed.
@@ -45,38 +51,39 @@ const journeyPct = computed(() => {
         <img src="/favicon.svg" alt="" width="28" height="28" />
         <span>Docker Dojo</span>
       </RouterLink>
-      <nav id="main-nav" aria-label="Main" :class="{ open: menuOpen }">
-        <RouterLink to="/exercises">Exercises</RouterLink>
-        <RouterLink to="/quiz">Quiz</RouterLink>
-        <RouterLink to="/chat">Chat<span v-if="unread" class="unread" :aria-label="`${unread} new`">{{ unread > 9 ? '9+' : unread }}</span></RouterLink>
-        <RouterLink to="/glossary">Glossary</RouterLink>
-        <RouterLink to="/references">References</RouterLink>
-        <RouterLink to="/live" class="live"><i aria-hidden="true" />Live</RouterLink>
+      <nav id="main-nav" :aria-label="t('nav.main')" :class="{ open: menuOpen }">
+        <RouterLink to="/exercises">{{ t('nav.exercises') }}</RouterLink>
+        <RouterLink to="/quiz">{{ t('nav.quiz') }}</RouterLink>
+        <RouterLink to="/chat">{{ t('nav.chat') }}<span v-if="unread" class="unread" :aria-label="t('nav.unread', { n: unread })">{{ unread > 9 ? '9+' : unread }}</span></RouterLink>
+        <RouterLink to="/glossary">{{ t('nav.glossary') }}</RouterLink>
+        <RouterLink to="/references">{{ t('nav.references') }}</RouterLink>
+        <RouterLink to="/live" class="live"><i aria-hidden="true" />{{ t('nav.live') }}</RouterLink>
         <p v-if="state.progress" class="nav-id muted">
-          You are <button type="button" class="copy-id" :aria-label="`Copy your id, ${state.progress.id}`" @click="copyId(state.progress.id)"><code>{{ state.progress.id }}</code><AppIcon name="copy" /></button>
+          {{ t('nav.youAre') }} <button type="button" class="copy-id" :aria-label="t('nav.copyId', { id: state.progress.id })" @click="copyId(state.progress.id)"><code>{{ state.progress.id }}</code><AppIcon name="copy" /></button>
         </p>
+        <LanguagePicker class="nav-lang" />
       </nav>
       <!-- Your id and progress. Pressing it copies the id (to continue on another device). -->
-      <button v-if="state.progress" type="button" class="me" :title="`Your participant id: ${state.progress.id}. Click to copy.`" :aria-label="`Copy your id, ${state.progress.id}. ${coreCompleted.size} of ${exerciseCount} exercises done.`" @click="copyId(state.progress.id)">
+      <button v-if="state.progress" type="button" class="me" :title="t('nav.copyIdTitle', { id: state.progress.id })" :aria-label="t('nav.copyIdProgress', { id: state.progress.id, done: coreCompleted.size, total: exerciseCount })" @click="copyId(state.progress.id)">
         <span class="me-id">{{ state.progress.id }}</span>
         <span class="tag" :class="{ ok: coreCompleted.size === exerciseCount }">
           <AppIcon v-if="coreCompleted.size === exerciseCount" name="check" class="tag-icon" />{{ coreCompleted.size }}/{{ exerciseCount }}
         </span>
         <span v-if="state.progress.quiz" class="tag quiz-tag" :class="{ ok: state.progress.quiz.passed }">
-          Quiz {{ state.progress.quiz.bestScore }}/{{ state.progress.quiz.total }}
+          {{ t('nav.quizTag', { score: state.progress.quiz.bestScore, total: state.progress.quiz.total }) }}
         </span>
       </button>
       <!-- Both labels share one grid cell so the button keeps its width. -->
       <button class="btn small ghost swap menu-btn" type="button" aria-controls="main-nav" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
-        <span :aria-hidden="menuOpen"><AppIcon name="menu" />Menu</span>
-        <span :aria-hidden="!menuOpen"><AppIcon name="x" />Close</span>
+        <span :aria-hidden="menuOpen"><AppIcon name="menu" />{{ t('nav.menu') }}</span>
+        <span :aria-hidden="!menuOpen"><AppIcon name="x" />{{ t('common.close') }}</span>
       </button>
     </div>
     <div
       v-if="state.progress"
       class="rail"
       role="progressbar"
-      aria-label="Your progress through the Dojo"
+      :aria-label="t('nav.progress')"
       :aria-valuenow="Math.round(journeyPct)"
       aria-valuemin="0"
       aria-valuemax="100"
@@ -86,10 +93,10 @@ const journeyPct = computed(() => {
   </header>
 
   <main class="container main" :class="{ embed }">
-    <p v-if="state.loading" class="muted">Loading…</p>
+    <p v-if="state.loading" class="muted">{{ t('common.loading') }}</p>
     <div v-else-if="state.error" class="callout error">
       <AppIcon name="alert" />
-      <span>Could not reach the Dojo API: {{ state.error }}</span>
+      <span>{{ t('common.apiDown', { error: state.error }) }}</span>
     </div>
     <RouterView v-else />
   </main>
@@ -97,10 +104,12 @@ const journeyPct = computed(() => {
   <footer v-if="!embed" class="foot" :class="{ 'with-pet': pet.shown }">
     <div class="container foot-inner">
       <p class="credits muted">
-        Docker Dojo · Vibe-coded with AI by <a href="https://github.com/albertsyh" target="_blank" rel="noopener">albertsyh</a>
-        · Pets by <a href="https://openpets.dev" target="_blank" rel="noopener">OpenPets</a>
+        <i18n-t keypath="footer.credits" scope="global">
+          <template #author><a href="https://github.com/albertsyh" target="_blank" rel="noopener">albertsyh</a></template>
+          <template #pets><a href="https://openpets.dev" target="_blank" rel="noopener">OpenPets</a></template>
+        </i18n-t>
         <br />
-        Unofficial. Not affiliated with or endorsed by Docker, Inc. Docker is a trademark of Docker, Inc.
+        {{ t('footer.disclaimer') }}
       </p>
       <DisplayControls />
     </div>
@@ -163,6 +172,8 @@ nav a.router-link-active::after {
 
 .menu-btn { display: none; }
 .nav-id { display: none; }
+/* The footer has the language switch; on small screens the menu has it too, since the footer is far down. */
+.nav-lang { display: none; }
 
 /* Six links, the brand and your tags fit one row from about 1024px. Below 1280px the id
    text goes first (your tags stay); it is on the start page and in the menu. */
@@ -188,6 +199,7 @@ nav a.router-link-active::after {
   nav a { min-height: 3rem; padding: 0 var(--space-3); font-size: var(--text-md); }
   nav a.router-link-active { background: var(--primary-soft); }
   nav a.router-link-active::after { display: none; }
+  .nav-lang { display: inline-grid; margin: var(--space-3) var(--space-3) 0; }
   .nav-id { display: block; margin: var(--space-3) var(--space-3) 0; padding-top: var(--space-3); border-top: 1px solid var(--border); font-size: var(--text-sm); overflow-wrap: anywhere; }
 }
 /* Very narrow phones: keep only the exercise count. */

@@ -1,0 +1,65 @@
+{
+  "groups": {
+    "learn": {
+      "source": "a6f169dc",
+      "title": "Belajar Docker",
+      "intro": "Video yang merangkumi perkara yang sama seperti latihan. Mulakan dengan salah satu daripada dua yang pertama."
+    },
+    "windows-server": {
+      "source": "89bb78ab",
+      "title": "Deploy pada Windows Server",
+      "intro": "Peraturan yang perlu diketahui dahulu: container berkongsi kernel hos. Jadi Windows container (contohnya .NET Framework atau IIS) hanya berjalan pada hos Windows, dan Linux container memerlukan Linux, atau VM pada Windows. Docker Desktop tidak disokong pada Windows Server, jadi engine perlu disediakan secara manual. Versi Windows dalam container biasanya mesti sepadan dengan versi hos, melainkan anda menggunakan pengasingan Hyper-V."
+    },
+    "older-talks": {
+      "source": "3e7d989f",
+      "title": "Ceramah lama, masih bagus untuk konsep",
+      "intro": "Ideanya masih relevan, tetapi langkah persediaan dalam ceramah ini sudah lapuk."
+    }
+  },
+  "links": {
+    "https://www.youtube.com/watch?v=pg19Z8LL06w": {
+      "source": "96f9fc7e",
+      "note": "Pendek dan terkini. Pilihan pertama yang terbaik."
+    },
+    "https://www.youtube.com/watch?v=3c-iBn73dDE": {
+      "source": "fd792e0a",
+      "note": "Versi panjang bagi kursus ringkas itu."
+    },
+    "https://www.youtube.com/watch?v=gAkwW2tuIqE": {
+      "source": "e6f27d61",
+      "note": "Lawatan gambaran besar yang sangat pantas, termasuk Docker Compose."
+    },
+    "https://www.youtube.com/watch?v=zJ6WbK9zFpI": {
+      "source": "2f15a6b8",
+      "note": "Makmal amali."
+    },
+    "https://www.youtube.com/watch?v=Wf2eSG3owoA": {
+      "source": "1564e992",
+      "note": "Untuk kemudian, apabila anda beralih ke Kubernetes."
+    },
+    "https://www.youtube.com/watch?v=90Gpfou_oeI": {
+      "source": "96faec3b",
+      "note": "Yang terbaharu. Alat yang patut digunakan pada server semasa."
+    },
+    "https://www.youtube.com/watch?v=6ENy6mtuGuU": {
+      "source": "fbe67f82",
+      "note": "Persediaan langkah demi langkah pada server production."
+    },
+    "https://www.youtube.com/watch?v=g2W5Mkjed10": {
+      "source": "6607a200",
+      "note": "Berguna untuk memindahkan aplikasi .NET lama ke dalam container."
+    },
+    "https://www.youtube.com/watch?v=hElwBXu3tuo": {
+      "source": "3ef42ab6",
+      "note": "Pengasingan Hyper-V menjalankan setiap container dalam VM kecil, yang mengatasi ketidakpadanan versi antara hos dan image."
+    },
+    "https://learn.microsoft.com/en-us/virtualization/windowscontainers/about/": {
+      "source": "1cc2c510",
+      "note": "Bacaan latar tentang cara Windows container berfungsi."
+    },
+    "https://www.youtube.com/watch?v=85nCF5S8Qok": {
+      "source": "e8e528a4",
+      "note": "Menerangkan sebab peraturan kernel itu wujud."
+    }
+  }
+}

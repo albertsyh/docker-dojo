@@ -23,6 +23,9 @@ Route::prefix('/participants/{id}')->middleware('throttle:participant')->group(f
     // Take-home tracks have their own quiz. The controller 404s an unknown or unpublished track.
     Route::get('/quiz/{track}', [DojoController::class, 'quizPaper'])->where('track', '[a-z0-9-]+');
     Route::post('/quiz/{track}', [DojoController::class, 'submitQuiz'])->where('track', '[a-z0-9-]+')->middleware('throttle:quiz');
+    // The text of a paper's questions in another language, for switching mid-quiz (no answers).
+    Route::get('/quiz-questions', [DojoController::class, 'quizQuestions']);
+    Route::get('/quiz-questions/{track}', [DojoController::class, 'quizQuestions'])->where('track', '[a-z0-9-]+');
     Route::get('/chat', [ChatController::class, 'show']);
     Route::post('/chat', [ChatController::class, 'store'])->middleware('throttle:chat');
     Route::delete('/chat/{messageId}', [ChatController::class, 'destroy'])->whereNumber('messageId');

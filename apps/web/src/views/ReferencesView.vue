@@ -2,6 +2,9 @@
 import { computed } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
 import { state } from '../store'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // Served with the rest of the content, from apps/api/resources/content/references.json.
 const groups = computed(() => state.content?.references ?? [])
@@ -13,11 +16,11 @@ const host = (url: string) => new URL(url).hostname.replace(/^www\./, '')
 <template>
   <div class="page">
     <header>
-      <h1>References</h1>
-      <p class="lead">Videos and reading for after the workshop, or for going deeper on a topic. Links open in a new tab.</p>
+      <h1>{{ t('references.title') }}</h1>
+      <p class="lead">{{ t('references.lead') }}</p>
     </header>
 
-    <nav class="topics" aria-label="Reference topics">
+    <nav class="topics" :aria-label="t('references.topics')">
       <RouterLink v-for="g in groups" :key="g.id" :to="{ hash: `#${g.id}` }">{{ g.title }}</RouterLink>
     </nav>
 
@@ -26,13 +29,13 @@ const host = (url: string) => new URL(url).hostname.replace(/^www\./, '')
       <p v-if="g.intro" class="intro">{{ g.intro }}</p>
       <ul>
         <li v-for="link in g.links" :key="link.url" class="entry">
-          <span class="kind" :title="link.kind === 'video' ? 'Video' : 'Reading'">
+          <span class="kind" :title="link.kind === 'video' ? t('references.video') : t('references.reading')">
             <AppIcon :name="link.kind === 'video' ? 'play' : 'book'" />
-            <span class="sr-only">{{ link.kind === 'video' ? 'Video:' : 'Reading:' }}</span>
+            <span class="sr-only">{{ link.kind === 'video' ? t('references.video') : t('references.reading') }}:</span>
           </span>
           <div class="body">
             <a :href="link.url" target="_blank" rel="noopener noreferrer" class="title">
-              {{ link.title }}<AppIcon name="external" class="ext" /><span class="sr-only"> (opens in a new tab)</span>
+              {{ link.title }}<AppIcon name="external" class="ext" /><span class="sr-only">{{ ' ' + t('common.opensInNewTab') }}</span>
             </a>
             <p class="meta muted">{{ link.source }} · {{ host(link.url) }}</p>
             <p v-if="link.note" class="note">{{ link.note }}</p>

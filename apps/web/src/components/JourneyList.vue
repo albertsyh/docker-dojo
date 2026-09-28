@@ -3,6 +3,9 @@ import { computed } from 'vue'
 import type { Exercise, QuizProgress, QuizSummary } from '../api'
 import { completed } from '../store'
 import AppIcon from './AppIcon.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // A track is a real sequence, so it is shown as one numbered line of stops, ending in its quiz.
 const props = defineProps<{
@@ -27,26 +30,26 @@ const quizHere = computed(() => !next.value && !props.quizProgress?.passed)
       <RouterLink :to="`/exercises/${ex.id}`" class="stop">
         <span class="stop-head">
           <strong>{{ ex.title }}</strong>
-          <span v-if="next?.id === ex.id" class="tag here">You are here</span>
-          <span v-else-if="completed.has(ex.id)" class="sr-only">(done)</span>
+          <span v-if="next?.id === ex.id" class="tag here">{{ t('common.youAreHere') }}</span>
+          <span v-else-if="completed.has(ex.id)" class="sr-only">{{ t('common.doneSr') }}</span>
         </span>
         <span class="muted summary">{{ ex.summary }}</span>
       </RouterLink>
-      <span class="minutes muted">{{ ex.minutes }} min</span>
+      <span class="minutes muted">{{ t('common.minutes', { n: ex.minutes }) }}</span>
     </li>
     <li class="finish" :class="{ done: quizProgress?.passed, here: quizHere }">
       <span class="node" aria-hidden="true"><AppIcon :name="quizProgress?.passed ? 'check' : 'sparkle'" /></span>
       <RouterLink :to="quizTo" class="stop">
         <span class="stop-head">
-          <strong>Quiz</strong>
-          <span v-if="quizHere" class="tag here">You are here</span>
+          <strong>{{ t('journey.quiz') }}</strong>
+          <span v-if="quizHere" class="tag here">{{ t('common.youAreHere') }}</span>
         </span>
         <span class="muted summary">
-          {{ quiz.questionCount }} questions, from easy to reading a full compose file. Each retake asks new ones.
-          <template v-if="quizProgress"> Best so far: {{ quizProgress.bestScore }}/{{ quizProgress.total }}.</template>
+          {{ t('journey.quizSummary', { count: quiz.questionCount }) }}
+          <template v-if="quizProgress">{{ ' ' + t('journey.best', { score: quizProgress.bestScore, total: quizProgress.total }) }}</template>
         </span>
       </RouterLink>
-      <span class="minutes muted">{{ quiz.minutes }} min</span>
+      <span class="minutes muted">{{ t('common.minutes', { n: quiz.minutes }) }}</span>
     </li>
   </ol>
 </template>

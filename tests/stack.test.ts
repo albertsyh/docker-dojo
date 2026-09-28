@@ -114,6 +114,19 @@ describe('api', () => {
     expect(JSON.stringify(content.quiz)).not.toContain('"answer"')
   })
 
+  test('content comes in Malay with ?lang=ms, with the same ids and commands', async () => {
+    const malay = (await api('GET', '/content?lang=ms')).json
+    expect(malay.language).toBe('ms')
+    expect(malay.exercises.map((e: any) => e.id)).toEqual(content.exercises.map((e: any) => e.id))
+    expect(malay.exercises[0].title).not.toBe(content.exercises[0].title)
+    expect(malay.exercises[0].steps.map((s: any) => s.code)).toEqual(content.exercises[0].steps.map((s: any) => s.code))
+    // Messages too, from lang/ms.
+    const id = await join()
+    const missing = await api('PUT', `/participants/${id}/exercises/no-such-exercise?lang=ms`)
+    expect(missing.status).toBe(404)
+    expect(missing.json.message).toBe('Latihan tidak dikenali.')
+  })
+
   test('/api/exercises lists the ids through nginx, matching the content', async () => {
     const { status, json } = await api('GET', '/exercises')
     expect(status).toBe(200)
