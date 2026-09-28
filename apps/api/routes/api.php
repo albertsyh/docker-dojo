@@ -14,5 +14,6 @@ Route::prefix('/participants/{id}')->middleware('throttle:participant')->group(f
     Route::get('/', [DojoController::class, 'showParticipant']);
     Route::put('/exercises/{exerciseId}', [DojoController::class, 'completeExercise']);
     Route::delete('/exercises/{exerciseId}', [DojoController::class, 'uncompleteExercise']);
+    Route::get('/quiz', [DojoController::class, 'quizPaper']);
     Route::post('/quiz', [DojoController::class, 'submitQuiz'])->middleware('throttle:quiz');
 });

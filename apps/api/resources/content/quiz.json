@@ -1,8 +1,146 @@
 {
   "passMark": 0.7,
+  "minutes": 12,
+  "split": {
+    "easy": 4,
+    "medium": 3,
+    "advanced": 3
+  },
+  "scenarios": [
+    {
+      "id": "shop",
+      "title": "An online shop",
+      "intro": "A shop with a web server in front, an API, a MySQL database and a Redis cache.",
+      "label": "compose.yaml",
+      "code": [
+        "services:",
+        "  web:",
+        "    image: nginx:1.29-alpine",
+        "    ports:",
+        "      - \"8080:80\"",
+        "    depends_on:",
+        "      - api",
+        "",
+        "  api:",
+        "    build: ./api",
+        "    environment:",
+        "      DB_HOST: db",
+        "      REDIS_HOST: cache",
+        "    depends_on:",
+        "      db:",
+        "        condition: service_healthy",
+        "      cache:",
+        "        condition: service_started",
+        "",
+        "  db:",
+        "    image: mysql:8.4",
+        "    environment:",
+        "      MYSQL_ROOT_PASSWORD: example",
+        "      MYSQL_DATABASE: shop",
+        "    volumes:",
+        "      - dbdata:/var/lib/mysql",
+        "    healthcheck:",
+        "      test: [\"CMD\", \"mysqladmin\", \"ping\", \"-h\", \"127.0.0.1\"]",
+        "      interval: 5s",
+        "      retries: 10",
+        "",
+        "  cache:",
+        "    image: redis:7-alpine",
+        "",
+        "volumes:",
+        "  dbdata:"
+      ]
+    },
+    {
+      "id": "notes",
+      "title": "A Node.js app in production",
+      "intro": "One Node.js service, built from a multi-stage Dockerfile and run on a server.",
+      "label": "compose.yaml",
+      "code": [
+        "services:",
+        "  app:",
+        "    build:",
+        "      context: .",
+        "      target: production",
+        "    image: notes-app:1.4",
+        "    env_file: .env",
+        "    environment:",
+        "      NODE_ENV: production",
+        "    ports:",
+        "      - \"127.0.0.1:3000:3000\"",
+        "    restart: unless-stopped",
+        "    deploy:",
+        "      resources:",
+        "        limits:",
+        "          cpus: \"0.5\"",
+        "          memory: 256M"
+      ]
+    },
+    {
+      "id": "dev",
+      "title": "A development setup",
+      "intro": "A frontend with live reload while you edit, talking to an API.",
+      "label": "compose.yaml",
+      "code": [
+        "services:",
+        "  web:",
+        "    build: .",
+        "    command: npm run dev",
+        "    ports:",
+        "      - \"5173:5173\"",
+        "    volumes:",
+        "      - .:/app",
+        "      - node_modules:/app/node_modules",
+        "    environment:",
+        "      API_URL: http://api:8000",
+        "",
+        "  api:",
+        "    image: my-api:latest",
+        "",
+        "volumes:",
+        "  node_modules:"
+      ]
+    },
+    {
+      "id": "blog",
+      "title": "A blog with two networks",
+      "intro": "A proxy, a blog and its database, split across two networks.",
+      "label": "compose.yaml",
+      "code": [
+        "services:",
+        "  proxy:",
+        "    image: nginx:alpine",
+        "    ports:",
+        "      - \"80:80\"",
+        "    networks: [front]",
+        "",
+        "  blog:",
+        "    image: wordpress:6",
+        "    environment:",
+        "      WORDPRESS_DB_HOST: db",
+        "    networks: [front, back]",
+        "",
+        "  db:",
+        "    image: mariadb:11",
+        "    environment:",
+        "      MARIADB_ROOT_PASSWORD: example",
+        "    volumes:",
+        "      - dbdata:/var/lib/mysql",
+        "    networks: [back]",
+        "",
+        "networks:",
+        "  front:",
+        "  back:",
+        "",
+        "volumes:",
+        "  dbdata:"
+      ]
+    }
+  ],
   "questions": [
     {
       "id": "image-vs-container",
+      "level": "easy",
       "prompt": "What is a container?",
       "options": [
         "Another name for an image",
@@ -15,6 +153,7 @@
     },
     {
       "id": "port-mapping",
+      "level": "easy",
       "prompt": "In `docker run -p 8080:80 nginx`, what is 8080?",
       "options": [
         "The port inside the container",
@@ -27,6 +166,7 @@
     },
     {
       "id": "detached",
+      "level": "easy",
       "prompt": "What does `-d` do in `docker run`?",
       "options": [
         "Deletes the container when it stops",
@@ -39,6 +179,7 @@
     },
     {
       "id": "ephemeral",
+      "level": "easy",
       "prompt": "You change a file inside a container. Then you remove it and start a new one from the same image. Is your change still there?",
       "options": [
         "Yes, all containers share files",
@@ -51,6 +192,7 @@
     },
     {
       "id": "volume",
+      "level": "easy",
       "prompt": "How do you keep database files after the container is removed?",
       "options": [
         "Use a named volume",
@@ -63,6 +205,7 @@
     },
     {
       "id": "layer-cache",
+      "level": "easy",
       "prompt": "You change only index.html and rebuild. Why is `FROM nginx:alpine` not downloaded again?",
       "options": [
         "Docker reuses layers that did not change",
@@ -75,6 +218,7 @@
     },
     {
       "id": "build-context",
+      "level": "easy",
       "prompt": "In `docker build -t my-site:1.0 .`, what does the last `.` mean?",
       "options": [
         "The image name",
@@ -87,6 +231,7 @@
     },
     {
       "id": "dns",
+      "level": "easy",
       "prompt": "Two containers are on the same user-defined network. How can one reach the other?",
       "options": [
         "Only through ports on localhost",
@@ -99,6 +244,7 @@
     },
     {
       "id": "compose-down-v",
+      "level": "easy",
       "prompt": "What does `-v` add to `docker compose down`?",
       "options": [
         "Nothing, both do the same",
@@ -111,6 +257,7 @@
     },
     {
       "id": "healthy",
+      "level": "easy",
       "prompt": "Why add `condition: service_healthy` to depends_on?",
       "options": [
         "It makes the database faster",
@@ -120,6 +267,659 @@
       ],
       "answer": 1,
       "explanation": "MySQL takes a few seconds to accept connections after it starts. The health check waits for that."
+    },
+    {
+      "id": "deleted-file",
+      "level": "easy",
+      "prompt": "One RUN step creates a 50 MB file. The next RUN step deletes it. How big is the image?",
+      "options": [
+        "50 MB smaller, the file is gone",
+        "Still 50 MB bigger, the first layer keeps the file",
+        "It depends on the base image",
+        "The build fails"
+      ],
+      "answer": 1,
+      "explanation": "Layers are read-only. Deleting in a later step only hides the file. Create and delete it in the same RUN step."
+    },
+    {
+      "id": "dependency-order",
+      "level": "easy",
+      "prompt": "Why copy package.json and run npm install before `COPY . .`?",
+      "options": [
+        "npm needs the files in that order",
+        "It makes the image smaller",
+        "So a code change does not rerun npm install",
+        "So node_modules is not copied"
+      ],
+      "answer": 2,
+      "explanation": "npm install stays cached until package.json changes. Code changes only rebuild the steps after `COPY . .`."
+    },
+    {
+      "id": "dockerignore",
+      "level": "easy",
+      "prompt": "What does a .dockerignore file do?",
+      "options": [
+        "Stops matching files from reaching the build",
+        "Deletes files from running containers",
+        "Hides images from `docker image ls`",
+        "Skips Dockerfile steps that fail"
+      ],
+      "answer": 0,
+      "explanation": "Matching files are never sent to the build, so `COPY . .` cannot copy secrets like .env into the image."
+    },
+    {
+      "id": "multi-stage-target",
+      "level": "easy",
+      "prompt": "A Dockerfile has a `test` stage and a `production` stage (last). What does `docker build --target test .` do?",
+      "options": [
+        "Builds every stage",
+        "Builds up to the test stage and stops there",
+        "Runs the production image in test mode",
+        "Pushes the image to a test registry"
+      ],
+      "answer": 1,
+      "explanation": "`--target` picks the stage to build. Without it, Docker builds the last stage and skips stages it does not need."
+    },
+    {
+      "id": "scout",
+      "level": "easy",
+      "prompt": "Docker Scout finds many high issues in your image. What usually fixes most of them?",
+      "options": [
+        "Removing the CMD line",
+        "Adding a .dockerignore file",
+        "Running the container with -d",
+        "Moving to a newer or smaller base image"
+      ],
+      "answer": 3,
+      "explanation": "Most known issues live in the packages of the base image. A newer or slimmer base image drops them."
+    },
+    {
+      "id": "ps-all",
+      "level": "easy",
+      "prompt": "Which command also lists containers that have stopped?",
+      "options": [
+        "`docker ps`",
+        "`docker images`",
+        "`docker ps -a`",
+        "`docker logs`"
+      ],
+      "answer": 2,
+      "explanation": "`docker ps` shows running containers only. `-a` adds stopped ones."
+    },
+    {
+      "id": "exec-shell",
+      "level": "easy",
+      "prompt": "A container named web is running. How do you open a shell inside it?",
+      "options": [
+        "`docker exec -it web sh`",
+        "`docker run -it web sh`",
+        "`docker attach web sh`",
+        "`docker shell web`"
+      ],
+      "answer": 0,
+      "explanation": "`docker exec` runs a command in a container that is already running. `docker run` would start a new one."
+    },
+    {
+      "id": "history",
+      "level": "easy",
+      "prompt": "Which command shows the layers of an image and how big each one is?",
+      "options": [
+        "`docker image ls`",
+        "`docker inspect`",
+        "`docker system df`",
+        "`docker history`"
+      ],
+      "answer": 3,
+      "explanation": "`docker history` lists one row per layer, with the step that made it and its size."
+    },
+    {
+      "id": "run-detached-port",
+      "level": "medium",
+      "context": "You want to run nginx in the background, name it web, and open it at http://localhost:8080. Inside the container, nginx listens on port 80.",
+      "prompt": "Fill in the two blanks.",
+      "label": "terminal",
+      "code": [
+        "docker run {{1}} --name web -p {{2}} nginx:alpine"
+      ],
+      "blanks": [
+        [
+          "-d",
+          "--detach"
+        ],
+        [
+          "8080:80"
+        ]
+      ],
+      "explanation": "`-d` runs it in the background. `-p` is your port first, then the container port: `8080:80`."
+    },
+    {
+      "id": "exec-into",
+      "level": "medium",
+      "context": "A container named web is already running. You want an interactive shell inside it.",
+      "prompt": "Fill in the command and the shell.",
+      "label": "terminal",
+      "code": [
+        "docker {{1}} -it web {{2}}"
+      ],
+      "blanks": [
+        [
+          "exec"
+        ],
+        [
+          "sh",
+          "/bin/sh"
+        ]
+      ],
+      "explanation": "`docker exec -it web sh` runs a shell in the running container. Alpine images have `sh`, not `bash`."
+    },
+    {
+      "id": "build-tag",
+      "level": "medium",
+      "context": "You are in a folder that has a Dockerfile. You want to build an image named my-site with the tag 2.0, and send the current folder as the build context.",
+      "prompt": "Fill in the flag and the build context.",
+      "label": "terminal",
+      "code": [
+        "docker build {{1}} my-site:2.0 {{2}}"
+      ],
+      "blanks": [
+        [
+          "-t",
+          "--tag"
+        ],
+        [
+          ".",
+          "./"
+        ]
+      ],
+      "explanation": "`-t` names and tags the image. The `.` at the end is the build context: the current folder."
+    },
+    {
+      "id": "dependency-layer",
+      "level": "medium",
+      "context": "You are writing a Dockerfile for a Node.js app. npm install is slow, so it should only run again when your dependencies change, not when you edit code.",
+      "prompt": "Fill in the two blanks.",
+      "label": "Dockerfile",
+      "code": [
+        "FROM node:24-alpine",
+        "WORKDIR /app",
+        "COPY {{1}} ./",
+        "RUN npm install",
+        "{{2}} . .",
+        "CMD [\"node\", \"server.js\"]"
+      ],
+      "blanks": [
+        [
+          "package.json",
+          "package*.json",
+          "package.json package-lock.json"
+        ],
+        [
+          "COPY"
+        ]
+      ],
+      "explanation": "Copy only `package.json` first and install. The install layer stays cached until it changes. Then `COPY . .` brings in the code."
+    },
+    {
+      "id": "same-run-cleanup",
+      "level": "medium",
+      "context": "This Dockerfile downloads an archive, unpacks it, and deletes the archive. The archive must not take up space in the final image.",
+      "prompt": "Fill in the blanks so it all happens in one layer.",
+      "label": "Dockerfile",
+      "code": [
+        "FROM alpine:3.20",
+        "RUN wget -O /tmp/app.tar.gz https://example.com/app.tar.gz \\",
+        "    {{1}} tar -xzf /tmp/app.tar.gz -C /opt \\",
+        "    && {{2}} /tmp/app.tar.gz"
+      ],
+      "blanks": [
+        [
+          "&&"
+        ],
+        [
+          "rm",
+          "rm -f",
+          "rm -rf"
+        ]
+      ],
+      "explanation": "Chaining with `&&` keeps it one RUN step, so the archive is deleted before the layer is saved."
+    },
+    {
+      "id": "ignore-logs",
+      "level": "medium",
+      "context": "Your project folder has a .env file with secrets, a node_modules folder, and many log files ending in .log. None of them should reach the build.",
+      "prompt": "Fill in the pattern that leaves out every log file.",
+      "label": ".dockerignore",
+      "code": [
+        ".env",
+        "node_modules",
+        "{{1}}"
+      ],
+      "blanks": [
+        [
+          "*.log",
+          "**/*.log"
+        ]
+      ],
+      "explanation": "`*.log` matches every file ending in .log, just like in .gitignore."
+    },
+    {
+      "id": "build-target",
+      "level": "medium",
+      "context": "Your Dockerfile has three stages: base, test and production. You want to build only the test stage and tag it my-app:test.",
+      "prompt": "Fill in the flag.",
+      "label": "terminal",
+      "code": [
+        "docker build {{1}} test -t my-app:test ."
+      ],
+      "blanks": [
+        [
+          "--target"
+        ]
+      ],
+      "explanation": "`--target` builds up to the named stage and stops there."
+    },
+    {
+      "id": "production-stage",
+      "level": "medium",
+      "context": "In the production stage you want Node libraries in production mode, only runtime dependencies installed, and the app not running as root.",
+      "prompt": "Fill in the three blanks.",
+      "label": "Dockerfile",
+      "code": [
+        "FROM base AS production",
+        "ENV {{1}}=production",
+        "RUN npm install --omit={{2}}",
+        "COPY . .",
+        "{{3}} node",
+        "CMD [\"node\", \"server.js\"]"
+      ],
+      "blanks": [
+        [
+          "NODE_ENV"
+        ],
+        [
+          "dev"
+        ],
+        [
+          "USER"
+        ]
+      ],
+      "explanation": "`NODE_ENV=production` switches libraries to production mode, `--omit=dev` skips dev dependencies, and `USER node` drops root."
+    },
+    {
+      "id": "named-volume",
+      "level": "medium",
+      "context": "You want Postgres to keep its data in a named volume called pgdata. Postgres stores its data in /var/lib/postgresql/data inside the container.",
+      "prompt": "Fill in the volume name and the path.",
+      "label": "terminal",
+      "code": [
+        "docker run -d --name db -e POSTGRES_PASSWORD=secret -v {{1}}:{{2}} postgres:17-alpine"
+      ],
+      "blanks": [
+        [
+          "pgdata"
+        ],
+        [
+          "/var/lib/postgresql/data",
+          "/var/lib/postgresql/data/"
+        ]
+      ],
+      "explanation": "`-v name:/path` mounts the named volume at that path, so the data outlives the container."
+    },
+    {
+      "id": "user-network",
+      "level": "medium",
+      "context": "You want two containers to reach each other by name. First you create a network called app-net, then you start Redis on it.",
+      "prompt": "Fill in the two blanks.",
+      "label": "terminal",
+      "code": [
+        "docker network {{1}} app-net",
+        "docker run -d --name cache {{2}} app-net redis:7-alpine"
+      ],
+      "blanks": [
+        [
+          "create"
+        ],
+        [
+          "--network",
+          "--net"
+        ]
+      ],
+      "explanation": "Containers on a network you created can reach each other by name, such as `cache`."
+    },
+    {
+      "id": "wait-for-healthy",
+      "level": "medium",
+      "context": "In this compose.yaml, api must wait until the database answers, not just until its container has started. db already has a healthcheck.",
+      "prompt": "Fill in the condition.",
+      "label": "compose.yaml",
+      "code": [
+        "services:",
+        "  db:",
+        "    image: postgres:17-alpine",
+        "    healthcheck:",
+        "      test: [\"CMD\", \"pg_isready\", \"-U\", \"postgres\"]",
+        "  api:",
+        "    build: .",
+        "    depends_on:",
+        "      db:",
+        "        condition: {{1}}"
+      ],
+      "blanks": [
+        [
+          "service_healthy"
+        ]
+      ],
+      "explanation": "`service_healthy` waits for the healthcheck to pass. `service_started` only waits for the container to start."
+    },
+    {
+      "id": "compose-ports",
+      "level": "medium",
+      "context": "Only the web service should be reachable from your machine, at http://localhost:8000. Inside its container, the web server listens on port 80.",
+      "prompt": "Fill in the key and the mapping.",
+      "label": "compose.yaml",
+      "code": [
+        "services:",
+        "  web:",
+        "    image: nginx:alpine",
+        "    {{1}}:",
+        "      - \"{{2}}\"",
+        "  api:",
+        "    build: ./api"
+      ],
+      "blanks": [
+        [
+          "ports"
+        ],
+        [
+          "8000:80"
+        ]
+      ],
+      "explanation": "`ports:` publishes a port to your machine, host port first. api has none, so only other containers can reach it."
+    },
+    {
+      "id": "compose-build",
+      "level": "medium",
+      "context": "You changed the Dockerfile of one service. You want Compose to rebuild the images and start everything in the background.",
+      "prompt": "Fill in the flag.",
+      "label": "terminal",
+      "code": [
+        "docker compose up -d {{1}}"
+      ],
+      "blanks": [
+        [
+          "--build"
+        ]
+      ],
+      "explanation": "Without `--build`, Compose reuses the image it built last time."
+    },
+    {
+      "id": "compose-down-volumes",
+      "level": "medium",
+      "context": "You want to stop the app and also delete its named volumes, so the database starts empty next time.",
+      "prompt": "Fill in the flag.",
+      "label": "terminal",
+      "code": [
+        "docker compose down {{1}}"
+      ],
+      "blanks": [
+        [
+          "-v",
+          "--volumes"
+        ]
+      ],
+      "explanation": "`-v` also removes the named volumes. Their data is gone for good."
+    },
+    {
+      "id": "shop-browser",
+      "level": "advanced",
+      "scenario": "shop",
+      "prompt": "Which address opens the shop in your browser?",
+      "options": [
+        "http://localhost:80",
+        "http://localhost:8080",
+        "http://api:8080",
+        "http://localhost:3306"
+      ],
+      "answer": 1,
+      "explanation": "`\"8080:80\"` publishes port 80 of the web container on port 8080 of your machine."
+    },
+    {
+      "id": "shop-db-host",
+      "level": "advanced",
+      "scenario": "shop",
+      "prompt": "How does the api container find the database?",
+      "options": [
+        "At localhost:3306",
+        "At the IP address of your laptop",
+        "By the name `db`, which Compose resolves on the project network",
+        "It cannot, because db has no `ports:`"
+      ],
+      "answer": 2,
+      "explanation": "Compose puts every service on one network where the service name is the hostname. `ports:` is only for your machine."
+    },
+    {
+      "id": "shop-restart-data",
+      "level": "advanced",
+      "scenario": "shop",
+      "prompt": "You run `docker compose down`, then `docker compose up -d`. What happened to the shop database?",
+      "options": [
+        "It is empty again",
+        "Only the tables survived",
+        "Compose asks whether to keep it",
+        "Its data is still there, in the dbdata volume"
+      ],
+      "answer": 3,
+      "explanation": "`down` removes containers but keeps named volumes. Only `down -v` would delete dbdata."
+    },
+    {
+      "id": "shop-cache-started",
+      "level": "advanced",
+      "scenario": "shop",
+      "prompt": "What does `condition: service_started` wait for, for the cache?",
+      "options": [
+        "Only for the cache container to start",
+        "For Redis to answer a PING",
+        "For the api to become healthy",
+        "For 10 retries 5 seconds apart"
+      ],
+      "answer": 0,
+      "explanation": "cache has no healthcheck, so Compose can only wait for its container to start, not for Redis to be ready."
+    },
+    {
+      "id": "shop-reachable",
+      "level": "advanced",
+      "scenario": "shop",
+      "prompt": "Which services can you reach directly from your own machine?",
+      "options": [
+        "All four",
+        "Only web",
+        "web and db",
+        "None of them"
+      ],
+      "answer": 1,
+      "explanation": "Only web has `ports:`. The others are reachable only from containers on the project network."
+    },
+    {
+      "id": "notes-target",
+      "level": "advanced",
+      "scenario": "notes",
+      "prompt": "What does `target: production` under `build:` do?",
+      "options": [
+        "Pulls the image tagged production",
+        "Runs the app with NODE_ENV=production",
+        "Builds the stage named production in the Dockerfile",
+        "Skips the build cache"
+      ],
+      "answer": 2,
+      "explanation": "`target` is the Compose version of `docker build --target`: it picks the Dockerfile stage to build."
+    },
+    {
+      "id": "notes-localhost-port",
+      "level": "advanced",
+      "scenario": "notes",
+      "prompt": "The port line is `\"127.0.0.1:3000:3000\"`. Who can open the app?",
+      "options": [
+        "Only the server itself, for example a reverse proxy running on it",
+        "Anyone on the internet",
+        "Nobody, the port is not published",
+        "Only other containers"
+      ],
+      "answer": 0,
+      "explanation": "Binding to 127.0.0.1 publishes the port on the loopback address only, so other machines cannot connect directly."
+    },
+    {
+      "id": "notes-memory-limit",
+      "level": "advanced",
+      "scenario": "notes",
+      "prompt": "The app goes above 256 MB of memory. What happens?",
+      "options": [
+        "Docker gives it more memory automatically",
+        "Nothing, the limit is only a hint",
+        "It is stopped for running out of memory, and restart: unless-stopped starts it again",
+        "Compose starts a second copy"
+      ],
+      "answer": 2,
+      "explanation": "A memory limit is enforced: the process is killed. The restart policy then brings the container back."
+    },
+    {
+      "id": "notes-image-name",
+      "level": "advanced",
+      "scenario": "notes",
+      "prompt": "What does `image: notes-app:1.4` do next to `build:`?",
+      "options": [
+        "It gives the built image that name and tag",
+        "Compose pulls notes-app:1.4 instead of building",
+        "It runs two containers, one per image",
+        "It is ignored when there is a build: section"
+      ],
+      "answer": 0,
+      "explanation": "With both keys, Compose builds from the Dockerfile and tags the result as notes-app:1.4."
+    },
+    {
+      "id": "notes-code-change",
+      "level": "advanced",
+      "scenario": "notes",
+      "prompt": "You edited server.js on the server. What makes the running app use the change?",
+      "options": [
+        "`docker compose restart`",
+        "`docker compose up -d --build`",
+        "`docker compose logs -f`",
+        "Nothing, it picks it up by itself"
+      ],
+      "answer": 1,
+      "explanation": "The code is copied into the image at build time, so you need a rebuild. `restart` reuses the old image."
+    },
+    {
+      "id": "dev-bind-mount",
+      "level": "advanced",
+      "scenario": "dev",
+      "prompt": "What does `- .:/app` under volumes do?",
+      "options": [
+        "Copies the folder into the image at build time",
+        "Creates a named volume called app",
+        "Mounts your project folder into the container, so edits show up straight away",
+        "Nothing, volumes only work for databases"
+      ],
+      "answer": 2,
+      "explanation": "A path on the left makes it a bind mount: the container sees your files live, which is what makes live reload work."
+    },
+    {
+      "id": "dev-command",
+      "level": "advanced",
+      "scenario": "dev",
+      "prompt": "What does `command: npm run dev` do?",
+      "options": [
+        "Runs once while the image is built",
+        "Replaces the default CMD of the image when the container starts",
+        "Adds a second process next to the CMD",
+        "Runs on your machine before Compose starts"
+      ],
+      "answer": 1,
+      "explanation": "`command:` overrides the image CMD for this service only."
+    },
+    {
+      "id": "dev-api-url",
+      "level": "advanced",
+      "scenario": "dev",
+      "prompt": "Why does `http://api:8000` work from inside web but not in your browser?",
+      "options": [
+        "The name api only resolves on the Compose network",
+        "Browsers block port 8000",
+        "api needs a healthcheck first",
+        "It does work in the browser too"
+      ],
+      "answer": 0,
+      "explanation": "Service names are DNS names inside the project network. Your browser runs on your machine, outside it, and api has no `ports:` either."
+    },
+    {
+      "id": "dev-node-modules",
+      "level": "advanced",
+      "scenario": "dev",
+      "prompt": "Why is there a named volume at /app/node_modules?",
+      "options": [
+        "To share packages with other projects",
+        "To make npm install faster on your machine",
+        "Because node_modules must always be a volume",
+        "So the bind mount of your folder does not hide the packages installed in the container"
+      ],
+      "answer": 3,
+      "explanation": "The `.:/app` bind mount covers /app. The more specific volume on /app/node_modules keeps the container's own packages visible."
+    },
+    {
+      "id": "blog-proxy-db",
+      "level": "advanced",
+      "scenario": "blog",
+      "prompt": "Can the proxy container reach db by name?",
+      "options": [
+        "Yes, all services share one network",
+        "No, they are not on a common network",
+        "Yes, through port 80",
+        "Only after db becomes healthy"
+      ],
+      "answer": 1,
+      "explanation": "proxy is only on front and db is only on back. Containers can only talk over a network they both joined."
+    },
+    {
+      "id": "blog-two-networks",
+      "level": "advanced",
+      "scenario": "blog",
+      "prompt": "Why is blog on both networks?",
+      "options": [
+        "It needs to talk to the proxy and to the database",
+        "Two networks make it faster",
+        "WordPress requires two networks",
+        "So it can publish two ports"
+      ],
+      "answer": 0,
+      "explanation": "blog sits in the middle: proxy reaches it on front, and it reaches db on back. db stays hidden from proxy."
+    },
+    {
+      "id": "blog-down-v",
+      "level": "advanced",
+      "scenario": "blog",
+      "prompt": "You run `docker compose down -v`. What happens to the blog posts?",
+      "options": [
+        "They are kept in the image",
+        "They are backed up automatically",
+        "They are deleted with the dbdata volume",
+        "They move to the proxy"
+      ],
+      "answer": 2,
+      "explanation": "`-v` removes named volumes, and the posts live in the database files on dbdata."
+    },
+    {
+      "id": "blog-containers",
+      "level": "advanced",
+      "scenario": "blog",
+      "prompt": "How many containers does `docker compose up -d` start here?",
+      "options": [
+        "One",
+        "Two",
+        "Five, counting networks and volumes",
+        "Three"
+      ],
+      "answer": 3,
+      "explanation": "One container per service: proxy, blog and db. Networks and volumes are not containers."
     }
   ]
 }

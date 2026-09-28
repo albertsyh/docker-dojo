@@ -42,7 +42,8 @@ class Stats
 
         $avgBest = DB::query()->fromSub(
             DB::table('quiz_attempts')
-                ->selectRaw('MAX(score / total) AS best')
+                // * 1.0 keeps the division decimal on every database (SQLite divides integers).
+                ->selectRaw('MAX(score * 1.0 / total) AS best')
                 ->groupBy('participant_id'),
             'b',
         )->avg('best');

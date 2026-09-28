@@ -6,6 +6,7 @@ use App\Models\ExerciseCompletion;
 use App\Models\Participant;
 use App\Models\QuizAttempt;
 use App\Support\Content;
+use App\Support\Quiz;
 use App\Support\Stats;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +18,8 @@ class DojoController extends Controller
     {
         return response()->json([
             'exercises' => Content::exercises(),
-            'quiz' => Content::publicQuiz(),
+            'quiz' => Quiz::summary(),
+            'glossary' => Content::glossary(),
             // The Reverb app key is public by design; the secret never leaves the server.
             'realtime' => ['key' => config('broadcasting.connections.reverb.key')],
         ]);
@@ -81,44 +83,52 @@ class DojoController extends Controller
         return response()->json($this->progress($id));
     }
 
+    /** A new quiz for this participant: questions without answers, and a one-time token. */
+    public function quizPaper(string $id): JsonResponse
+    {
+        $this->touch($id);
+
+        return response()->json(Quiz::paper($id));
+    }
+
     public function submitQuiz(Request $request, string $id): JsonResponse
     {
         $this->touch($id);
         $quiz = Content::quiz();
-        $total = count($quiz['questions']);
+        $size = array_sum($quiz['split']);
 
-        $answers = $request->validate([
-            'answers' => ['required', 'array', "size:$total"],
-            'answers.*' => ['required', 'integer', 'min:0', 'max:9'],
-        ])['answers'];
-
-        $results = [];
-        $score = 0;
-        foreach ($quiz['questions'] as $i => $q) {
-            $correct = (int) $answers[$i] === $q['answer'];
-            $score += (int) $correct;
-            $results[] = [
-                'questionId' => $q['id'],
-                'chosen' => (int) $answers[$i],
-                'answer' => $q['answer'],
-                'correct' => $correct,
-                'explanation' => $q['explanation'],
-            ];
-        }
-        $passed = $score / $total >= $quiz['passMark'];
-
-        QuizAttempt::create([
-            'participant_id' => $id,
-            'score' => $score,
-            'total' => $total,
-            'passed' => $passed,
-            'answers' => array_map('intval', $answers),
+        $input = $request->validate([
+            'token' => ['required', 'string', 'size:64'],
+            'questions' => ['required', 'array', "size:$size"],
+            'questions.*' => ['required', 'string', 'distinct', 'max:80'],
+            'answers' => ['required', 'array', "size:$size"],
         ]);
+        abort_unless(hash_equals(Quiz::sign($id, $input['questions']), $input['token']), 422, 'That quiz is not valid. Start a new one.');
+
+        $results = Quiz::grade($input['questions'], $input['answers']);
+        abort_if($results === null, 422, 'Some answers do not fit their questions. Start a new quiz.');
+
+        $score = count(array_filter(array_column($results, 'correct')));
+        $passed = $score / $size >= $quiz['passMark'];
+
+        try {
+            QuizAttempt::create([
+                'participant_id' => $id,
+                'paper_token' => $input['token'],
+                'score' => $score,
+                'total' => $size,
+                'passed' => $passed,
+                'answers' => array_map(fn ($qid, $answer) => ['id' => $qid, 'answer' => $answer], $input['questions'], $input['answers']),
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            // Otherwise you could submit, read the answers, and submit the same paper again.
+            abort(409, 'This quiz was already submitted. Start a new one.');
+        }
         Stats::broadcast();
 
         return response()->json([
             'score' => $score,
-            'total' => $total,
+            'total' => $size,
             'passed' => $passed,
             'results' => $results,
             'progress' => $this->progress($id),

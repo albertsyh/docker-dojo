@@ -170,81 +170,370 @@
     }
   },
   {
-    "id": "layer-cache",
-    "title": "How the build cache works",
+    "id": "image-size",
+    "title": "Where the megabytes go",
     "minutes": 6,
-    "summary": "See Docker reuse layers, see one change rebuild everything after it, and fix it by reordering.",
+    "summary": "Check how big an image is, read its layers with docker history, and see why deleting a file in a later step saves nothing.",
     "steps": [
       {
-        "text": "Go back to your home folder, make a new folder, and move into it.",
-        "code": "cd ~\nmkdir cache-demo\ncd cache-demo",
+        "text": "List your images and their sizes. Compare nginx:alpine with your own my-site images: yours are barely bigger, because they share the nginx layers.",
+        "code": "docker image ls",
         "label": "terminal"
       },
       {
-        "text": "Create a file called message.txt with this line.",
-        "code": "Hello, cache!",
-        "label": "message.txt"
+        "text": "Show the layers of your my-site image. Each Dockerfile step is one row, with the size it added. Your COPY step adds only a few bytes.",
+        "code": "docker history my-site:1.0",
+        "label": "terminal"
       },
       {
-        "text": "Create a Dockerfile. The RUN step waits 5 seconds to act like a slow install (think npm install or apt-get).",
-        "code": "FROM alpine:3.20\nCOPY message.txt /message.txt\nRUN echo \"Installing dependencies...\" && sleep 5\nCMD [\"cat\", \"/message.txt\"]",
+        "text": "Go back to your home folder, make a new folder, and move into it.",
+        "code": "cd ~\nmkdir layers-demo\ncd layers-demo",
+        "label": "terminal"
+      },
+      {
+        "text": "Create a Dockerfile that makes a 50 MB file in one step and deletes it in the next.",
+        "code": "FROM alpine:3.20\nRUN dd if=/dev/zero of=/big.file bs=1M count=50\nRUN rm /big.file",
         "label": "Dockerfile",
         "notes": [
           {
             "for": "Windows",
-            "text": "Save it as Dockerfile, not Dockerfile.txt (choose \"All files\" in Notepad)."
+            "text": "Save it as Dockerfile, not Dockerfile.txt (choose \"All files\" in Notepad), or use VS Code."
           }
         ]
       },
       {
-        "text": "Build it. It takes about 5 seconds because of the RUN step.",
-        "code": "docker build -t cache-demo .",
+        "text": "Build it, then check its size. It is about 60 MB, even though the file is gone.",
+        "code": "docker build -t layers-demo:bloated .\ndocker image ls layers-demo",
         "label": "terminal"
       },
       {
-        "text": "Build again without changing anything. It finishes almost instantly, and each step says CACHED. Docker reused every layer.",
-        "code": "docker build -t cache-demo .",
+        "text": "Look at the layers. The dd layer still holds 52 MB. Layers are read-only, so a later rm only hides the file: the bytes still ship.",
+        "code": "docker history layers-demo:bloated",
         "label": "terminal"
       },
       {
-        "text": "Change the text in message.txt, save it, and build again. It is slow again. The COPY step changed, so every step after it rebuilds too, even the RUN step that did not change.",
-        "code": "docker build -t cache-demo .",
-        "label": "terminal"
-      },
-      {
-        "text": "Fix it: move the slow RUN step above the COPY. Things that rarely change go first, things that change often go last.",
-        "code": "FROM alpine:3.20\nRUN echo \"Installing dependencies...\" && sleep 5\nCOPY message.txt /message.txt\nCMD [\"cat\", \"/message.txt\"]",
+        "text": "Fix it: create and delete the file in the same RUN step, so the layer is saved without it.",
+        "code": "FROM alpine:3.20\nRUN dd if=/dev/zero of=/big.file bs=1M count=50 && rm /big.file",
         "label": "Dockerfile"
       },
       {
-        "text": "Build once (slow, because the order changed). Then change message.txt again and rebuild. Now it is fast: the RUN step says CACHED and only COPY runs.",
-        "code": "docker build -t cache-demo .",
-        "label": "terminal"
-      },
-      {
-        "text": "Run it, then list its layers. Each Dockerfile step is one layer.",
-        "code": "docker run --rm cache-demo\ndocker history cache-demo",
+        "text": "Build the slim version and compare. In real Dockerfiles this is why you see `apk add --no-cache`, or `apt-get install` and `rm -rf /var/lib/apt/lists/*` in one RUN.",
+        "code": "docker build -t layers-demo:slim .\ndocker image ls layers-demo",
         "label": "terminal"
       }
     ],
-    "expected": "The last rebuild takes about 1 second instead of 5, with the RUN step marked CACHED.",
+    "expected": "layers-demo:bloated is about 60 MB and layers-demo:slim is about 9 MB, the same as alpine itself.",
     "files": {
-      "note": "Run every command from inside cache-demo.",
+      "note": "From step 3 on, run every command from inside layers-demo.",
       "entries": [
         {
-          "path": "cache-demo/",
-          "note": "your working folder, step 1"
+          "path": "layers-demo/",
+          "note": "your working folder, step 3"
         },
         {
-          "path": "cache-demo/message.txt",
-          "note": "step 2, you edit it twice"
-        },
-        {
-          "path": "cache-demo/Dockerfile",
-          "note": "step 3, reordered in step 7"
+          "path": "layers-demo/Dockerfile",
+          "note": "step 4, rewritten in step 7"
         }
       ]
     }
+  },
+  {
+    "id": "layer-cache",
+    "title": "Cache your dependencies",
+    "minutes": 7,
+    "summary": "Order a Node.js Dockerfile so npm install only runs again when your dependencies change, not on every code change.",
+    "steps": [
+      {
+        "text": "Go back to your home folder, make a new folder, and move into it. You will use this small Node.js app for the next three exercises.",
+        "code": "cd ~\nmkdir node-app\ncd node-app",
+        "label": "terminal"
+      },
+      {
+        "text": "Create package.json. It lists one dependency (express) and one development-only tool (prettier).",
+        "code": "{\n  \"name\": \"node-app\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"scripts\": {\n    \"start\": \"node server.js\",\n    \"test\": \"node --test\"\n  },\n  \"dependencies\": {\n    \"express\": \"^5.1.0\"\n  },\n  \"devDependencies\": {\n    \"prettier\": \"^3.6.0\"\n  }\n}",
+        "label": "package.json"
+      },
+      {
+        "text": "Create greet.js.",
+        "code": "export function greet(name) {\n  return `Hello, ${name}!`\n}",
+        "label": "greet.js"
+      },
+      {
+        "text": "Create server.js. It answers every request with a JSON greeting.",
+        "code": "import express from 'express'\nimport { greet } from './greet.js'\n\nconst app = express()\napp.get('/', (req, res) => {\n  res.json({ message: greet('Dojo'), mode: process.env.NODE_ENV ?? 'development' })\n})\napp.listen(3000, () => console.log('Listening on port 3000'))",
+        "label": "server.js"
+      },
+      {
+        "text": "Create a Dockerfile the simple way: copy everything, then install. You do not need Node.js on your machine: npm runs inside the build.",
+        "code": "FROM node:24-alpine\nWORKDIR /app\nCOPY . .\nRUN npm install\nCMD [\"node\", \"server.js\"]",
+        "label": "Dockerfile",
+        "notes": [
+          {
+            "for": "Windows",
+            "text": "Save it as Dockerfile, not Dockerfile.txt (choose \"All files\" in Notepad), or use VS Code."
+          }
+        ]
+      },
+      {
+        "text": "Build it. The npm install step downloads about 70 packages.",
+        "code": "docker build -t node-app .",
+        "label": "terminal"
+      },
+      {
+        "text": "Change \"Hello\" to \"Hi\" in greet.js, save, and build again. npm install runs again, although package.json did not change. COPY . . saw a changed file, so every step after it rebuilt.",
+        "code": "docker build -t node-app .",
+        "label": "terminal"
+      },
+      {
+        "text": "Fix it: copy package.json on its own first, install, then copy the rest of the code.",
+        "code": "FROM node:24-alpine\nWORKDIR /app\nCOPY package.json ./\nRUN npm install\nCOPY . .\nCMD [\"node\", \"server.js\"]",
+        "label": "Dockerfile"
+      },
+      {
+        "text": "Build once (it installs again, because the steps changed). Then change \"Hi\" to \"Hey\" in greet.js and build again. This time npm install says CACHED and only the last COPY runs.",
+        "code": "docker build -t node-app .\ndocker build -t node-app .",
+        "label": "terminal"
+      },
+      {
+        "text": "Run it and open http://localhost:8083. Then remove the container.",
+        "code": "docker run -d --name node-app -p 8083:3000 node-app\ndocker rm -f node-app",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "Real projects also copy the lock file (package-lock.json) in that first COPY and use npm ci. PHP works the same way: copy composer.json and composer.lock, run composer install, then copy the code."
+          }
+        ]
+      }
+    ],
+    "expected": "After the fix, a code-only change rebuilds in about a second, with RUN npm install marked CACHED.",
+    "files": {
+      "note": "Run every command from inside node-app. There is no node_modules here: packages are installed inside the image.",
+      "entries": [
+        {
+          "path": "node-app/",
+          "note": "your working folder, step 1"
+        },
+        {
+          "path": "node-app/package.json",
+          "note": "step 2"
+        },
+        {
+          "path": "node-app/greet.js",
+          "note": "step 3, you edit it twice"
+        },
+        {
+          "path": "node-app/server.js",
+          "note": "step 4"
+        },
+        {
+          "path": "node-app/Dockerfile",
+          "note": "step 5, reordered in step 8"
+        }
+      ]
+    }
+  },
+  {
+    "id": "dockerignore",
+    "title": "Keep files out with .dockerignore",
+    "minutes": 4,
+    "summary": "COPY . . copies everything, secrets included. Use .dockerignore to decide what reaches the build.",
+    "steps": [
+      {
+        "text": "Stay in node-app. Create a .env file with a pretend secret, like many projects have.",
+        "code": "SECRET_KEY=do-not-ship-me",
+        "label": ".env",
+        "notes": [
+          {
+            "for": "Windows",
+            "text": "Save it as .env, not .env.txt (choose \"All files\" in Notepad), or use VS Code."
+          }
+        ]
+      },
+      {
+        "text": "Create a debug.log file too.",
+        "code": "debug output",
+        "label": "debug.log"
+      },
+      {
+        "text": "Build and list the files inside the image. Your secret and your log file are both in there, for anyone who pulls the image.",
+        "code": "docker build -t node-app .\ndocker run --rm node-app ls -a",
+        "label": "terminal"
+      },
+      {
+        "text": "Create a .dockerignore file. It works like .gitignore: matching files never reach the build. node_modules is there so a local install can never overwrite the one built in the image.",
+        "code": ".env\n*.log\nnode_modules",
+        "label": ".dockerignore",
+        "notes": [
+          {
+            "for": "Windows",
+            "text": "Save it as .dockerignore, not .dockerignore.txt (choose \"All files\" in Notepad), or use VS Code."
+          }
+        ]
+      },
+      {
+        "text": "Build and list again. .env and debug.log are gone. The build output line \"transferring context\" also shows how much was sent to Docker.",
+        "code": "docker build -t node-app .\ndocker run --rm node-app ls -a",
+        "label": "terminal"
+      }
+    ],
+    "expected": "The second listing has no .env and no debug.log.",
+    "files": {
+      "note": "Still inside node-app.",
+      "entries": [
+        {
+          "path": "node-app/",
+          "note": "from the last exercise"
+        },
+        {
+          "path": "node-app/.env",
+          "note": "step 1, must not ship"
+        },
+        {
+          "path": "node-app/debug.log",
+          "note": "step 2"
+        },
+        {
+          "path": "node-app/.dockerignore",
+          "note": "step 4"
+        },
+        {
+          "path": "node-app/Dockerfile"
+        },
+        {
+          "path": "node-app/greet.js"
+        },
+        {
+          "path": "node-app/package.json"
+        },
+        {
+          "path": "node-app/server.js"
+        }
+      ]
+    }
+  },
+  {
+    "id": "multi-stage",
+    "title": "Test and ship with multi-stage builds",
+    "minutes": 8,
+    "summary": "One Dockerfile, two targets: a test stage with every tool, and a lean production stage that runs as a normal user.",
+    "steps": [
+      {
+        "text": "Stay in node-app. Set greet.js back to \"Hello\", then add a test for it. node --test finds files ending in .test.js.",
+        "code": "import { test } from 'node:test'\nimport assert from 'node:assert/strict'\nimport { greet } from './greet.js'\n\ntest('greets by name', () => {\n  assert.equal(greet('Dojo'), 'Hello, Dojo!')\n})",
+        "label": "greet.test.js"
+      },
+      {
+        "text": "Replace the Dockerfile with three stages. Each FROM starts a stage, and AS gives it a name. test and production both start from base.",
+        "code": "FROM node:24-alpine AS base\nWORKDIR /app\nCOPY package.json ./\n\nFROM base AS test\nRUN npm install\nCOPY . .\nRUN npm test\n\nFROM base AS production\nENV NODE_ENV=production\nRUN npm install --omit=dev\nCOPY . .\nUSER node\nCMD [\"node\", \"server.js\"]",
+        "label": "Dockerfile"
+      },
+      {
+        "text": "Build only the test stage with --target. The tests run during the build, and the build stops if any fail.",
+        "code": "docker build --target test -t node-app:test .",
+        "label": "terminal"
+      },
+      {
+        "text": "Break the test: change \"Hello\" to \"Helo\" in greet.js and build the test stage again. The build fails and shows expected and actual. Change it back afterwards.",
+        "code": "docker build --target test -t node-app:test .",
+        "label": "terminal"
+      },
+      {
+        "text": "Build the production image. With no --target, Docker builds the last stage, and skips stages it does not need, like test.",
+        "code": "docker build -t node-app:prod .",
+        "label": "terminal"
+      },
+      {
+        "text": "Compare them. production is smaller: --omit=dev left out prettier, and NODE_ENV=production tells libraries like express to run in production mode.",
+        "code": "docker image ls node-app\ndocker run --rm node-app:test ls node_modules/prettier\ndocker run --rm node-app:prod ls node_modules/prettier",
+        "label": "terminal"
+      },
+      {
+        "text": "Run production and open http://localhost:8083. The response says \"mode\": \"production\". USER node means the app does not run as root.",
+        "code": "docker run -d --name node-app -p 8083:3000 node-app:prod\ndocker exec node-app whoami",
+        "label": "terminal"
+      },
+      {
+        "text": "Remove the container. For a Laravel app the production stage runs composer install --no-dev --optimize-autoloader and php artisan optimize instead. This app's own api Dockerfile does exactly that, with a test stage that runs php artisan test.",
+        "code": "docker rm -f node-app",
+        "label": "terminal"
+      }
+    ],
+    "expected": "The broken test fails the build, node-app:prod is smaller than node-app:test, has no prettier, and whoami prints node.",
+    "files": {
+      "note": "Still inside node-app.",
+      "entries": [
+        {
+          "path": "node-app/",
+          "note": "from the last exercises"
+        },
+        {
+          "path": "node-app/greet.test.js",
+          "note": "step 1"
+        },
+        {
+          "path": "node-app/Dockerfile",
+          "note": "step 2, now three stages"
+        },
+        {
+          "path": "node-app/greet.js",
+          "note": "broken and fixed in step 4"
+        },
+        {
+          "path": "node-app/.dockerignore"
+        },
+        {
+          "path": "node-app/.env"
+        },
+        {
+          "path": "node-app/debug.log"
+        },
+        {
+          "path": "node-app/package.json"
+        },
+        {
+          "path": "node-app/server.js"
+        }
+      ]
+    }
+  },
+  {
+    "id": "scan-image",
+    "title": "Scan an image for vulnerabilities",
+    "minutes": 5,
+    "summary": "Use Docker Scout, built into Docker Desktop, to find known security issues in your image and how to fix them.",
+    "steps": [
+      {
+        "text": "Scout needs a free Docker account. Sign in to Docker Desktop (top right), or run docker login in your terminal.",
+        "code": "docker login",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Linux",
+            "text": "Docker Engine on its own does not include Scout. Use Docker Desktop for this exercise, or install the scout plugin from github.com/docker/scout-cli."
+          }
+        ]
+      },
+      {
+        "text": "In Docker Desktop, open Images and select node-app:prod. The Vulnerabilities view lists known issues (CVEs) by severity and which package each one is in."
+      },
+      {
+        "text": "The same from the terminal. quickview gives a summary and a health score: your USER node line already passes the non-root check. cves lists only the serious issues, and --locations shows the file each one was found in.",
+        "code": "docker scout quickview node-app:prod\ndocker scout cves --only-severity critical,high --locations node-app:prod",
+        "label": "terminal"
+      },
+      {
+        "text": "Look at the paths: they are all under /usr/local/lib/node_modules/npm, which is npm itself, shipped in the node base image. Your code and express are clean. Ask Scout whether a newer or different base image would help.",
+        "code": "docker scout recommendations node-app:prod",
+        "label": "terminal"
+      },
+      {
+        "text": "For contrast, scan an old base image that no longer gets updates. It has dozens of high and critical issues and runs as root. The fix for most findings is a newer, smaller base image.",
+        "code": "docker scout quickview node:18-alpine",
+        "label": "terminal"
+      }
+    ],
+    "expected": "Your image shows a few high issues, all inside npm from the base image, while node:18-alpine shows dozens, including critical ones."
   },
   {
     "id": "volumes",
@@ -390,6 +679,11 @@
         "code": "cd ~\ngit clone <repo-url-from-your-trainer> docker-dojo\ncd docker-dojo\ndocker compose up -d --build"
       },
       {
+        "text": "Both Dojo images use multi-stage builds with a test stage. Run the API tests the same way you ran yours.",
+        "code": "docker build --target test apps/api\ndocker build --target test apps/web",
+        "label": "terminal"
+      },
+      {
         "text": "Open http://localhost:8000 to see your own copy. When you're finished, run: docker compose down"
       }
     ],
@@ -434,7 +728,7 @@
   {
     "id": "cleanup",
     "title": "Clean up",
-    "minutes": 2,
+    "minutes": 3,
     "summary": "See how much space Docker is using and reclaim it.",
     "steps": [
       {
@@ -444,12 +738,17 @@
       },
       {
         "text": "Remove what you made today. Removing a volume permanently deletes its data.",
-        "code": "docker image rm my-site:1.0 my-site:1.1 cache-demo\ndocker volume rm notes",
+        "code": "docker image rm my-site:1.0 my-site:1.1 layers-demo:bloated layers-demo:slim\ndocker image rm node-app node-app:test node-app:prod\ndocker volume rm notes",
         "label": "terminal"
       },
       {
         "text": "Optionally, remove all stopped containers and unused images in one go (asks for confirmation).",
         "code": "docker system prune",
+        "label": "terminal"
+      },
+      {
+        "text": "The builds left cached layers behind too. This clears the build cache.",
+        "code": "docker builder prune",
         "label": "terminal"
       }
     ],

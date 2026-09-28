@@ -3,14 +3,16 @@
 namespace App\Support;
 
 /**
- * Exercises and quiz live in resources/content/*.json so they can be edited
- * without touching PHP. Quiz answers are only ever returned after grading.
+ * Exercises, quiz and glossary live in resources/content/*.json so they can be edited
+ * without touching PHP. Quiz answers never leave the server before grading (see Quiz).
  */
 class Content
 {
     private static ?array $exercises = null;
 
     private static ?array $quiz = null;
+
+    private static ?array $glossary = null;
 
     public static function exercises(): array
     {
@@ -27,17 +29,9 @@ class Content
         return self::$quiz ??= self::load('quiz.json');
     }
 
-    public static function publicQuiz(): array
+    public static function glossary(): array
     {
-        $quiz = self::quiz();
-
-        return [
-            'passMark' => $quiz['passMark'],
-            'questions' => array_map(
-                fn (array $q) => array_diff_key($q, ['answer' => 1, 'explanation' => 1]),
-                $quiz['questions'],
-            ),
-        ];
+        return self::$glossary ??= self::load('glossary.json');
     }
 
     private static function load(string $file): array
