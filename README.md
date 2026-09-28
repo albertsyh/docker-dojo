@@ -1,8 +1,8 @@
 # docker-dojo
 
-A one-hour, hands-on Docker and Docker Compose workshop: 9 copy-paste exercises
-(~43 min) and a 10-question quiz (~10 min), with anonymous progress tracking and a
-live tracker for the trainer. The app is itself fully dockerised, so students can
+A 90-minute, hands-on Docker and Docker Compose workshop: 14 copy-paste exercises
+(~75 min) and a 15-question quiz (~12 min), with a glossary, anonymous progress
+tracking and a live tracker for the trainer. The app is itself fully dockerised, so students can
 read and run it as the final example.
 
 ## Run it
@@ -60,6 +60,46 @@ and point `REDIS_HOST` at a Redis service, so the instances share messages.
 
 Rate limits: joining is limited per IP (`DOJO_JOIN_PER_MINUTE`, default 120, because a
 classroom often shares one public IP). Everything else is limited per participant id.
+
+### Resources
+
+`compose.yaml` caps each container. Together they allow 3 CPUs and about 1.5GB of
+memory, so a 2 vCPU / 2GB VPS is enough for a workshop.
+
+| Service | Limit | Idle | Peak in load test |
+|---|---|---|---|
+| db | 1 CPU, 768MB | ~450MB | 90% CPU, 455MB |
+| api | 1 CPU, 384MB | ~12MB | 100% CPU, 46MB |
+| reverb | 0.5 CPU, 256MB | ~35MB | 37% CPU, 42MB |
+| web | 0.5 CPU, 64MB | ~9MB | 42% CPU, 16MB |
+
+The load test ran 150 students who each joined, finished all 10 exercises and
+submitted the quiz, 30 at a time, with 150 Live-page websockets open. That is 1,800
+writes in 14 seconds, about 130 requests a second, with p95 latency of 280ms and no
+errors. A real workshop is a small fraction of that.
+
+MySQL is most of the memory, and most of that is its default buffers. It could be
+trimmed if you need a smaller box.
+
+## Tests
+
+Each image has a `test` stage that runs its suite during the build, and fails the
+build if a test fails. `docker compose build` only builds the production stages, so
+run the tests explicitly:
+
+```sh
+docker build --target test apps/api    # PHPUnit: API behaviour and content rules
+docker build --target test apps/web    # Vitest: glossary, header menu, pets
+./scripts/test-stack.sh                # whole stack end to end (needs Bun)
+```
+
+- **API tests** cover joining, conflicts, grading, stats and broadcasts.
+- **Content tests** check `exercises.json`, `quiz.json` and `glossary.json`: ids,
+  required fields, no em-dashes, shell-safe commands, and glossary links.
+- **`test-stack.sh`** starts a throwaway copy of the stack as the compose project
+  `docker-dojo-test` on port 8099, with its own database volume. It tests through
+  nginx (routing, websockets, published ports, resource limits), then removes the
+  copy. Your normal stack and its data are untouched.
 
 ## Developing the frontend
 

@@ -1,6 +1,6 @@
 ---
 name: Docker Dojo
-description: A one-hour, hands-on Docker workshop. Copy a command, run it, tick it off.
+description: A 90-minute, hands-on Docker workshop. Copy a command, run it, tick it off.
 colors:
   chalkboard-green: "#226929"
   chalkboard-green-deep: "#15561d"

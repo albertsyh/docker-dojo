@@ -6,7 +6,7 @@ product
 
 ## Users
 
-Adults learning Docker in a live, trainer-led workshop of about one hour. Each student sits at
+Adults learning Docker in a live, trainer-led workshop of about 90 minutes. Each student sits at
 their own laptop with a terminal open next to the browser: they read a step, copy a command,
 run it, check the result, and come back. Many are developers new to containers; some are
 non-developers (analysts, QA, ops). They are anonymous (a random id, no account).
@@ -16,8 +16,9 @@ and how far the room has got. That screen is read from across the room, at a gla
 
 ## Product Purpose
 
-Docker Dojo walks a room through ten short, copy-paste exercises (containers, images, the
-build cache, volumes, networks, Docker Compose) and a ten-question quiz, all inside an hour.
+Docker Dojo walks a room through fourteen short, copy-paste exercises (containers, images,
+image size and layers, the build cache, .dockerignore, multi-stage builds, vulnerability
+scanning, volumes, networks, Docker Compose) and a fifteen-question quiz, in about 90 minutes.
 The app itself runs in Docker, so it doubles as the final worked example.
 
 Success looks like: every student finishes the exercises without getting lost, passes the

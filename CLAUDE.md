@@ -1,6 +1,6 @@
 # Docker Dojo
 
-A one-hour, hands-on Docker and Docker Compose workshop. Students pick a random
+A 90-minute, hands-on Docker and Docker Compose workshop. Students pick a random
 participant id, work through copy-paste exercises on their own machine, mark each one
 done, then take a short quiz. A public Live page shows the whole room's progress.
 It is an unofficial training app, not affiliated with Docker, Inc.
@@ -14,17 +14,19 @@ It is an unofficial training app, not affiliated with Docker, Inc.
 
 ## Writing exercises
 
-Content lives in `apps/api/resources/content/exercises.json` and `quiz.json`. The API
+Content lives in `apps/api/resources/content/`: `exercises.json`, `quiz.json` and `glossary.json`. The API
 serves it. Editing it needs an api rebuild (`docker compose up -d --build api reverb`),
 not a web rebuild.
 
-**Time budget.** Exercises plus the quiz must fit in about an hour. Keep the sum of
-`minutes` near 50, and leave 10 for the quiz. If you add an exercise, trim or merge
-another.
+**Time budget.** Exercises plus the quiz must fit in about 90 minutes. Keep the sum
+of `minutes` at or under 80 (a content test enforces it), and leave about 12 for the
+quiz. If you add an exercise, trim or merge another.
 
 **Sequence.** The order is the curriculum. Each exercise introduces one idea and may
-rely on the ones before it: run, exec, build, cache, volumes, networks, Compose, this
-app, cleanup. The home page and journey list point students at the first unfinished one.
+rely on the ones before it: run, exec, build, image size and layers, dependency cache,
+.dockerignore, multi-stage, scanning, volumes, networks, Compose, this app, cleanup.
+`layer-cache`, `dockerignore` and `multi-stage` share one `~/node-app` folder, each
+building on the last. The home page and journey list point students at the first unfinished one.
 
 **Shape of an exercise:**
 
@@ -67,7 +69,8 @@ app, cleanup. The home page and journey list point students at the first unfinis
   - 8000: the Dojo itself;
   - 8080: nginx exercises;
   - 8081: my-site;
-  - 8082: the Compose demo.
+  - 8082: the Compose demo;
+  - 8083: node-app.
 
   Pick a free one for anything new.
 - Name everything the student creates, and tidy up at the end of the exercise, so that
@@ -96,9 +99,9 @@ progress for it. Only do that between workshops.
 - **No em-dashes anywhere in UI copy or content.** Use a colon, a full stop, or brackets.
 - Backticks in quiz text and glossary entries render as inline code (`RichText.vue`).
   Exercise step `text` is plain.
-- The glossary (`apps/web/src/glossary.ts`) is the vocabulary list for the exercises.
+- The glossary (`apps/api/resources/content/glossary.json`) is the vocabulary list for the exercises.
   When an exercise introduces a new term, add it there. `seenIn` must name real
-  exercise ids (unknown ids are hidden, not flagged).
+  exercise ids. The content tests check that.
 
 ## Backend patterns (apps/api)
 
@@ -140,7 +143,21 @@ progress for it. Only do that between workshops.
 - Pets are OpenPets sprite sheets, used with permission and credited in the footer and
   README. To add one, run `bun scripts/build-pets.ts` in `apps/web`, which regenerates
   the WebP sheets and `pets.json`. They only show at 1000px and wider.
-- `bun run build` (vue-tsc plus vite) is the typecheck. Run it before handing over.
+- `bun run build` (vue-tsc plus vite) is the typecheck and `bun run test` runs Vitest.
+  Run both before handing over.
+
+## Tests
+
+- Run them before handing over:
+  - `docker build --target test apps/api` (PHPUnit);
+  - `docker build --target test apps/web` (Vitest);
+  - `./scripts/test-stack.sh` (the whole stack end to end, in a throwaway compose project on port 8099).
+- API tests use SQLite in memory, so keep SQL portable. For example, write
+  `score * 1.0 / total`, because SQLite divides integers.
+- `tests/Feature/ContentTest.php` encodes the exercise rules above. When you add a
+  rule, add a test for it.
+- A new behaviour gets a test that fails without it. Check that by breaking a scratch
+  copy, never the real stack's data.
 
 ## Working here
 
