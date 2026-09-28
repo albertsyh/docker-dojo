@@ -17,8 +17,8 @@ const rows = computed(() => {
 </script>
 
 <template>
-  <aside class="card files" aria-label="Files in your working folder">
-    <h2>Files</h2>
+  <aside class="files" aria-label="Files in your working folder">
+    <h2>Files in your folder</h2>
     <p v-if="files.note" class="muted note">{{ files.note }}</p>
     <ul class="tree">
       <li v-for="(row, i) in rows" :key="i" :class="{ nested: row.depth > 0 }" :style="{ '--depth': row.depth }">
@@ -38,10 +38,10 @@ const rows = computed(() => {
 </template>
 
 <style scoped>
-.files { display: grid; gap: 12px; padding: 16px; }
-h2 { font-size: 1rem; margin: 0; }
-.note { font-size: 0.9rem; margin: 0; }
-.tree { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.files { display: grid; gap: var(--space-3); padding: var(--space-4); border-radius: var(--radius-lg); background: var(--panel); border: 1px solid var(--border); }
+h2 { font-size: var(--text-md); margin: 0; }
+.note { font-size: var(--text-sm); margin: 0; }
+.tree { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
 .tree li { display: flex; gap: 8px; align-items: flex-start; padding-left: calc(var(--depth) * 1.1rem); }
 /* Vertical guide line under the parent's icon. */
 .tree li.nested {
@@ -51,9 +51,9 @@ h2 { font-size: 1rem; margin: 0; }
   background-position: calc(var(--depth) * 1.1rem - 0.6rem) 0;
 }
 .icon { flex: none; width: 1rem; height: 1rem; margin-top: 0.2rem; }
-.icon.dir { fill: color-mix(in srgb, var(--accent) 30%, transparent); stroke: var(--accent); stroke-width: 1; }
+.icon.dir { fill: var(--primary-soft); stroke: var(--primary); stroke-width: 1; }
 .icon.file { fill: none; stroke: var(--muted); stroke-width: 1; stroke-linejoin: round; }
 .entry { display: flex; flex-direction: column; min-width: 0; }
-.name { font-family: var(--mono); font-size: 0.86rem; overflow-wrap: anywhere; }
-.hint { font-size: 0.8rem; line-height: 1.35; }
+.name { font-family: var(--mono); font-size: var(--text-sm); font-weight: 600; overflow-wrap: anywhere; }
+.hint { font-size: var(--text-xs); line-height: 1.4; }
 </style>

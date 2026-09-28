@@ -1,11 +1,17 @@
 <script setup lang="ts">
 // Shown instead of a page that needs a participant id.
+import AppIcon from './AppIcon.vue'
 </script>
 
 <template>
-  <div class="card stack">
-    <h2>Start first</h2>
-    <p class="muted">Grab an anonymous participant id on the home page so your progress can be saved.</p>
-    <RouterLink to="/" class="btn primary">Go to start</RouterLink>
-  </div>
+  <section class="gate">
+    <h1>Get your name badge first</h1>
+    <p class="lead">Pick an anonymous id on the start page so your progress is saved. It takes a few seconds.</p>
+    <RouterLink to="/" class="btn primary">Go to start<AppIcon name="arrow-right" /></RouterLink>
+  </section>
 </template>
+
+<style scoped>
+.gate { display: grid; gap: var(--space-2); justify-items: start; }
+.gate .btn { margin-top: var(--space-3); }
+</style>

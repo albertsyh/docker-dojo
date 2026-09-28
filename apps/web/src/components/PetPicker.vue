@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { choosePet, pet, PETS, togglePicker } from '../pets'
+import AppIcon from './AppIcon.vue'
 
 const list = ref<HTMLElement | null>(null)
 
@@ -17,10 +18,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <section class="picker card" role="dialog" aria-labelledby="pet-picker-title">
+  <section class="picker" role="dialog" aria-labelledby="pet-picker-title">
     <header>
       <h2 id="pet-picker-title">Choose your pet</h2>
-      <button class="close" type="button" aria-label="Close" @click="togglePicker">✕</button>
+      <button class="btn small ghost close" type="button" aria-label="Close" @click="togglePicker"><AppIcon name="x" /></button>
     </header>
     <div ref="list" class="options" role="radiogroup" aria-labelledby="pet-picker-title">
       <button
@@ -38,6 +39,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
           <strong>{{ p.name }}</strong>
           <span class="muted">{{ p.description }}</span>
         </span>
+        <AppIcon v-if="pet.id === p.id" name="check" class="chosen" />
       </button>
     </div>
     <p class="muted credit">Pets by <a href="https://openpets.dev" target="_blank" rel="noopener">OpenPets</a></p>
@@ -45,32 +47,34 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 </template>
 
 <style scoped>
-/* Sits above the pet in the bottom-right corner. */
+/* Floats above the pet in the bottom-right corner. */
 .picker {
-  position: fixed; right: 16px; bottom: 136px; z-index: 30;
-  width: min(340px, calc(100vw - 32px)); max-height: calc(100vh - 160px); overflow-y: auto;
-  padding: 14px; display: grid; gap: 10px;
-  box-shadow: 0 12px 32px rgb(16 24 40 / 0.18);
+  position: fixed; right: var(--space-4); bottom: 136px; z-index: var(--z-popover);
+  width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 160px); overflow-y: auto;
+  padding: var(--space-4); display: grid; gap: var(--space-3);
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-float);
+  animation: rise var(--dur-base) var(--ease-out);
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
 }
 header { display: flex; align-items: center; justify-content: space-between; }
-h2 { font-size: 1rem; margin: 0; }
-.close {
-  font: inherit; width: 2rem; height: 2rem; border-radius: 8px; cursor: pointer;
-  border: 1px solid var(--border); background: var(--surface); color: var(--muted);
-}
-.close:hover { color: var(--text); }
-.options { display: grid; gap: 6px; }
+h2 { font-size: var(--text-md); margin: 0; }
+.close { width: 2rem; padding: 0; }
+.options { display: grid; gap: var(--space-2); }
 .option {
-  display: flex; gap: 12px; align-items: center; text-align: left; width: 100%;
-  font: inherit; color: var(--text); background: var(--surface); cursor: pointer;
-  border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px;
+  display: flex; gap: var(--space-3); align-items: center; text-align: left; width: 100%;
+  font: inherit; color: var(--ink); background: var(--bg); cursor: pointer;
+  border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3);
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
 }
-.option:hover { border-color: var(--accent); }
-.option.on { border-color: var(--accent); background: var(--accent-soft); }
+.option:hover { border-color: var(--ink); }
+.option.on { border-color: var(--primary); background: var(--primary-soft); }
 .option img { flex: none; image-rendering: pixelated; }
-.text { display: flex; flex-direction: column; min-width: 0; }
-.text .muted { font-size: 0.82rem; line-height: 1.35; }
-.credit { font-size: 0.8rem; margin: 0; }
+.text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.text .muted { font-size: var(--text-xs); line-height: 1.4; }
+.chosen { flex: none; width: 1.2rem; height: 1.2rem; color: var(--primary); }
+.credit { font-size: var(--text-xs); margin: 0; }
 @media (max-width: 999px) {
   .picker { display: none; }
 }

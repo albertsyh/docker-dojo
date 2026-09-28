@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-28T00:00:00Z",
+  "title": "Design System: Docker Dojo",
+  "extensions": {
+    "colorMeta": {
+      "chalkboard-green": { "role": "primary", "displayName": "Chalkboard Green", "canonical": "oklch(0.46 0.12 145)", "dark": "oklch(0.74 0.15 145)" },
+      "chalkboard-green-deep": { "role": "primary", "displayName": "Chalkboard Green Deep", "canonical": "oklch(0.4 0.11 145)", "dark": "oklch(0.8 0.14 145)" },
+      "green-wash": { "role": "primary", "displayName": "Green Wash", "canonical": "oklch(0.95 0.04 145)", "dark": "oklch(0.28 0.05 145)" },
+      "highlighter": { "role": "secondary", "displayName": "Highlighter", "canonical": "oklch(0.92 0.155 100)", "dark": "oklch(0.88 0.15 100)" },
+      "highlighter-wash": { "role": "secondary", "displayName": "Highlighter Wash", "canonical": "oklch(0.97 0.06 100)", "dark": "oklch(0.3 0.05 100)" },
+      "highlighter-ink": { "role": "secondary", "displayName": "Highlighter Ink", "canonical": "oklch(0.25 0.05 100)", "dark": "oklch(0.2 0.04 100)" },
+      "bench-white": { "role": "neutral", "displayName": "Bench White", "canonical": "oklch(1 0 0)", "dark": "oklch(0.17 0.012 150)" },
+      "bench-panel": { "role": "neutral", "displayName": "Bench Panel", "canonical": "oklch(0.975 0.008 150)", "dark": "oklch(0.21 0.014 150)" },
+      "bench-panel-2": { "role": "neutral", "displayName": "Bench Panel 2", "canonical": "oklch(0.95 0.012 150)", "dark": "oklch(0.25 0.016 150)" },
+      "rule": { "role": "neutral", "displayName": "Rule", "canonical": "oklch(0.9 0.012 150)", "dark": "oklch(0.31 0.016 150)" },
+      "rule-strong": { "role": "neutral", "displayName": "Rule Strong", "canonical": "oklch(0.62 0.02 150)", "dark": "oklch(0.5 0.02 150)" },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "oklch(0.22 0.02 150)", "dark": "oklch(0.94 0.01 150)" },
+      "ink-muted": { "role": "neutral", "displayName": "Ink Muted", "canonical": "oklch(0.47 0.02 150)", "dark": "oklch(0.74 0.02 150)" },
+      "terminal": { "role": "neutral", "displayName": "Terminal", "canonical": "oklch(0.21 0.015 150)", "dark": "oklch(0.12 0.01 150)" },
+      "terminal-text": { "role": "neutral", "displayName": "Terminal Text", "canonical": "oklch(0.93 0.01 150)" },
+      "terminal-muted": { "role": "neutral", "displayName": "Terminal Muted", "canonical": "oklch(0.68 0.03 150)" },
+      "terminal-prompt": { "role": "neutral", "displayName": "Terminal Prompt", "canonical": "oklch(0.78 0.13 145)" },
+      "error-red": { "role": "error", "displayName": "Error Red", "canonical": "oklch(0.53 0.19 27)", "dark": "oklch(0.72 0.16 27)" },
+      "error-wash": { "role": "error", "displayName": "Error Wash", "canonical": "oklch(0.96 0.025 27)", "dark": "oklch(0.27 0.05 27)" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles; 2.75rem on the home hero." },
+      "headline": { "displayName": "Headline", "purpose": "Section headings." },
+      "title": { "displayName": "Title", "purpose": "Exercise names, quiz questions." },
+      "body": { "displayName": "Body", "purpose": "Steps and prose, max 68ch." },
+      "label": { "displayName": "Label", "purpose": "Buttons, meta lines, tags." },
+      "code": { "displayName": "Code", "purpose": "Commands, file contents, participant ids." }
+    },
+    "shadows": [
+      { "name": "float", "value": "0 12px 32px oklch(0.22 0.02 150 / 0.16), 0 2px 6px oklch(0.22 0.02 150 / 0.08)", "purpose": "Pet picker and sticky quiz submit bar only." },
+      { "name": "badge", "value": "0 6px 16px oklch(0.22 0.02 150 / 0.12)", "purpose": "The tilted name badge." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.25, 1, 0.5, 1)", "purpose": "All state transitions (ease-out-quart)." },
+      { "name": "dur-fast", "value": "150ms", "purpose": "Hover and colour changes." },
+      { "name": "dur-base", "value": "200ms", "purpose": "Popover entrance, id reroll fade." },
+      { "name": "dur-slow", "value": "250ms", "purpose": "Progress fills (transform: scaleX)." }
+    ],
+    "breakpoints": [
+      { "name": "narrow", "value": "640px" },
+      { "name": "panel", "value": "900px", "purpose": "Files panel moves beside the steps." },
+      { "name": "pet", "value": "1000px", "purpose": "Pet and its controls appear." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The next thing to press. One per view region.",
+      "html": "<button class=\"ds-btn\">Mark as done</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; font: 650 14px/1.2 'Figtree Variable', system-ui, sans-serif; color: #fff; background: #226929; border: 1px solid #226929; border-radius: 8px; cursor: pointer; transition: background-color 150ms cubic-bezier(0.25,1,0.5,1); } .ds-btn:hover { background: #15561d; border-color: #15561d; }"
+    },
+    {
+      "name": "Terminal Code Block",
+      "kind": "custom",
+      "refersTo": "code-block",
+      "description": "Every command students copy. The $ prompt is CSS and never copied.",
+      "html": "<div class=\"ds-code\"><div class=\"ds-code-head\"><span>terminal</span><button>Copy</button></div><pre><code><span class=\"ds-line\">docker run hello-world</span></code></pre></div>",
+      "css": ".ds-code { background: #131a15; border-radius: 8px; overflow: hidden; } .ds-code-head { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 4px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); font: 13px 'JetBrains Mono Variable', monospace; color: #8c9e8f; } .ds-code-head button { font: 650 13px system-ui; color: #e3eae4; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 4px 12px; } .ds-code pre { margin: 0; padding: 12px 16px 16px; } .ds-code code { font: 14px/1.7 'JetBrains Mono Variable', monospace; color: #e3eae4; } .ds-line { display: block; } .ds-line::before { content: '$ '; color: #80cd82; user-select: none; }"
+    },
+    {
+      "name": "You Are Here Tag",
+      "kind": "chip",
+      "refersTo": "tag-here",
+      "description": "The single current item in a view.",
+      "html": "<span class=\"ds-here\">You are here</span>",
+      "css": ".ds-here { display: inline-flex; font: 650 13px/1 'Figtree Variable', system-ui, sans-serif; padding: 5px 8px; border-radius: 6px; background: #fde75e; color: #272201; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Lab Bench",
+    "overview": "A well-run university lab session: clean white bench paper, a chalkboard-green instructor's hand guiding each step, and a highlighter marking the one line that matters right now. The student's terminal is the real stage; this interface is the handout next to it.",
+    "keyCharacteristics": [
+      "White bench, chalkboard-green actions, highlighter yellow only for 'you are here' and celebrations.",
+      "Near-black terminal code blocks with a green $ prompt that is never copied.",
+      "One sans (Figtree) plus JetBrains Mono.",
+      "Flat by default; shadows only on floating things.",
+      "Progress always visible."
+    ],
+    "rules": [
+      { "name": "The Highlighter Rule", "body": "Yellow marks at most one current thing per view, plus celebrations.", "section": "colors" },
+      { "name": "The Green Means Go Rule", "body": "Green is for actions and completed progress; done states also carry a check or the word Done.", "section": "colors" },
+      { "name": "The No Eyebrow Rule", "body": "No small uppercase tracked labels above headings.", "section": "typography" },
+      { "name": "The Flat Bench Rule", "body": "If it doesn't float, it doesn't cast a shadow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep commands the most legible thing on screen.",
+      "Do show where the student is at all times.",
+      "Do pair every status colour with an icon or a word.",
+      "Do write short, plain copy with no em-dashes."
+    ],
+    "donts": [
+      "Don't make it look like a generic SaaS dashboard.",
+      "Don't make it look like a kids' learning app.",
+      "Don't use Docker's branding: no Docker blue, no whale or container-block marks.",
+      "Don't use coloured side-stripe borders.",
+      "Don't use yellow text on white."
+    ]
+  }
+}

@@ -68,6 +68,10 @@ reload. It proxies `/api` and the websocket to `localhost:8000`.
 
 ## Credits
 
+Docker Dojo is an unofficial training app. It is not affiliated with or endorsed by
+Docker, Inc. Docker is a trademark of Docker, Inc.
+
+
 - **Pets** by [OpenPets](https://openpets.dev), used with permission: Nori (the default),
   Crumb, Fuse and Professor Hoot (catalog ids `nori`, `crumb`, `fuse`, `professor-hoot`).
   Students pick one with "Choose pet" in the footer. `apps/web/src/assets/pets/` holds

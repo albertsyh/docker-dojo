@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import AppIcon from './components/AppIcon.vue'
 import DisplayControls from './components/DisplayControls.vue'
 import PetCompanion from './components/PetCompanion.vue'
 import PetPicker from './components/PetPicker.vue'
@@ -7,39 +8,66 @@ import { pet } from './pets'
 import { completed, state } from './store'
 
 const exerciseCount = computed(() => state.content?.exercises.length ?? 0)
+// The quiz counts as one more step on the journey, done once it's passed.
+const journeyPct = computed(() => {
+  if (!state.progress || !exerciseCount.value) return 0
+  const quizDone = state.progress.quiz?.passed ? 1 : 0
+  return ((completed.value.size + quizDone) / (exerciseCount.value + 1)) * 100
+})
 </script>
 
 <template>
   <header class="top">
     <div class="container top-inner">
       <RouterLink to="/" class="brand">
-        <img src="/favicon.svg" alt="" width="26" height="26" />
-        Docker Dojo
+        <img src="/favicon.svg" alt="" width="28" height="28" />
+        <span>Docker Dojo</span>
       </RouterLink>
-      <nav>
+      <nav aria-label="Main">
         <RouterLink to="/exercises">Exercises</RouterLink>
         <RouterLink to="/quiz">Quiz</RouterLink>
-        <RouterLink to="/live" class="live">Live</RouterLink>
+        <RouterLink to="/live" class="live"><i aria-hidden="true" />Live</RouterLink>
       </nav>
       <div v-if="state.progress" class="me" :title="`Your participant id: ${state.progress.id}`">
         <span class="me-id">{{ state.progress.id }}</span>
-        <span class="pill" :class="{ ok: completed.size === exerciseCount }">{{ completed.size }}/{{ exerciseCount }}</span>
-        <span v-if="state.progress.quiz" class="pill" :class="{ ok: state.progress.quiz.passed }">
-          quiz {{ state.progress.quiz.bestScore }}/{{ state.progress.quiz.total }}
+        <span class="tag" :class="{ ok: completed.size === exerciseCount }">
+          <AppIcon v-if="completed.size === exerciseCount" name="check" class="tag-icon" />{{ completed.size }}/{{ exerciseCount }}
+        </span>
+        <span v-if="state.progress.quiz" class="tag" :class="{ ok: state.progress.quiz.passed }">
+          Quiz {{ state.progress.quiz.bestScore }}/{{ state.progress.quiz.total }}
         </span>
       </div>
+    </div>
+    <div
+      v-if="state.progress"
+      class="rail"
+      role="progressbar"
+      aria-label="Your progress through the Dojo"
+      :aria-valuenow="Math.round(journeyPct)"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      <span :style="{ transform: `scaleX(${journeyPct / 100})` }" />
     </div>
   </header>
 
   <main class="container main">
     <p v-if="state.loading" class="muted">Loading…</p>
-    <div v-else-if="state.error" class="error">Could not reach the Dojo API: {{ state.error }}</div>
+    <div v-else-if="state.error" class="callout error">
+      <AppIcon name="alert" />
+      <span>Could not reach the Dojo API: {{ state.error }}</span>
+    </div>
     <RouterView v-else />
   </main>
 
   <footer class="foot" :class="{ 'with-pet': pet.shown }">
     <div class="container foot-inner">
-      <span class="muted">Docker Dojo · Vibe-coded with AI by <a href="https://github.com/albertsyh" target="_blank" rel="noopener">albertsyh</a> · Pets by <a href="https://openpets.dev" target="_blank" rel="noopener">OpenPets</a></span>
+      <p class="credits muted">
+        Docker Dojo · Vibe-coded with AI by <a href="https://github.com/albertsyh" target="_blank" rel="noopener">albertsyh</a>
+        · Pets by <a href="https://openpets.dev" target="_blank" rel="noopener">OpenPets</a>
+        <br />
+        Unofficial. Not affiliated with or endorsed by Docker, Inc. Docker is a trademark of Docker, Inc.
+      </p>
       <DisplayControls />
     </div>
   </footer>
@@ -49,25 +77,40 @@ const exerciseCount = computed(() => state.content?.exercises.length ?? 0)
 </template>
 
 <style scoped>
-.top { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
-.top-inner { display: flex; align-items: center; gap: 20px; min-height: 60px; flex-wrap: wrap; padding-block: 8px; }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text); text-decoration: none; letter-spacing: -0.01em; }
-nav { display: flex; gap: 4px; }
-nav a { color: var(--muted); text-decoration: none; font-weight: 600; padding: 6px 12px; border-radius: 8px; }
-nav a:hover { color: var(--text); background: var(--surface-2); }
-nav a.router-link-active { color: var(--accent); background: var(--accent-soft); }
-.live::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); margin-right: 6px; vertical-align: 2px; }
-.me { margin-left: auto; display: flex; gap: 6px; align-items: center; }
-.me-id { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
-.main { flex: 1; width: 100%; padding-top: 28px; padding-bottom: 64px; }
-.foot { background: var(--surface); border-top: 1px solid var(--border); }
-.foot-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-block: 12px; font-size: 0.9rem; }
+.top { background: var(--bg); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: var(--z-sticky); }
+.top-inner { display: flex; align-items: center; gap: var(--space-5); min-height: 64px; flex-wrap: wrap; padding-block: var(--space-2); }
+.brand { display: flex; align-items: center; gap: var(--space-3); font-weight: 800; font-size: var(--text-lg); color: var(--ink); text-decoration: none; letter-spacing: -0.02em; }
+.brand img { border-radius: var(--radius-sm); }
+nav { display: flex; gap: var(--space-1); }
+nav a {
+  position: relative; display: inline-flex; align-items: center; gap: var(--space-2);
+  color: var(--muted); text-decoration: none; font-weight: 600; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+  transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+nav a:hover { color: var(--ink); background: var(--panel); }
+/* Current page: ink text with a short green underline, not a filled pill. */
+nav a.router-link-active { color: var(--ink); }
+nav a.router-link-active::after {
+  content: ''; position: absolute; left: var(--space-3); right: var(--space-3); bottom: 2px; height: 2px; border-radius: 2px; background: var(--primary);
+}
+.live i { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+.me { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; }
+.me-id { font-family: var(--mono); font-size: var(--text-xs); color: var(--muted); }
+.tag-icon { width: 0.9rem; height: 0.9rem; }
+/* Journey progress along the bottom edge of the header. */
+.rail { position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; }
+.rail > span { display: block; height: 100%; background: var(--primary); transform-origin: left; transition: transform var(--dur-slow) var(--ease-out); }
+.main { flex: 1; width: 100%; padding-top: var(--space-7); padding-bottom: var(--space-8); }
+.foot { border-top: 1px solid var(--border); background: var(--panel); }
+.foot-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-5); flex-wrap: wrap; padding-block: var(--space-4); }
+.credits { margin: 0; font-size: var(--text-sm); }
 /* Keep the footer controls clear of the pet (fixed, 96px wide, 16px from the right edge).
    The container's own side margin counts towards the gap on wide screens. */
 @media (min-width: 1000px) {
   .foot.with-pet .foot-inner { padding-right: max(16px, calc(128px - max(0px, (100vw - 1180px) / 2))); }
 }
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .me-id { display: none; }
+  .top-inner { gap: var(--space-3); }
 }
 </style>

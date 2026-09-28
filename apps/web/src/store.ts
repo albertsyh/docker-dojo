@@ -30,6 +30,9 @@ export const state = reactive({
 
 export const completed = computed(() => new Set(state.progress?.completed ?? []))
 
+/** The first exercise not yet done, or null when every exercise is done. */
+export const nextExercise = computed(() => state.content?.exercises.find((e) => !completed.value.has(e.id)) ?? null)
+
 export const totalMinutes = computed(() => state.content?.exercises.reduce((sum, e) => sum + e.minutes, 0) ?? 0)
 
 export async function boot() {

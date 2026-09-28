@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { api, type Stats } from '../api'
+import AppIcon from '../components/AppIcon.vue'
 import { getEcho } from '../realtime'
 import { state } from '../store'
 
@@ -48,55 +49,76 @@ onBeforeUnmount(() => {
   state.content?.realtime.key && getEcho(state.content.realtime.key).leaveChannel('tracker')
 })
 
-const maxDone = computed(() => Math.max(1, stats.value?.participants ?? 1))
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0)
+const origin = location.origin
+
+// Quiz as one stacked bar across everyone who joined: passed / tried but not passed / not yet.
+const quizSplit = computed(() => {
+  const s = stats.value
+  if (!s || !s.participants) return { passed: 0, tried: 0, notYet: 100 }
+  const passed = pct(s.quiz.passed, s.participants)
+  const tried = pct(s.quiz.attempted - s.quiz.passed, s.participants)
+  return { passed, tried, notYet: Math.max(0, 100 - passed - tried) }
+})
 </script>
 
 <template>
-  <div class="stack">
-    <div class="row head">
-      <div>
-        <h1>Live tracker</h1>
-        <p class="muted" style="margin: 0">Everyone taking the Dojo, updated as it happens.</p>
-      </div>
-      <span class="status" :class="connection">
-        <i />{{ connection === 'live' ? 'Live' : connection === 'connecting' ? 'Connecting…' : 'Offline, refreshing every 30s' }}
+  <div class="tracker wide-page">
+    <header class="head">
+      <h1>Live</h1>
+      <span class="status" :class="connection" role="status">
+        <i aria-hidden="true" />{{ connection === 'live' ? 'Live' : connection === 'connecting' ? 'Connecting…' : 'Offline, refreshing every 30s' }}
       </span>
-    </div>
+    </header>
 
-    <p v-if="error" class="error">{{ error }}</p>
+    <div v-if="error" class="callout error" role="alert"><AppIcon name="alert" /><span>{{ error }}</span></div>
 
     <template v-if="stats">
-      <div class="tiles">
-        <div class="card tile">
-          <span class="label">Joined</span>
-          <span class="value">{{ stats.participants }}</span>
-          <span class="muted">{{ stats.activeNow }} active in the last {{ stats.activeWindowMinutes }} min</span>
-        </div>
-        <div class="card tile">
-          <span class="label">Exercise progress</span>
-          <span class="value">{{ stats.exerciseCompletionPct }}%</span>
-          <span class="muted">{{ stats.finishedAllExercises }} finished every exercise</span>
-        </div>
-        <div class="card tile">
-          <span class="label">Quiz</span>
-          <span class="value">{{ stats.quiz.passed }}<small> / {{ stats.quiz.attempted }}</small></span>
-          <span class="muted">
-            passed / attempted<template v-if="stats.quiz.averageBestPct !== null"> · avg best {{ stats.quiz.averageBestPct }}%</template>
-          </span>
-        </div>
+      <!-- Written as sentences so the room can read it from the back. -->
+      <p class="headline" aria-live="polite">
+        <strong>{{ stats.participants }}</strong> in the room.
+        <strong>{{ stats.activeNow }}</strong> active in the last {{ stats.activeWindowMinutes }} minutes.
+      </p>
+
+      <div v-if="!stats.participants" class="callout">
+        <AppIcon name="info" />
+        <span>Nobody has joined yet. Ask everyone to open <strong>{{ origin }}</strong> and get their name badge.</span>
       </div>
 
-      <div class="card stack">
-        <h2>Completion by exercise</h2>
-        <p class="muted" style="margin: 0">Share of everyone who joined that has marked each exercise done.</p>
-        <div v-for="(ex, i) in stats.exercises" :key="ex.id" class="ex">
-          <div class="ex-head">
-            <span><span class="muted">{{ i + 1 }}.</span> {{ ex.title }}</span>
-            <span class="muted">{{ ex.completed }} · {{ pct(ex.completed, stats.participants) }}%</span>
+      <div v-else class="grid">
+        <section aria-labelledby="ex-title">
+          <h2 id="ex-title">Exercises</h2>
+          <p class="muted sub">
+            {{ stats.exerciseCompletionPct }}% of all exercises done · {{ stats.finishedAllExercises }}
+            {{ stats.finishedAllExercises === 1 ? 'person has' : 'people have' }} finished every one
+          </p>
+          <ol class="ladder">
+            <li v-for="(ex, i) in stats.exercises" :key="ex.id">
+              <span class="ex-name"><span class="muted">{{ i + 1 }}</span>{{ ex.title }}</span>
+              <span class="track" aria-hidden="true"><span :style="{ transform: `scaleX(${pct(ex.completed, stats.participants) / 100})` }" /></span>
+              <span class="ex-count">{{ ex.completed }}<span class="muted"> · {{ pct(ex.completed, stats.participants) }}%</span></span>
+            </li>
+          </ol>
+        </section>
+
+        <section aria-labelledby="quiz-title" class="quiz">
+          <h2 id="quiz-title">Quiz</h2>
+          <p class="quiz-line">
+            <strong>{{ stats.quiz.passed }}</strong> passed,
+            <strong>{{ stats.quiz.attempted - stats.quiz.passed }}</strong> still trying,
+            <strong>{{ stats.participants - stats.quiz.attempted }}</strong> not started.
+          </p>
+          <div class="stacked" aria-hidden="true">
+            <span class="passed" :style="{ width: `${quizSplit.passed}%` }" />
+            <span class="tried" :style="{ width: `${quizSplit.tried}%` }" />
           </div>
-          <div class="bar"><span :style="{ width: `${(ex.completed / maxDone) * 100}%` }" /></div>
-        </div>
+          <ul class="legend">
+            <li><i class="passed" />Passed</li>
+            <li><i class="tried" />Tried, not passed yet</li>
+            <li><i class="not-yet" />Not started</li>
+          </ul>
+          <p v-if="stats.quiz.averageBestPct !== null" class="muted">Average best score: {{ stats.quiz.averageBestPct }}%</p>
+        </section>
       </div>
       <p class="muted small">Last update {{ new Date(stats.updatedAt).toLocaleTimeString() }}</p>
     </template>
@@ -105,25 +127,50 @@ const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0)
 </template>
 
 <style scoped>
-.head { justify-content: space-between; }
-.status { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.9rem; color: var(--muted); }
+.tracker { display: grid; gap: var(--space-6); }
+.head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.head h1 { margin: 0; }
+.status { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 650; font-size: var(--text-sm); color: var(--muted); padding: var(--space-1) var(--space-3); border-radius: 999px; background: var(--panel); }
 .status i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
-.status.live { color: var(--ok); }
-.status.live i { background: var(--ok); box-shadow: 0 0 0 0 var(--ok); animation: pulse 2s infinite; }
-.status.offline i { background: var(--bad); }
+.status.live { color: var(--primary); background: var(--primary-soft); }
+.status.live i { background: var(--primary); animation: pulse 2s var(--ease-out) infinite; }
+.status.offline { color: var(--error); background: var(--error-soft); }
+.status.offline i { background: var(--error); }
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent); }
+  0% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 60%, transparent); }
   100% { box-shadow: 0 0 0 10px transparent; }
 }
-@media (prefers-reduced-motion: reduce) { .status.live i { animation: none; } }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-.tile { display: flex; flex-direction: column; gap: 2px; }
-.label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
-.value { font-size: 2.6rem; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-.value small { font-size: 1.2rem; color: var(--muted); font-weight: 600; }
-.tile .muted { font-size: 0.9rem; }
-.ex { display: grid; gap: 6px; }
-.ex-head { display: flex; justify-content: space-between; gap: 12px; font-size: 0.95rem; }
-.ex-head .muted:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.small { font-size: 0.85rem; }
+
+.headline { font-size: clamp(1.75rem, 3.6vw, 3rem); font-weight: 650; line-height: 1.2; letter-spacing: -0.02em; margin: 0; max-width: 28ch; text-wrap: balance; }
+.headline strong { color: var(--primary); font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: var(--space-7); align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+h2 { font-size: var(--text-xl); margin-bottom: var(--space-1); }
+.sub { margin-bottom: var(--space-4); }
+
+.ladder { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.ladder li { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) 6.5rem; gap: var(--space-4); align-items: center; font-size: var(--text-lg); }
+.ex-name { display: flex; gap: var(--space-2); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ex-name .muted { font-variant-numeric: tabular-nums; min-width: 1.4em; }
+.track { height: 14px; border-radius: 999px; background: var(--panel-2); overflow: hidden; }
+.track > span { display: block; height: 100%; background: var(--primary); transform-origin: left; transition: transform var(--dur-slow) var(--ease-out); }
+.ex-count { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+@media (max-width: 640px) {
+  .ladder li { grid-template-columns: 1fr auto; font-size: var(--text-md); }
+  .track { grid-column: 1 / -1; grid-row: 2; }
+}
+
+.quiz { display: grid; gap: var(--space-3); }
+.quiz-line { font-size: var(--text-lg); margin: 0; }
+.quiz-line strong { font-variant-numeric: tabular-nums; }
+.stacked { display: flex; height: 20px; border-radius: 999px; overflow: hidden; background: var(--panel-2); }
+.stacked span { display: block; height: 100%; }
+.passed { background: var(--primary); }
+.tried { background: var(--highlight); }
+.legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); font-size: var(--text-sm); }
+.legend li { display: inline-flex; align-items: center; gap: var(--space-2); }
+.legend i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border-strong); }
+.legend i.not-yet { background: var(--panel-2); }
+.small { font-size: var(--text-sm); margin: 0; }
 </style>

@@ -25,10 +25,10 @@ const style = computed(() => {
 
 <style scoped>
 .pet {
-  position: fixed; right: 16px; bottom: 16px; z-index: 20;
+  position: fixed; right: 16px; bottom: 16px; z-index: var(--z-float);
   padding: 0; border: 0; background: none; cursor: pointer; line-height: 0;
 }
-.pet:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 2px; border-radius: 12px; }
+.pet:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--radius-lg); }
 .sprite {
   display: block;
   /* 96x104 frames in an 8 x 9 grid (FRAME_W / FRAME_H in pets.ts). */

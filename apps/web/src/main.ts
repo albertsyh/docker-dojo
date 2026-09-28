@@ -1,5 +1,7 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import '@fontsource-variable/figtree'
+import '@fontsource-variable/jetbrains-mono'
 import './style.css'
 import App from './App.vue'
 import HomeView from './views/HomeView.vue'
