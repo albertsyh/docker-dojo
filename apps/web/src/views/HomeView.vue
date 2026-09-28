@@ -10,7 +10,7 @@ const busy = ref(false)
 const error = ref('')
 const resumeId = ref('')
 
-const TOPICS = ['Containers', 'Images', 'The build cache', 'Volumes', 'Networks', 'Docker Compose']
+const TOPICS = ['Containers', 'Images and layers', 'The build cache', '.dockerignore', 'Multi-stage builds', 'Vulnerability scans', 'Volumes', 'Networks', 'Docker Compose']
 
 // A suggested id is only shown, never saved, until the student presses Start,
 // so rerolling doesn't inflate the tracker's "joined" count.
@@ -76,7 +76,7 @@ async function run(fn: () => Promise<void>) {
       <h1>Learn Docker by doing it.</h1>
       <p class="lead">
         {{ state.content?.exercises.length }} short hands-on exercises, about {{ totalMinutes }} minutes, then a
-        {{ state.content?.quiz.questions.length }}-question quiz. Copy each command, run it on your own machine, and tick it off.
+        {{ state.content?.quiz.questionCount }}-question quiz. Copy each command, run it on your own machine, and tick it off.
       </p>
       <ul class="topics" aria-label="What you will cover">
         <li v-for="t in TOPICS" :key="t">{{ t }}</li>

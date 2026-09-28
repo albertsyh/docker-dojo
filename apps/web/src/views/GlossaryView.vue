@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
 import RichText from '../components/RichText.vue'
-import { GLOSSARY } from '../glossary'
 import { state } from '../store'
 
 const query = ref('')
@@ -13,12 +12,14 @@ const exercises = computed(() => {
   return new Map(list.map((e, i) => [e.id, { title: e.title, n: i + 1 }]))
 })
 
-const total = GLOSSARY.reduce((sum, g) => sum + g.terms.length, 0)
+// Served with the rest of the content, from apps/api/resources/content/glossary.json.
+const glossary = computed(() => state.content?.glossary ?? [])
+const total = computed(() => glossary.value.reduce((sum, g) => sum + g.terms.length, 0))
 
 const groups = computed(() => {
   const q = query.value.trim().toLowerCase()
-  if (!q) return GLOSSARY
-  return GLOSSARY.map((g) => ({
+  if (!q) return glossary.value
+  return glossary.value.map((g) => ({
     ...g,
     terms: g.terms.filter((t) => `${t.term} ${t.aka ?? ''} ${t.text}`.toLowerCase().includes(q)),
   })).filter((g) => g.terms.length)
@@ -40,7 +41,7 @@ const matches = computed(() => groups.value.reduce((sum, g) => sum + g.terms.len
         <input v-model="query" type="search" placeholder="Search terms, like volume or -p" autocomplete="off" spellcheck="false" />
       </label>
       <nav v-if="!query.trim()" class="topics" aria-label="Glossary topics">
-        <RouterLink v-for="g in GLOSSARY" :key="g.id" :to="{ hash: `#${g.id}` }">{{ g.title }}</RouterLink>
+        <RouterLink v-for="g in glossary" :key="g.id" :to="{ hash: `#${g.id}` }">{{ g.title }}</RouterLink>
       </nav>
       <p class="count muted" aria-live="polite">
         <template v-if="query.trim()">{{ matches }} of {{ total }} terms match</template>

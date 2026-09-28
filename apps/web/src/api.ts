@@ -23,11 +23,29 @@ export type Exercise = {
   files?: { note?: string; entries: FileEntry[] }
 }
 
-export type Question = { id: string; prompt: string; options: string[] }
+export type Level = 'easy' | 'medium' | 'advanced'
+
+/** Shown before a quiz starts. The questions themselves come with each paper. */
+export type QuizSummary = { passMark: number; minutes: number; split: Record<Level, number>; questionCount: number }
+
+export type ChoiceQuestion = { kind: 'choice'; id: string; level: Level; prompt: string; options: string[]; scenario?: string }
+/** code holds {{1}}, {{2}}... where the student types; blanks is how many there are. */
+export type BlanksQuestion = { kind: 'blanks'; id: string; level: Level; context: string; prompt: string; label: string; code: string; blanks: number }
+export type Question = ChoiceQuestion | BlanksQuestion
+export type Scenario = { id: string; title: string; intro: string; label: string; code: string }
+
+/** One quiz: a signed, one-time selection from the pool. */
+export type QuizPaper = { token: string; questions: Question[]; scenarios: Scenario[] }
+export type Answer = number | string[]
+
+/** Backticks in text render as inline code. seenIn lists exercise ids where the term is used. */
+export type Term = { term: string; aka?: string; text: string; seenIn?: string[] }
+export type TermGroup = { id: string; title: string; terms: Term[] }
 
 export type Content = {
   exercises: Exercise[]
-  quiz: { passMark: number; questions: Question[] }
+  quiz: QuizSummary
+  glossary: TermGroup[]
   realtime: { key: string }
 }
 
@@ -41,7 +59,8 @@ export type QuizResult = {
   score: number
   total: number
   passed: boolean
-  results: { questionId: string; chosen: number; answer: number; correct: boolean; explanation: string }[]
+  /** answer is the right option index, or the expected text for each blank. */
+  results: { questionId: string; chosen: Answer; answer: Answer; correct: boolean; blankCorrect?: boolean[]; explanation: string }[]
   progress: Progress
 }
 
@@ -88,5 +107,7 @@ export const api = {
   progress: (id: string) => request<Progress>('GET', p(id)),
   setDone: (id: string, exerciseId: string, done: boolean) =>
     request<Progress>(done ? 'PUT' : 'DELETE', `${p(id)}/exercises/${encodeURIComponent(exerciseId)}`),
-  submitQuiz: (id: string, answers: number[]) => request<QuizResult>('POST', `${p(id)}/quiz`, { answers }),
+  quizPaper: (id: string) => request<QuizPaper>('GET', `${p(id)}/quiz`),
+  submitQuiz: (id: string, paper: QuizPaper, answers: Answer[]) =>
+    request<QuizResult>('POST', `${p(id)}/quiz`, { token: paper.token, questions: paper.questions.map((q) => q.id), answers }),
 }

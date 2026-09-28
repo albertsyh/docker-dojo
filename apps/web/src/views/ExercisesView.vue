@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppIcon from '../components/AppIcon.vue'
 import JoinGate from '../components/JoinGate.vue'
-import { completed, nextExercise, state, totalMinutes } from '../store'
+import { completed, nextExercise, quizMinutes, state, totalMinutes } from '../store'
 </script>
 
 <template>
@@ -44,11 +44,11 @@ import { completed, nextExercise, state, totalMinutes } from '../store'
             <span v-if="!nextExercise && !state.progress.quiz?.passed" class="tag here">You are here</span>
           </span>
           <span class="muted summary">
-            {{ state.content.quiz.questions.length }} questions to check it stuck. You can take it any time.
+            {{ state.content.quiz.questionCount }} questions, from easy to reading a full compose file. Each retake asks new ones.
             <template v-if="state.progress.quiz"> Best so far: {{ state.progress.quiz.bestScore }}/{{ state.progress.quiz.total }}.</template>
           </span>
         </RouterLink>
-        <span class="minutes muted">10 min</span>
+        <span class="minutes muted">{{ quizMinutes }} min</span>
       </li>
     </ol>
   </div>
