@@ -26,6 +26,17 @@ const stats: Stats = {
     { id: 'volumes', title: 'Keep data with volumes', completed: 0, here: 3 },
   ],
   quiz: { attempted: 4, passed: 3, takingNow: 2, averageBestPct: 80 },
+  takeHome: [
+    {
+      id: 'node',
+      title: 'Take-home: Node.js',
+      label: 'Node',
+      exercises: [
+        { id: 'node-first', title: 'A first Dockerfile', completed: 2, here: 1 },
+        { id: 'node-last', title: 'Clean up', completed: 0, here: 0 },
+      ],
+    },
+  ],
   updatedAt: new Date().toISOString(),
 }
 
@@ -108,10 +119,31 @@ describe('TrackerView', () => {
     wrapper.unmount()
   })
 
+  it('lists take-home tracks in their own section, apart from the workshop', async () => {
+    const wrapper = await render()
+    const section = wrapper.find('.take-home')
+    expect(section.find('h3').text()).toContain('Take-home: Node.js')
+    expect(section.findAll('.ladder li .ex-name').map((n) => n.text())).toEqual(['A first Dockerfile', 'Clean up'])
+    expect(section.find('.ladder li .ex-count').text()).toBe('2 · 20%')
+    // The workshop list above is unchanged.
+    expect(wrapper.findAll('.grid .ladder li')).toHaveLength(2)
+    wrapper.unmount()
+  })
+
+  it('?exercise with a take-home id narrows that track instead', async () => {
+    const wrapper = await render('/live?embed&exercise=node-last&count=1')
+    expect(wrapper.find('#ex-title').text()).toBe('Take-home: Node.js')
+    expect(wrapper.findAll('.ladder li .ex-num').map((n) => n.text())).toEqual(['2'])
+    expect(wrapper.find('.ladder li.current .ex-name').text()).toBe('Clean up')
+    expect(wrapper.text()).toContain('Showing 2 to 2 of 2.')
+    wrapper.unmount()
+  })
+
   it('embed mode shows only exercise progress', async () => {
     const wrapper = await render('/live?embed')
     expect(wrapper.find('h1').exists()).toBe(false)
     expect(wrapper.find('.quiz').exists()).toBe(false)
+    expect(wrapper.find('.take-home').exists()).toBe(false)
     expect(wrapper.findAll('.ladder li')).toHaveLength(2)
     expect(wrapper.find('.headline').exists()).toBe(true)
     wrapper.unmount()

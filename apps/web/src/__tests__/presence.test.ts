@@ -17,7 +17,7 @@ describe('usePresence', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
-    state.progress = { id: 'brave-otter-k3x9q2', completed: [], quiz: null }
+    state.progress = { id: 'brave-otter-k3x9q2', completed: [], quiz: null, trackQuizzes: {} }
     where.value = 'hello-docker'
     presence = vi.spyOn(api, 'presence').mockResolvedValue({ exercise: null })
     beacon = vi.spyOn(api, 'presenceBeacon').mockReturnValue(true)

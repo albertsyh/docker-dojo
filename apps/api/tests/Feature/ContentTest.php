@@ -25,11 +25,47 @@ class ContentTest extends TestCase
         return $out;
     }
 
+    /** Core plus every take-home track, published or not, keyed by track id. */
+    private function tracks(): array
+    {
+        return array_merge(
+            [Content::CORE],
+            array_column(Content::takeHomeTracks(includeUnpublished: true), 'id'),
+        );
+    }
+
+    /** Every exercise in every track. */
+    private function allExercises(): array
+    {
+        return array_merge(...array_map(Content::trackExercises(...), $this->tracks()));
+    }
+
+    public function test_take_home_tracks_are_well_formed(): void
+    {
+        $tracks = Content::takeHomeTracks(includeUnpublished: true);
+        $this->assertSame(count($tracks), count(array_unique(array_column($tracks, 'id'))), 'Track ids must be unique.');
+
+        foreach ($tracks as $t) {
+            $this->assertMatchesRegularExpression('/^[a-z0-9]+$/', $t['id']);
+            $this->assertNotSame(Content::CORE, $t['id']);
+            foreach (['title', 'label', 'summary'] as $field) {
+                $this->assertNotEmpty($t[$field] ?? null, "Track {$t['id']} needs a $field.");
+            }
+            $this->assertIsBool($t['published'] ?? null, "Track {$t['id']} needs published: true or false.");
+            $this->assertNotEmpty(Content::trackExercises($t['id']), "Track {$t['id']} has no exercises.");
+            // The prefix keeps ids unique across tracks and says where an id belongs.
+            foreach (Content::trackExercises($t['id']) as $e) {
+                $this->assertStringStartsWith($t['id'].'-', $e['id'], "{$e['id']} should start with {$t['id']}-.");
+            }
+        }
+    }
+
     public function test_exercises_have_unique_ids_and_required_fields(): void
     {
-        $exercises = Content::exercises();
+        $exercises = $this->allExercises();
         $ids = array_column($exercises, 'id');
 
+        // Unique across tracks too: completions are stored by exercise id alone.
         $this->assertSame(count($ids), count(array_unique($ids)), 'Exercise ids must be unique.');
         foreach ($exercises as $e) {
             $this->assertMatchesRegularExpression('/^[a-z0-9-]+$/', $e['id']);
@@ -58,13 +94,13 @@ class ContentTest extends TestCase
     {
         $minutes = array_sum(array_column(Content::exercises(), 'minutes'));
 
-        // Exercises plus a ten-minute quiz, about ninety minutes in all.
+        // Exercises plus a ten-minute quiz, about ninety minutes in all. Take-home tracks are not timed.
         $this->assertLessThanOrEqual(80, $minutes);
     }
 
     public function test_terminal_commands_work_in_every_shell(): void
     {
-        foreach (Content::exercises() as $e) {
+        foreach ($this->allExercises() as $e) {
             foreach ($e['steps'] as $i => $step) {
                 if (($step['label'] ?? null) !== 'terminal' || ! isset($step['code'])) {
                     continue;
@@ -81,16 +117,32 @@ class ContentTest extends TestCase
 
     public function test_copy_has_no_em_dashes(): void
     {
-        $all = [...$this->strings(Content::exercises()), ...$this->strings(Content::quiz()), ...$this->strings(Content::glossary()), ...$this->strings(Content::references())];
+        $all = [...$this->strings(Content::glossary()), ...$this->strings(Content::references()), ...$this->strings(Content::takeHomeTracks(includeUnpublished: true))];
+        foreach ($this->tracks() as $track) {
+            $all = [...$all, ...$this->strings(Content::trackExercises($track)), ...$this->strings(Content::quiz($track))];
+        }
 
         foreach ($all as $text) {
             $this->assertStringNotContainsString('—', $text, "Em-dash in: $text");
         }
     }
 
+    public function test_quiz_question_ids_are_unique_across_tracks(): void
+    {
+        $ids = array_merge(...array_map(fn ($t) => array_column(Content::quiz($t)['questions'], 'id'), $this->tracks()));
+
+        $this->assertSame(count($ids), count(array_unique($ids)), 'Question ids must be unique across every quiz.');
+    }
+
     public function test_quiz_questions_are_well_formed(): void
     {
-        $quiz = Content::quiz();
+        foreach ($this->tracks() as $track) {
+            $this->assertQuizWellFormed(Content::quiz($track));
+        }
+    }
+
+    private function assertQuizWellFormed(array $quiz): void
+    {
         $ids = array_column($quiz['questions'], 'id');
         $scenarioIds = array_column($quiz['scenarios'], 'id');
 
@@ -134,7 +186,13 @@ class ContentTest extends TestCase
 
     public function test_the_pool_is_big_enough_for_retakes_without_repeats(): void
     {
-        $quiz = Content::quiz();
+        foreach ($this->tracks() as $track) {
+            $this->assertPoolBigEnough(Content::quiz($track));
+        }
+    }
+
+    private function assertPoolBigEnough(array $quiz): void
+    {
         $pool = collect($quiz['questions']);
 
         foreach (['easy', 'medium'] as $level) {
@@ -150,7 +208,7 @@ class ContentTest extends TestCase
 
     public function test_glossary_links_point_at_real_exercises(): void
     {
-        $exerciseIds = Content::exerciseIds();
+        $exerciseIds = array_column($this->allExercises(), 'id');
         $terms = [];
 
         foreach (Content::glossary() as $group) {
@@ -192,9 +250,10 @@ class ContentTest extends TestCase
 
     public function test_host_ports_do_not_clash_with_the_dojo(): void
     {
-        foreach (Content::exercises() as $e) {
+        foreach ($this->allExercises() as $e) {
             foreach ($e['steps'] as $step) {
-                preg_match_all('/-p (\d+):/', $step['code'] ?? '', $m);
+                // -p 8084:3000 and -p 127.0.0.1:8084:3000 both publish 8084.
+                preg_match_all('/-p (?:[\d.]+:)?(\d+):/', $step['code'] ?? '', $m);
                 foreach ($m[1] as $port) {
                     $this->assertNotSame('8000', $port, "{$e['id']} publishes 8000, which the Dojo itself uses.");
                 }

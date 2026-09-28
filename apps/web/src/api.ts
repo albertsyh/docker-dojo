@@ -46,18 +46,28 @@ export type TermGroup = { id: string; title: string; terms: Term[] }
 export type Reference = { title: string; url: string; kind: 'video' | 'reading'; source: string; note?: string }
 export type ReferenceGroup = { id: string; title: string; intro?: string; links: Reference[] }
 
+/** A self-paced track for after the workshop, with its own exercises and quiz. label is short: "Node". */
+export type TakeHomeTrack = { id: string; title: string; label: string; summary: string; exercises: Exercise[]; quiz: QuizSummary }
+
 export type Content = {
   exercises: Exercise[]
   quiz: QuizSummary
+  takeHome: TakeHomeTrack[]
   glossary: TermGroup[]
   references: ReferenceGroup[]
   realtime: { key: string }
 }
 
+export type QuizProgress = { bestScore: number; total: number; passed: boolean; attempts: number }
+
 export type Progress = {
   id: string
+  /** Every completed exercise id, in any track. */
   completed: string[]
-  quiz: { bestScore: number; total: number; passed: boolean; attempts: number } | null
+  /** The workshop quiz. */
+  quiz: QuizProgress | null
+  /** Each take-home track's quiz, by track id. */
+  trackQuizzes: Record<string, QuizProgress | null>
 }
 
 export type QuizResult = {
@@ -82,6 +92,8 @@ export type ChatMessage = {
 }
 export type ChatList = { messages: ChatMessage[] }
 
+export type StatsExercise = { id: string; title: string; completed: number; here: number }
+
 export type Stats = {
   participants: number
   activeNow: number
@@ -89,8 +101,10 @@ export type Stats = {
   hereWindowMinutes: number
   exerciseCompletionPct: number
   finishedAllExercises: number
-  /** here = people with that exercise page open right now. */
-  exercises: { id: string; title: string; completed: number; here: number }[]
+  /** here = people with that exercise page open right now. Workshop exercises only; the figures above count these. */
+  exercises: StatsExercise[]
+  /** Take-home tracks, for their own section. */
+  takeHome: { id: string; title: string; label: string; exercises: StatsExercise[] }[]
   /** attempted = submitted at least once. takingNow = opened a quiz, not submitted yet, active in the window. */
   quiz: { attempted: number; passed: number; takingNow: number; averageBestPct: number | null }
   updatedAt: string
@@ -119,6 +133,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 }
 
 const p = (id: string) => `/participants/${encodeURIComponent(id)}`
+const quizPath = (id: string, track?: string) => `${p(id)}/quiz${track ? `/${encodeURIComponent(track)}` : ''}`
 
 export const api = {
   content: () => request<Content>('GET', '/content'),
@@ -137,7 +152,8 @@ export const api = {
   postChat: (id: string, body: string, exercise: string | null) => request<ChatList>('POST', `${p(id)}/chat`, { body, exercise }),
   deleteChat: (id: string, messageId: number) => request<ChatList>('DELETE', `${p(id)}/chat/${messageId}`),
   setMeToo: (id: string, messageId: number, on: boolean) => request<ChatList>(on ? 'PUT' : 'DELETE', `${p(id)}/chat/${messageId}/me-too`),
-  quizPaper: (id: string) => request<QuizPaper>('GET', `${p(id)}/quiz`),
-  submitQuiz: (id: string, paper: QuizPaper, answers: Answer[]) =>
-    request<QuizResult>('POST', `${p(id)}/quiz`, { token: paper.token, questions: paper.questions.map((q) => q.id), answers }),
+  /** No track means the workshop quiz. */
+  quizPaper: (id: string, track?: string) => request<QuizPaper>('GET', quizPath(id, track)),
+  submitQuiz: (id: string, paper: QuizPaper, answers: Answer[], track?: string) =>
+    request<QuizResult>('POST', quizPath(id, track), { token: paper.token, questions: paper.questions.map((q) => q.id), answers }),
 }

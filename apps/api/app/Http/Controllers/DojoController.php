@@ -19,6 +19,15 @@ class DojoController extends Controller
         return response()->json([
             'exercises' => Content::exercises(),
             'quiz' => Quiz::summary(),
+            // Self-paced tracks for after the workshop. Each has its own exercises and quiz.
+            'takeHome' => array_map(fn (array $t) => [
+                'id' => $t['id'],
+                'title' => $t['title'],
+                'label' => $t['label'],
+                'summary' => $t['summary'],
+                'exercises' => Content::trackExercises($t['id']),
+                'quiz' => Quiz::summary($t['id']),
+            ], Content::takeHomeTracks()),
             'glossary' => Content::glossary(),
             'references' => Content::references(),
             // The Reverb app key is public by design; the secret never leaves the server.
@@ -33,18 +42,24 @@ class DojoController extends Controller
      */
     public function exerciseIds(): JsonResponse
     {
-        $exercises = array_map(fn (array $e, int $i) => [
+        $list = fn (array $exercises) => array_map(fn (array $e, int $i) => [
             'number' => $i + 1,
             'id' => $e['id'],
             'title' => $e['title'],
             'minutes' => $e['minutes'],
             'page' => '/exercises/'.$e['id'],
             'live' => '/live?embed&exercise='.$e['id'],
-        ], Content::exercises(), array_keys(Content::exercises()));
+        ], $exercises, array_keys($exercises));
+        $exercises = $list(Content::exercises());
 
         return response()->json([
             'exercises' => $exercises,
             'totalMinutes' => array_sum(array_column($exercises, 'minutes')),
+            'takeHome' => array_map(fn (array $t) => [
+                'id' => $t['id'],
+                'title' => $t['title'],
+                'exercises' => $list(Content::trackExercises($t['id'])),
+            ], Content::takeHomeTracks()),
         ]);
     }
 
@@ -84,7 +99,7 @@ class DojoController extends Controller
     public function completeExercise(string $id, string $exerciseId): JsonResponse
     {
         $this->touch($id);
-        abort_unless(in_array($exerciseId, Content::exerciseIds(), true), 404, 'Unknown exercise.');
+        abort_unless(in_array($exerciseId, Content::allExerciseIds(), true), 404, 'Unknown exercise.');
 
         ExerciseCompletion::insertOrIgnore([
             'participant_id' => $id,
@@ -115,7 +130,7 @@ class DojoController extends Controller
     {
         $participant = $this->touch($id);
         $exercise = $request->validate(['exercise' => ['present', 'nullable', 'string', 'max:64']])['exercise'];
-        abort_unless($exercise === null || in_array($exercise, Content::exerciseIds(), true), 404, 'Unknown exercise.');
+        abort_unless($exercise === null || in_array($exercise, Content::allExerciseIds(), true), 404, 'Unknown exercise.');
 
         if ($participant->current_exercise_id !== $exercise) {
             $participant->forceFill(['current_exercise_id' => $exercise])->save();
@@ -126,23 +141,31 @@ class DojoController extends Controller
     }
 
     /** A new quiz for this participant: questions without answers, and a one-time token. */
-    public function quizPaper(string $id): JsonResponse
+    public function quizPaper(string $id, string $track = Content::CORE): JsonResponse
     {
+        abort_unless(Content::isTrack($track), 404, 'Unknown quiz.');
+        $participant = $this->touch($id);
         // On the quiz, so no longer on an exercise, even if the page's goodbye never arrived.
-        $this->touch($id)->forceFill(['quiz_opened_at' => now(), 'current_exercise_id' => null])->save();
-        $paper = Quiz::paper($id);
+        $participant->current_exercise_id = null;
+        // Only the workshop quiz counts as "taking it now" on the tracker.
+        if ($track === Content::CORE) {
+            $participant->quiz_opened_at = now();
+        }
+        $participant->save();
+        $paper = Quiz::paper($id, $track);
         // Opening a first quiz moves someone to "taking it now" on the tracker.
-        if (! QuizAttempt::where('participant_id', $id)->exists()) {
+        if ($track === Content::CORE && ! QuizAttempt::where('participant_id', $id)->where('track', Content::CORE)->exists()) {
             Stats::broadcast();
         }
 
         return response()->json($paper);
     }
 
-    public function submitQuiz(Request $request, string $id): JsonResponse
+    public function submitQuiz(Request $request, string $id, string $track = Content::CORE): JsonResponse
     {
+        abort_unless(Content::isTrack($track), 404, 'Unknown quiz.');
         $this->touch($id);
-        $quiz = Content::quiz();
+        $quiz = Content::quiz($track);
         $size = array_sum($quiz['split']);
 
         $input = $request->validate([
@@ -151,9 +174,9 @@ class DojoController extends Controller
             'questions.*' => ['required', 'string', 'distinct', 'max:80'],
             'answers' => ['required', 'array', "size:$size"],
         ]);
-        abort_unless(hash_equals(Quiz::sign($id, $input['questions']), $input['token']), 422, 'That quiz is not valid. Start a new one.');
+        abort_unless(hash_equals(Quiz::sign($id, $input['questions'], $track), $input['token']), 422, 'That quiz is not valid. Start a new one.');
 
-        $results = Quiz::grade($input['questions'], $input['answers']);
+        $results = Quiz::grade($input['questions'], $input['answers'], $track);
         abort_if($results === null, 422, 'Some answers do not fit their questions. Start a new quiz.');
 
         $score = count(array_filter(array_column($results, 'correct')));
@@ -162,6 +185,7 @@ class DojoController extends Controller
         try {
             QuizAttempt::create([
                 'participant_id' => $id,
+                'track' => $track,
                 'paper_token' => $input['token'],
                 'score' => $score,
                 'total' => $size,
@@ -195,19 +219,30 @@ class DojoController extends Controller
 
     private function progress(string $id): array
     {
-        $best = QuizAttempt::where('participant_id', $id)
-            ->orderByDesc('score')->orderByDesc('id')
-            ->first(['score', 'total', 'passed']);
+        $trackQuizzes = [];
+        foreach (Content::takeHomeTrackIds() as $track) {
+            $trackQuizzes[$track] = $this->quizProgress($id, $track);
+        }
 
         return [
             'id' => $id,
             'completed' => ExerciseCompletion::where('participant_id', $id)->pluck('exercise_id'),
-            'quiz' => $best ? [
-                'bestScore' => $best->score,
-                'total' => $best->total,
-                'passed' => $best->passed,
-                'attempts' => QuizAttempt::where('participant_id', $id)->count(),
-            ] : null,
+            'quiz' => $this->quizProgress($id, Content::CORE),
+            'trackQuizzes' => (object) $trackQuizzes,
         ];
+    }
+
+    /** The best attempt at one track's quiz, or null before the first. */
+    private function quizProgress(string $id, string $track): ?array
+    {
+        $attempts = QuizAttempt::where('participant_id', $id)->where('track', $track);
+        $best = (clone $attempts)->orderByDesc('score')->orderByDesc('id')->first(['score', 'total', 'passed']);
+
+        return $best ? [
+            'bestScore' => $best->score,
+            'total' => $best->total,
+            'passed' => $best->passed,
+            'attempts' => $attempts->count(),
+        ] : null;
     }
 }

@@ -7,6 +7,19 @@ export const content: Content = {
     { id: 'volumes', title: 'Keep data with volumes', minutes: 5, summary: 'Volumes.', steps: [{ text: 'Make one.' }], expected: 'Data.' },
   ],
   quiz: { passMark: 0.7, minutes: 12, split: { easy: 4, medium: 3, advanced: 3 }, questionCount: 10 },
+  takeHome: [
+    {
+      id: 'node',
+      title: 'Take-home: Node.js',
+      label: 'Node',
+      summary: 'After the workshop.',
+      exercises: [
+        { id: 'node-first', title: 'A first Dockerfile', minutes: 7, summary: 'Start.', steps: [{ text: 'Build it.' }], expected: 'An image.' },
+        { id: 'node-last', title: 'Clean up', minutes: 3, summary: 'End.', steps: [{ text: 'Remove it.' }], expected: 'Nothing left.' },
+      ],
+      quiz: { passMark: 0.7, minutes: 8, split: { easy: 3, medium: 2, advanced: 2 }, questionCount: 7 },
+    },
+  ],
   glossary: [
     {
       id: 'basics',

@@ -32,7 +32,7 @@ describe('App header', () => {
   it('your id in the header copies to the clipboard, from the bar and from the menu', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
-    state.progress = { id: 'brave-otter-k3x9q2', completed: [], quiz: null }
+    state.progress = { id: 'brave-otter-k3x9q2', completed: [], quiz: null, trackQuizzes: {} }
     const { wrapper } = await renderApp()
 
     await wrapper.find('button.me').trigger('click')
@@ -42,6 +42,17 @@ describe('App header', () => {
 
     await wrapper.find('.nav-id button.copy-id').trigger('click')
     expect(writeText).toHaveBeenCalledTimes(2)
+    state.progress = null
+    wrapper.unmount()
+  })
+
+  it('the header counts workshop exercises only', async () => {
+    // node-first is a take-home exercise, so it must not move the workshop count.
+    state.progress = { id: 'brave-otter-k3x9q2', completed: ['hello-docker', 'node-first'], quiz: null, trackQuizzes: {} }
+    const { wrapper } = await renderApp()
+
+    expect(wrapper.find('button.me .tag').text()).toBe('1/2')
+    expect(wrapper.find('button.me').attributes('aria-label')).toContain('1 of 2 exercises done')
     state.progress = null
     wrapper.unmount()
   })

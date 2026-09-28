@@ -24,8 +24,9 @@ class Stats
             ->where('last_seen_at', '>=', now()->subMinutes(self::ACTIVE_WINDOW_MINUTES))
             ->count();
 
+        // Take-home exercises are counted too, for their own section. Every total below is core only.
         $perExercise = DB::table('exercise_completions')
-            ->whereIn('exercise_id', $exerciseIds)
+            ->whereIn('exercise_id', Content::allExerciseIds())
             ->groupBy('exercise_id')
             ->pluck(DB::raw('COUNT(*)'), 'exercise_id');
 
@@ -45,7 +46,9 @@ class Stats
             'done',
         )->count();
 
+        // The Live page's quiz groups are about the workshop quiz only.
         $quiz = DB::table('quiz_attempts')
+            ->where('track', Content::CORE)
             ->selectRaw('COUNT(DISTINCT participant_id) AS attempted')
             ->selectRaw('COUNT(DISTINCT CASE WHEN passed THEN participant_id END) AS passed')
             ->first();
@@ -55,18 +58,25 @@ class Stats
         $takingNow = DB::table('participants')
             ->whereNotNull('quiz_opened_at')
             ->where('last_seen_at', '>=', now()->subMinutes(self::ACTIVE_WINDOW_MINUTES))
-            ->whereNotExists(fn ($q) => $q->from('quiz_attempts')->whereColumn('quiz_attempts.participant_id', 'participants.id'))
+            ->whereNotExists(fn ($q) => $q->from('quiz_attempts')->where('track', Content::CORE)->whereColumn('quiz_attempts.participant_id', 'participants.id'))
             ->count();
 
         $avgBest = DB::query()->fromSub(
             DB::table('quiz_attempts')
+                ->where('track', Content::CORE)
                 // * 1.0 keeps the division decimal on every database (SQLite divides integers).
                 ->selectRaw('MAX(score * 1.0 / total) AS best')
                 ->groupBy('participant_id'),
             'b',
         )->avg('best');
 
-        $totalCompletions = array_sum($perExercise->all());
+        $totalCompletions = array_sum($perExercise->only($exerciseIds)->all());
+        $row = fn (array $e) => [
+            'id' => $e['id'],
+            'title' => $e['title'],
+            'completed' => (int) ($perExercise[$e['id']] ?? 0),
+            'here' => (int) ($here[$e['id']] ?? 0),
+        ];
 
         return [
             'participants' => $participants,
@@ -77,12 +87,13 @@ class Stats
                 ? round($totalCompletions / ($participants * $exerciseCount) * 100, 1)
                 : 0,
             'finishedAllExercises' => $finishedAll,
-            'exercises' => array_map(fn (array $e) => [
-                'id' => $e['id'],
-                'title' => $e['title'],
-                'completed' => (int) ($perExercise[$e['id']] ?? 0),
-                'here' => (int) ($here[$e['id']] ?? 0),
-            ], Content::exercises()),
+            'exercises' => array_map($row, Content::exercises()),
+            'takeHome' => array_map(fn (array $t) => [
+                'id' => $t['id'],
+                'title' => $t['title'],
+                'label' => $t['label'],
+                'exercises' => array_map($row, Content::trackExercises($t['id'])),
+            ], Content::takeHomeTracks()),
             'quiz' => [
                 'attempted' => (int) $quiz->attempted,
                 'passed' => (int) $quiz->passed,

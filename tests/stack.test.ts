@@ -6,7 +6,14 @@ import { beforeAll, describe, expect, test } from 'bun:test'
 const BASE = process.env.BASE_URL ?? 'http://localhost:8099'
 const PROJECT = process.env.COMPOSE_PROJECT ?? 'docker-dojo-test'
 
-type Content = { exercises: { id: string }[]; quiz: { questionCount: number }; glossary: unknown[]; references: unknown[]; realtime: { key: string } }
+type Content = {
+  exercises: { id: string }[]
+  quiz: { questionCount: number }
+  takeHome: { id: string; exercises: { id: string }[]; quiz: { questionCount: number } }[]
+  glossary: unknown[]
+  references: unknown[]
+  realtime: { key: string }
+}
 let content: Content
 
 async function api(method: string, path: string, body?: unknown) {
@@ -59,7 +66,7 @@ beforeAll(async () => {
 
 describe('web (nginx)', () => {
   test('serves the app shell on every route, for client-side routing', async () => {
-    for (const path of ['/', '/exercises/hello-docker', '/chat', '/glossary', '/references', '/live']) {
+    for (const path of ['/', '/exercises/hello-docker', '/take-home/node', '/take-home/node/quiz', '/chat', '/glossary', '/references', '/live']) {
       const res = await fetch(BASE + path)
       expect(res.status).toBe(200)
       expect(await res.text()).toContain('<div id="app">')
@@ -116,6 +123,21 @@ describe('api', () => {
 
     const resumed = await api('GET', `/participants/${id}`)
     expect(resumed.json.quiz).toMatchObject({ attempts: 1, total: content.quiz.questionCount })
+  })
+
+  test('a take-home track has its own exercises and quiz, apart from the workshop figures', async () => {
+    const track = content.takeHome[0]
+    expect(track.exercises.length).toBeGreaterThan(0)
+    const id = await join()
+    const done = await api('PUT', `/participants/${id}/exercises/${track.exercises[0].id}`)
+    expect(done.json.completed).toEqual([track.exercises[0].id])
+
+    const paper = (await api('GET', `/participants/${id}/quiz/${track.id}`)).json
+    expect(paper.questions).toHaveLength(track.quiz.questionCount)
+    expect(JSON.stringify(paper.questions)).not.toMatch(/"(answer|explanation)"/)
+    const stats = (await api('GET', '/stats')).json
+    expect(stats.exercises.map((e: any) => e.id)).not.toContain(track.exercises[0].id)
+    expect(stats.takeHome.find((t: any) => t.id === track.id).exercises[0].completed).toBeGreaterThanOrEqual(1)
   })
 
   test('the tracker counts who is on an exercise page, and the page can be framed', async () => {

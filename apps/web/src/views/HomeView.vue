@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { api, ApiError } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import { copyId } from '../clipboard'
-import { completed, join, leave, nextExercise, resume, state, totalMinutes } from '../store'
+import { coreCompleted, join, leave, nextExercise, resume, state, totalMinutes } from '../store'
 
 const router = useRouter()
 const busy = ref(false)
@@ -94,7 +94,7 @@ async function run(fn: () => Promise<void>) {
       <div class="start-body">
         <h2 id="start-title">Welcome back</h2>
         <p class="muted">
-          {{ completed.size }} of {{ state.content?.exercises.length }} exercises done.
+          {{ coreCompleted.size }} of {{ state.content?.exercises.length }} exercises done.
           Keep your id if you want to continue on another device.
         </p>
         <div class="row">
@@ -104,6 +104,11 @@ async function run(fn: () => Promise<void>) {
           <RouterLink v-else to="/quiz" class="btn primary">Take the quiz<AppIcon name="arrow-right" /></RouterLink>
           <button class="btn ghost" type="button" @click="leave">Start over with a new id</button>
         </div>
+        <p v-if="state.content?.takeHome.length" class="muted take-home">
+          After the workshop, keep going with a
+          <template v-for="(t, i) in state.content.takeHome" :key="t.id"><template v-if="i"> or </template><RouterLink :to="`/take-home/${t.id}`">{{ t.label }}</RouterLink></template>
+          take-home track.
+        </p>
       </div>
     </section>
 
@@ -166,6 +171,7 @@ async function run(fn: () => Promise<void>) {
 }
 .start-body h2 { margin-bottom: var(--space-1); }
 .start-body .row { margin-top: var(--space-4); }
+.start-body .take-home { margin: var(--space-3) 0 0; font-size: var(--text-sm); }
 
 /* The name badge: the one playful object on the page. */
 .badge {

@@ -20,6 +20,9 @@ Route::prefix('/participants/{id}')->middleware('throttle:participant')->group(f
     Route::post('/presence', [DojoController::class, 'presence']);
     Route::get('/quiz', [DojoController::class, 'quizPaper']);
     Route::post('/quiz', [DojoController::class, 'submitQuiz'])->middleware('throttle:quiz');
+    // Take-home tracks have their own quiz. The controller 404s an unknown or unpublished track.
+    Route::get('/quiz/{track}', [DojoController::class, 'quizPaper'])->where('track', '[a-z0-9-]+');
+    Route::post('/quiz/{track}', [DojoController::class, 'submitQuiz'])->where('track', '[a-z0-9-]+')->middleware('throttle:quiz');
     Route::get('/chat', [ChatController::class, 'show']);
     Route::post('/chat', [ChatController::class, 'store'])->middleware('throttle:chat');
     Route::delete('/chat/{messageId}', [ChatController::class, 'destroy'])->whereNumber('messageId');

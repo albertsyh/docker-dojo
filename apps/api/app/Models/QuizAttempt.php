@@ -8,7 +8,7 @@ class QuizAttempt extends Model
 {
     public const UPDATED_AT = null;
 
-    protected $fillable = ['participant_id', 'paper_token', 'score', 'total', 'passed', 'answers'];
+    protected $fillable = ['participant_id', 'track', 'paper_token', 'score', 'total', 'passed', 'answers'];
 
     protected function casts(): array
     {

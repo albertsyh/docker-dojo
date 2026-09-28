@@ -11,6 +11,7 @@ import QuizView from './views/QuizView.vue'
 import TrackerView from './views/TrackerView.vue'
 import GlossaryView from './views/GlossaryView.vue'
 import ReferencesView from './views/ReferencesView.vue'
+import TrackView from './views/TrackView.vue'
 import { boot, state } from './store'
 import { startChat } from './chat'
 import ChatView from './views/ChatView.vue'
@@ -22,6 +23,8 @@ const router = createRouter({
     { path: '/exercises', component: ExercisesView },
     { path: '/exercises/:id', component: ExerciseView, props: true },
     { path: '/quiz', component: QuizView },
+    { path: '/take-home/:track', component: TrackView, props: true },
+    { path: '/take-home/:track/quiz', component: QuizView, props: true },
     { path: '/chat', component: ChatView },
     { path: '/glossary', component: GlossaryView },
     { path: '/references', component: ReferencesView },

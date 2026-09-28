@@ -7,9 +7,13 @@ import CodeBlock from '../components/CodeBlock.vue'
 import JoinGate from '../components/JoinGate.vue'
 import RichText from '../components/RichText.vue'
 import { petReact } from '../pets'
-import { state } from '../store'
+import { state, takeHomeTrack } from '../store'
 
-const summary = computed(() => state.content?.quiz)
+/** A take-home track's quiz, or the workshop's when there is none. */
+const props = defineProps<{ track?: string }>()
+const trackInfo = computed(() => (props.track ? takeHomeTrack(props.track) : null))
+const unknownTrack = computed(() => !!props.track && !!state.content && !trackInfo.value)
+const summary = computed(() => (props.track ? trackInfo.value?.quiz : state.content?.quiz))
 const passPct = computed(() => Math.round((summary.value?.passMark ?? 0) * 100))
 
 const SECTIONS: Record<Level, { title: string; intro: string }> = {
@@ -32,7 +36,7 @@ async function start() {
   error.value = ''
   result.value = null
   try {
-    paper.value = await api.quizPaper(state.progress.id)
+    paper.value = await api.quizPaper(state.progress.id, props.track)
     answers.value = paper.value.questions.map((q) => (q.kind === 'blanks' ? Array<string>(q.blanks).fill('') : null))
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
@@ -40,7 +44,7 @@ async function start() {
     loading.value = false
   }
 }
-watch(() => state.progress?.id, (id) => id && start(), { immediate: true })
+watch([() => state.progress?.id, () => props.track], ([id]) => id && !unknownTrack.value && start(), { immediate: true })
 
 // Answering sends nothing to the server, so check in every 2 minutes while a quiz is open.
 // That keeps this student under "taking it now" on the live tracker (a 5-minute window).
@@ -82,7 +86,7 @@ async function submit() {
   busy.value = true
   error.value = ''
   try {
-    result.value = await api.submitQuiz(state.progress.id, paper.value, answers.value as Answer[])
+    result.value = await api.submitQuiz(state.progress.id, paper.value, answers.value as Answer[], props.track)
     state.progress = result.value.progress
     petReact(result.value.passed ? 'jump' : 'sad')
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -111,9 +115,13 @@ function missedBlanks(index: number) {
 
 <template>
   <JoinGate v-if="!state.progress" />
+  <div v-else-if="unknownTrack" class="callout">
+    <AppIcon name="info" />
+    <span>That quiz doesn't exist. <RouterLink to="/exercises">Back to the exercises</RouterLink></span>
+  </div>
   <div v-else class="page">
     <header>
-      <h1>Quiz</h1>
+      <h1>{{ trackInfo ? `Quiz: ${trackInfo.label} track` : 'Quiz' }}</h1>
       <p class="lead">
         {{ summary?.questionCount }} questions: {{ summary?.split.easy }} easy, {{ summary?.split.medium }} fill in the blanks,
         and {{ summary?.split.advanced }} about a compose file. You need {{ passPct }}% to pass. Every retake asks new questions, and your best score counts.
@@ -124,11 +132,13 @@ function missedBlanks(index: number) {
       <div class="score-num">{{ result.score }}<span>/{{ result.total }}</span></div>
       <div class="score-text">
         <h2><AppIcon v-if="result.passed" name="sparkle" />{{ result.passed ? 'You passed!' : 'Not yet' }}</h2>
-        <p>{{ result.passed ? 'See the answers below, then check the live tracker.' : 'Read the answers below, review the exercises, then try a new quiz.' }}</p>
+        <p v-if="trackInfo">{{ result.passed ? 'See the answers below. That is the whole track done.' : 'Read the answers below, review the track, then try a new quiz.' }}</p>
+        <p v-else>{{ result.passed ? 'See the answers below, then check the live tracker.' : 'Read the answers below, review the exercises, then try a new quiz.' }}</p>
       </div>
       <div class="row score-actions">
         <button class="btn" type="button" :disabled="loading" @click="start">New quiz</button>
-        <RouterLink to="/live" class="btn primary">Live tracker<AppIcon name="arrow-right" /></RouterLink>
+        <RouterLink v-if="trackInfo" :to="`/take-home/${trackInfo.id}`" class="btn primary">Back to the track<AppIcon name="arrow-right" /></RouterLink>
+        <RouterLink v-else to="/live" class="btn primary">Live tracker<AppIcon name="arrow-right" /></RouterLink>
       </div>
     </section>
 

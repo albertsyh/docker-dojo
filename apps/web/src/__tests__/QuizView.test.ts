@@ -26,7 +26,7 @@ const graded: QuizResult = {
     { questionId: 'a1', chosen: 1, answer: 1, correct: true, explanation: 'Published port.' },
     { questionId: 'a2', chosen: 0, answer: 0, correct: true, explanation: 'Service name.' },
   ],
-  progress: { id: 'brave-otter-abc123', completed: [], quiz: { bestScore: 3, total: 4, passed: true, attempts: 1 } },
+  progress: { id: 'brave-otter-abc123', completed: [], quiz: { bestScore: 3, total: 4, passed: true, attempts: 1 }, trackQuizzes: {} },
 }
 
 async function render() {
@@ -39,7 +39,7 @@ describe('QuizView', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     state.content = structuredClone(content)
-    state.progress = { id: 'brave-otter-abc123', completed: [], quiz: null }
+    state.progress = { id: 'brave-otter-abc123', completed: [], quiz: null, trackQuizzes: {} }
     vi.spyOn(api, 'quizPaper').mockResolvedValue(structuredClone(paper))
     window.scrollTo = vi.fn()
   })
@@ -83,7 +83,8 @@ describe('QuizView', () => {
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
-    expect(submitQuiz).toHaveBeenCalledWith('brave-otter-abc123', expect.objectContaining({ token: paper.token }), [1, ['-d', '80:8080'], 1, 0])
+    // No track: the workshop quiz.
+    expect(submitQuiz).toHaveBeenCalledWith('brave-otter-abc123', expect.objectContaining({ token: paper.token }), [1, ['-d', '80:8080'], 1, 0], undefined)
     expect(wrapper.find('.score-num').text()).toContain('3')
     expect(wrapper.find('.missed').text()).toBe('Blank 2: you wrote 80:8080, the answer is 8080:80.')
     expect(wrapper.find('input[name="m1-1"]').classes()).toContain('ok')
@@ -103,12 +104,51 @@ describe('QuizView', () => {
   })
 })
 
+describe('QuizView for a take-home track', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    state.content = structuredClone(content)
+    state.progress = { id: 'brave-otter-abc123', completed: [], quiz: null, trackQuizzes: { node: null } }
+    vi.spyOn(api, 'quizPaper').mockResolvedValue(structuredClone(paper))
+    window.scrollTo = vi.fn()
+  })
+
+  it("fetches and submits that track's quiz, and points back to the track", async () => {
+    const submitQuiz = vi.spyOn(api, 'submitQuiz').mockResolvedValue(structuredClone(graded))
+    const wrapper = mount(QuizView, { props: { track: 'node' }, global: { stubs: { RouterLink: RouterLinkStub } } })
+    await flushPromises()
+
+    expect(api.quizPaper).toHaveBeenCalledWith('brave-otter-abc123', 'node')
+    expect(wrapper.find('h1').text()).toBe('Quiz: Node track')
+    expect(wrapper.find('.lead').text()).toContain('7 questions: 3 easy, 2 fill in the blanks')
+
+    await wrapper.find('input[name="e1"][value="1"]').setValue()
+    await wrapper.find('input[name="m1-1"]').setValue('-d')
+    await wrapper.find('input[name="m1-2"]').setValue('80:8080')
+    await wrapper.find('input[name="a1"][value="1"]').setValue()
+    await wrapper.find('input[name="a2"][value="0"]').setValue()
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(submitQuiz).toHaveBeenCalledWith('brave-otter-abc123', expect.anything(), expect.anything(), 'node')
+    expect(wrapper.findAllComponents(RouterLinkStub).map((l) => l.props('to'))).toContain('/take-home/node')
+  })
+
+  it('an unknown track says so instead of fetching a paper', async () => {
+    const wrapper = mount(QuizView, { props: { track: 'cobol' }, global: { stubs: { RouterLink: RouterLinkStub } } })
+    await flushPromises()
+
+    expect(api.quizPaper).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain("That quiz doesn't exist.")
+  })
+})
+
 describe('QuizView check-in', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.useFakeTimers()
     state.content = structuredClone(content)
-    state.progress = { id: 'brave-otter-abc123', completed: [], quiz: null }
+    state.progress = { id: 'brave-otter-abc123', completed: [], quiz: null, trackQuizzes: {} }
     vi.spyOn(api, 'quizPaper').mockResolvedValue(structuredClone(paper))
     window.scrollTo = vi.fn()
   })

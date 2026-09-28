@@ -34,7 +34,7 @@ class ChatController extends Controller
         // Laravel trims strings and turns empty ones into null, so blank messages fail "required".
         $input = $request->validate([
             'body' => ['required', 'string', 'max:'.Chat::MAX_LENGTH],
-            'exercise' => ['nullable', 'string', Rule::in(Content::exerciseIds())],
+            'exercise' => ['nullable', 'string', Rule::in(Content::allExerciseIds())],
         ]);
 
         ChatMessage::create(['participant_id' => $id, 'body' => $input['body'], 'exercise_id' => $input['exercise'] ?? null]);

@@ -2,14 +2,15 @@
 import { computed, ref } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
 import RichText from '../components/RichText.vue'
-import { state } from '../store'
+import { exerciseLabel, state } from '../store'
 
 const query = ref('')
 
 // Exercise titles for the "Used in" links, looked up by id.
+// Exercise ids in any track, with their labels ("3. Run a web server", "Node 3. Stop cleanly").
 const exercises = computed(() => {
-  const list = state.content?.exercises ?? []
-  return new Map(list.map((e, i) => [e.id, { title: e.title, n: i + 1 }]))
+  const ids = [...(state.content?.exercises ?? []), ...(state.content?.takeHome.flatMap((t) => t.exercises) ?? [])].map((e) => e.id)
+  return new Map(ids.map((id) => [id, exerciseLabel(id)!]))
 })
 
 // Served with the rest of the content, from apps/api/resources/content/glossary.json.
@@ -63,7 +64,7 @@ const matches = computed(() => groups.value.reduce((sum, g) => sum + g.terms.len
               Used in
               <template v-for="(id, i) in t.seenIn.filter((id) => exercises.has(id))" :key="id">
                 <template v-if="i > 0">, </template>
-                <RouterLink :to="`/exercises/${id}`">{{ exercises.get(id)!.n }}. {{ exercises.get(id)!.title }}</RouterLink>
+                <RouterLink :to="`/exercises/${id}`">{{ exercises.get(id) }}</RouterLink>
               </template>
             </p>
           </dd>

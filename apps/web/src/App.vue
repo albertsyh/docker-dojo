@@ -10,7 +10,7 @@ import { chat, unread } from './chat'
 import ToastHost from './components/ToastHost.vue'
 import { copyId } from './clipboard'
 import { pet } from './pets'
-import { completed, state } from './store'
+import { coreCompleted, state } from './store'
 
 // Small screens fold the nav into a menu. It closes when you navigate or press Esc.
 const menuOpen = ref(false)
@@ -30,7 +30,7 @@ const exerciseCount = computed(() => state.content?.exercises.length ?? 0)
 const journeyPct = computed(() => {
   if (!state.progress || !exerciseCount.value) return 0
   const quizDone = state.progress.quiz?.passed ? 1 : 0
-  return ((completed.value.size + quizDone) / (exerciseCount.value + 1)) * 100
+  return ((coreCompleted.value.size + quizDone) / (exerciseCount.value + 1)) * 100
 })
 </script>
 
@@ -53,10 +53,10 @@ const journeyPct = computed(() => {
         </p>
       </nav>
       <!-- Your id and progress. Pressing it copies the id (to continue on another device). -->
-      <button v-if="state.progress" type="button" class="me" :title="`Your participant id: ${state.progress.id}. Click to copy.`" :aria-label="`Copy your id, ${state.progress.id}. ${completed.size} of ${exerciseCount} exercises done.`" @click="copyId(state.progress.id)">
+      <button v-if="state.progress" type="button" class="me" :title="`Your participant id: ${state.progress.id}. Click to copy.`" :aria-label="`Copy your id, ${state.progress.id}. ${coreCompleted.size} of ${exerciseCount} exercises done.`" @click="copyId(state.progress.id)">
         <span class="me-id">{{ state.progress.id }}</span>
-        <span class="tag" :class="{ ok: completed.size === exerciseCount }">
-          <AppIcon v-if="completed.size === exerciseCount" name="check" class="tag-icon" />{{ completed.size }}/{{ exerciseCount }}
+        <span class="tag" :class="{ ok: coreCompleted.size === exerciseCount }">
+          <AppIcon v-if="coreCompleted.size === exerciseCount" name="check" class="tag-icon" />{{ coreCompleted.size }}/{{ exerciseCount }}
         </span>
         <span v-if="state.progress.quiz" class="tag quiz-tag" :class="{ ok: state.progress.quiz.passed }">
           Quiz {{ state.progress.quiz.bestScore }}/{{ state.progress.quiz.total }}

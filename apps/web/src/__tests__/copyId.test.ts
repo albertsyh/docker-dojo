@@ -48,7 +48,7 @@ describe('copying your id', () => {
 
   it('the name badge on the home page copies your id', async () => {
     state.content = structuredClone(content)
-    state.progress = { id: ID, completed: [], quiz: null }
+    state.progress = { id: ID, completed: [], quiz: null, trackQuizzes: {} }
     const wrapper = mount(HomeView, { global: { stubs: { RouterLink: RouterLinkStub } } })
     const badge = wrapper.find('button.badge')
     expect(badge.attributes('aria-label')).toBe(`Copy your id, ${ID}`)

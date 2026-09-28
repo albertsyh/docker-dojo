@@ -5,11 +5,15 @@ import CodeBlock from '../components/CodeBlock.vue'
 import FilesPanel from '../components/FilesPanel.vue'
 import JoinGate from '../components/JoinGate.vue'
 import { usePresence } from '../presence'
-import { completed, setDone, state } from '../store'
+import { completed, quizRoute, setDone, state, trackOf } from '../store'
 
 const props = defineProps<{ id: string }>()
 
-const list = computed(() => state.content?.exercises ?? [])
+// Stepper, numbering and Previous/Next stay inside the exercise's own track.
+const place = computed(() => trackOf(props.id))
+const track = computed(() => place.value?.track ?? null)
+const list = computed(() => place.value?.list ?? [])
+const backTo = computed(() => (track.value ? `/take-home/${track.value.id}` : '/exercises'))
 const index = computed(() => list.value.findIndex((e) => e.id === props.id))
 const exercise = computed(() => list.value[index.value])
 const prev = computed(() => list.value[index.value - 1])
@@ -43,7 +47,7 @@ async function toggle() {
   </div>
   <article v-else class="layout" :class="{ 'has-files': exercise.files }">
     <header class="intro">
-      <RouterLink to="/exercises" class="back"><AppIcon name="arrow-left" />All exercises</RouterLink>
+      <RouterLink :to="backTo" class="back"><AppIcon name="arrow-left" />{{ track ? track.title : 'All exercises' }}</RouterLink>
       <!-- Where you are in the course: one segment per exercise, each a shortcut. -->
       <nav class="stepper" aria-label="Exercises">
         <RouterLink
@@ -56,7 +60,10 @@ async function toggle() {
           :aria-current="i === index ? 'page' : undefined"
         />
       </nav>
-      <p class="meta muted">Exercise {{ index + 1 }} of {{ list.length }} · {{ exercise.minutes }} min</p>
+      <p class="meta muted">
+        <span v-if="track" class="tag">{{ track.label }}</span>
+        Exercise {{ index + 1 }} of {{ list.length }} · {{ exercise.minutes }} min
+      </p>
       <h1>{{ exercise.title }}</h1>
       <p class="lead">{{ exercise.summary }}</p>
     </header>
@@ -95,7 +102,7 @@ async function toggle() {
         <span class="spacer" />
         <RouterLink v-if="prev" :to="`/exercises/${prev.id}`" class="btn ghost"><AppIcon name="arrow-left" />Previous</RouterLink>
         <RouterLink v-if="next" :to="`/exercises/${next.id}`" class="btn" :class="{ primary: isDone }">Next<AppIcon name="arrow-right" /></RouterLink>
-        <RouterLink v-else to="/quiz" class="btn" :class="{ primary: isDone }">Take the quiz<AppIcon name="arrow-right" /></RouterLink>
+        <RouterLink v-else :to="quizRoute(track)" class="btn" :class="{ primary: isDone }">Take the quiz<AppIcon name="arrow-right" /></RouterLink>
       </div>
       <div v-if="error" class="callout error" role="alert"><AppIcon name="alert" /><span>{{ error }}</span></div>
     </div>
@@ -127,7 +134,7 @@ async function toggle() {
 .seg.done { background: var(--primary); }
 /* Current exercise: highlighter yellow with an ink outline, so it holds 3:1 on white. */
 .seg.current { background: var(--highlight); box-shadow: 0 0 0 1.5px var(--ink); }
-.meta { font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-1); }
+.meta { font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-1); display: flex; align-items: center; gap: var(--space-2); }
 .intro h1 { margin-bottom: var(--space-2); }
 
 /* minmax(0, 1fr): without it the column grows to the longest code line and overflows into the panel. */

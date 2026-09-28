@@ -1,0 +1,360 @@
+{
+  "passMark": 0.7,
+  "minutes": 8,
+  "split": {
+    "easy": 3,
+    "medium": 2,
+    "advanced": 2
+  },
+  "scenarios": [
+    {
+      "id": "node-first-deploy",
+      "title": "A first deploy",
+      "intro": "A Node.js API and its Postgres database, as first put on a Linux server.",
+      "label": "compose.yaml",
+      "code": [
+        "services:",
+        "  api:",
+        "    build: .",
+        "    environment:",
+        "      PGHOST: localhost",
+        "      PGPASSWORD: secret",
+        "    ports:",
+        "      - \"3000:3000\"",
+        "    depends_on:",
+        "      - db",
+        "",
+        "  db:",
+        "    image: postgres:latest",
+        "    environment:",
+        "      POSTGRES_PASSWORD: secret",
+        "    ports:",
+        "      - \"5432:5432\""
+      ]
+    },
+    {
+      "id": "node-almost-ready",
+      "title": "Almost ready for a server",
+      "intro": "The same app a few weeks later. Someone has added a volume and a healthcheck.",
+      "label": "compose.yaml",
+      "code": [
+        "services:",
+        "  web:",
+        "    build: .",
+        "    ports:",
+        "      - \"127.0.0.1:8084:3000\"",
+        "    environment:",
+        "      PGHOST: db",
+        "      PGPASSWORD: shop",
+        "    depends_on:",
+        "      - db",
+        "",
+        "  db:",
+        "    image: postgres:17-alpine",
+        "    environment:",
+        "      POSTGRES_PASSWORD: shop",
+        "    volumes:",
+        "      - shopdata:/var/lib/postgresql/data",
+        "    healthcheck:",
+        "      test: [\"CMD\", \"pg_isready\", \"-h\", \"127.0.0.1\", \"-U\", \"postgres\"]",
+        "      interval: 2s",
+        "      retries: 15",
+        "",
+        "volumes:",
+        "  shopdata:"
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "node-latest-tag",
+      "level": "easy",
+      "prompt": "Your Dockerfile starts with `FROM node:latest`. What is the problem?",
+      "options": [
+        "It is the smallest Node image",
+        "Docker refuses to build it",
+        "The same Dockerfile can build a different Node version next month",
+        "It only works on Apple Silicon"
+      ],
+      "answer": 2,
+      "explanation": "`latest` is whatever was newest on the day you build. Pin a version such as `node:24-alpine`, so every build gets the Node you tested with."
+    },
+    {
+      "id": "node-env-secret",
+      "level": "easy",
+      "prompt": "You wrote `ENV API_KEY=sk-live-123` in a Dockerfile and pushed the image. Who can read the key?",
+      "options": [
+        "Anyone who can pull the image",
+        "Only the app inside the container",
+        "Nobody: ENV values are encrypted",
+        "Only the person who built it"
+      ],
+      "answer": 0,
+      "explanation": "ENV values are saved in the image. `docker history` and `docker image inspect` show them. Pass secrets in when the container starts instead."
+    },
+    {
+      "id": "node-exit-137",
+      "level": "easy",
+      "prompt": "`docker stop` pauses for a few seconds, and the container then shows `Exited (137)`. What happened?",
+      "options": [
+        "The app finished cleanly",
+        "The port was already in use",
+        "The image was built for another CPU",
+        "The app ignored the stop signal, so Docker killed it"
+      ],
+      "answer": 3,
+      "explanation": "137 means killed. Node running as process 1 ignores SIGTERM unless the code handles it. Add a `process.on('SIGTERM', ...)` handler, or run with `--init`."
+    },
+    {
+      "id": "node-listen-localhost",
+      "level": "easy",
+      "prompt": "You ran the app with `-p 8084:3000`. The log says it is listening, but `localhost:8084` does not load. The app calls `app.listen(3000, '127.0.0.1')`. Why does it fail?",
+      "options": [
+        "Port 8084 is reserved by Docker",
+        "Inside the container, 127.0.0.1 is the container itself, and traffic from -p does not arrive there",
+        "Node cannot listen inside a container",
+        "The browser blocks port 8084"
+      ],
+      "answer": 1,
+      "explanation": "Published traffic arrives on the container's network address. Listen on `0.0.0.0` inside the container, and limit who can reach it with the `-p` side instead."
+    },
+    {
+      "id": "node-bind-mount-hides",
+      "level": "easy",
+      "prompt": "With `volumes: [./:/app]` the app says Cannot find package 'express', although the image installed it. Why?",
+      "options": [
+        "npm install failed without telling you",
+        "express is a devDependency",
+        "The bind mount covers all of /app, including the image's node_modules",
+        "Compose ignores the Dockerfile when volumes are set"
+      ],
+      "answer": 2,
+      "explanation": "A bind mount lays your folder over the path. Your folder has no node_modules, so neither does the container. An extra `- /app/node_modules` volume keeps the image's copy."
+    },
+    {
+      "id": "node-exec-format",
+      "level": "easy",
+      "prompt": "An image built on an Apple Silicon Mac fails on the server with `exec format error`. What fixes it?",
+      "options": [
+        "Build it with `--platform linux/amd64`, or build it in CI",
+        "Run it with `--init`",
+        "Publish a different port",
+        "Switch the base image to `node:latest`"
+      ],
+      "answer": 0,
+      "explanation": "The image was built for arm64 and the server is amd64. Build for the server's CPU."
+    },
+    {
+      "id": "node-depends-on",
+      "level": "easy",
+      "prompt": "What does a plain `depends_on: [db]` guarantee?",
+      "options": [
+        "The database accepts connections before the app starts",
+        "The app restarts when the database restarts",
+        "Both services share one volume",
+        "The db container is started before the app container"
+      ],
+      "answer": 3,
+      "explanation": "Started is not ready. A new Postgres takes a few seconds to set itself up. Use a healthcheck with `condition: service_healthy` to wait for ready."
+    },
+    {
+      "id": "node-env-at-run",
+      "level": "medium",
+      "context": "The key should reach the app when the container starts, and never be saved in the image.",
+      "prompt": "Fill in the flag.",
+      "label": "terminal",
+      "code": [
+        "docker run -d --name node-shop {{1}} API_KEY=sk-live-123 node-shop"
+      ],
+      "blanks": [
+        [
+          "-e",
+          "--env"
+        ]
+      ],
+      "explanation": "`-e` sets an environment variable for this one container. The image stays free of the key."
+    },
+    {
+      "id": "node-publish-local",
+      "level": "medium",
+      "context": "You want the app on port 8084, reachable from your own machine only, not from the rest of the network. The app listens on port 3000.",
+      "prompt": "Fill in the port mapping.",
+      "label": "terminal",
+      "code": [
+        "docker run -d --name node-shop -p {{1}} node-shop"
+      ],
+      "blanks": [
+        [
+          "127.0.0.1:8084:3000"
+        ]
+      ],
+      "explanation": "Putting `127.0.0.1` in front publishes on the loopback address only. Plain `8084:3000` opens it on every network, and on Linux it gets past ufw too."
+    },
+    {
+      "id": "node-service-healthy",
+      "level": "medium",
+      "context": "The db service has a healthcheck. The app should wait until it passes.",
+      "prompt": "Fill in the condition.",
+      "label": "compose.yaml",
+      "code": [
+        "  app:",
+        "    build: .",
+        "    depends_on:",
+        "      db:",
+        "        condition: {{1}}"
+      ],
+      "blanks": [
+        [
+          "service_healthy"
+        ]
+      ],
+      "explanation": "`service_healthy` waits for the healthcheck to pass. The default, `service_started`, only waits for the container to start."
+    },
+    {
+      "id": "node-keep-node-modules",
+      "level": "medium",
+      "context": "In development you bind-mount the project folder over /app, but the packages the image installed must stay visible.",
+      "prompt": "Fill in the second volume.",
+      "label": "compose.yaml",
+      "code": [
+        "    volumes:",
+        "      - ./:/app",
+        "      - {{1}}"
+      ],
+      "blanks": [
+        [
+          "/app/node_modules"
+        ]
+      ],
+      "explanation": "A volume on the more specific path wins over the bind mount, so /app/node_modules keeps the image's packages."
+    },
+    {
+      "id": "node-build-platform",
+      "level": "medium",
+      "context": "You are on an Apple Silicon Mac, and the server is an ordinary amd64 machine.",
+      "prompt": "Fill in the flag.",
+      "label": "terminal",
+      "code": [
+        "docker build {{1}} linux/amd64 -t node-shop:amd64 ."
+      ],
+      "blanks": [
+        [
+          "--platform"
+        ]
+      ],
+      "explanation": "`--platform` picks the CPU the image is built for. Check it afterwards with `docker image inspect --format '{{.Architecture}}'`."
+    },
+    {
+      "id": "node-first-db-public",
+      "level": "advanced",
+      "scenario": "node-first-deploy",
+      "prompt": "The server's firewall (ufw) blocks port 5432. Can someone on the internet reach this database?",
+      "options": [
+        "No: ufw blocks it",
+        "Only if they know the password",
+        "Only from the same Docker network",
+        "Yes: Docker's published ports get past ufw, so remove the db's ports"
+      ],
+      "answer": 3,
+      "explanation": "Docker writes its own firewall rules for published ports. The api reaches db over the Compose network, so db needs no `ports` at all."
+    },
+    {
+      "id": "node-first-localhost",
+      "level": "advanced",
+      "scenario": "node-first-deploy",
+      "prompt": "The api exits with `ECONNREFUSED 127.0.0.1:5432`. What is the fix?",
+      "options": [
+        "Set `PGHOST: db`",
+        "Publish 5432 on the api too",
+        "Add `restart: always` to the api",
+        "Use `postgres:17` instead of latest"
+      ],
+      "answer": 0,
+      "explanation": "localhost inside the api container is the api container. Compose gives each service a DNS name, so the database is `db`."
+    },
+    {
+      "id": "node-first-data-lost",
+      "level": "advanced",
+      "scenario": "node-first-deploy",
+      "prompt": "After `docker compose down` and `up` again, every table is gone. Why?",
+      "options": [
+        "down always deletes data",
+        "Postgres forgets its data when the password is short",
+        "db has no volume, so the data lived in the container that down removed",
+        "The api dropped the tables on start"
+      ],
+      "answer": 2,
+      "explanation": "Without a volume on /var/lib/postgresql/data, the data is part of the container. Add a named volume, as in the second file."
+    },
+    {
+      "id": "node-first-image",
+      "level": "advanced",
+      "scenario": "node-first-deploy",
+      "prompt": "Nothing in the file changed, but after the server pulled images again the database will not start. What in this file is the likely cause?",
+      "options": [
+        "`build: .` on the api",
+        "`image: postgres:latest` jumped to a new major version",
+        "`POSTGRES_PASSWORD` is too short",
+        "depends_on is in the wrong order"
+      ],
+      "answer": 1,
+      "explanation": "A new Postgres major version cannot read an older one's data files without an upgrade. Pin the version, for example `postgres:17-alpine`."
+    },
+    {
+      "id": "node-ready-race",
+      "level": "advanced",
+      "scenario": "node-almost-ready",
+      "prompt": "db has a healthcheck, but on a fresh server web still crashes the first time. What is missing?",
+      "options": [
+        "A volume on web",
+        "A second healthcheck on web",
+        "`condition: service_healthy` under web's depends_on",
+        "A published port on db"
+      ],
+      "answer": 2,
+      "explanation": "A healthcheck only reports. Nothing waits for it until depends_on asks for `condition: service_healthy`."
+    },
+    {
+      "id": "node-ready-who",
+      "level": "advanced",
+      "scenario": "node-almost-ready",
+      "prompt": "Who can open web on port 8084?",
+      "options": [
+        "Only programs on the server itself",
+        "Anyone on the internet",
+        "Anyone on the same network",
+        "Nobody, until you open it in the firewall"
+      ],
+      "answer": 0,
+      "explanation": "`127.0.0.1:8084:3000` publishes on the loopback address only. A reverse proxy or tunnel on the server then decides what the outside can see."
+    },
+    {
+      "id": "node-ready-reboot",
+      "level": "advanced",
+      "scenario": "node-almost-ready",
+      "prompt": "The server reboots for updates, and afterwards nothing is running. What would bring both services back on their own?",
+      "options": [
+        "A healthcheck on web",
+        "`restart: unless-stopped` on both services",
+        "A bigger volume",
+        "Running `docker compose up` without -d"
+      ],
+      "answer": 1,
+      "explanation": "Without a restart policy, Docker leaves containers stopped after a reboot. `unless-stopped` starts them again, unless you stopped them yourself."
+    },
+    {
+      "id": "node-ready-disk",
+      "level": "advanced",
+      "scenario": "node-almost-ready",
+      "prompt": "Months later, the server's disk is full. What in this file allows that?",
+      "options": [
+        "The healthcheck runs too often",
+        "The shopdata volume has no size",
+        "web publishes a port",
+        "No logging limits: the default log file never rotates"
+      ],
+      "answer": 3,
+      "explanation": "The default json-file log driver keeps every line for ever. Add `logging.options` with `max-size` and `max-file`, and check with `docker system df`."
+    }
+  ]
+}

@@ -27,7 +27,7 @@ async function renderPanel(path = '/chat') {
 
 beforeEach(() => {
   state.content = structuredClone(content)
-  state.progress = { id: ME, completed: [], quiz: null }
+  state.progress = { id: ME, completed: [], quiz: null, trackQuizzes: {} }
   Object.assign(chat, { messages: [], loaded: false, open: false, onPage: false, seenId: null })
   pet.pickerOpen = false
   pet.shown = true

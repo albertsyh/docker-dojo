@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import AppIcon from '../components/AppIcon.vue'
 import JoinGate from '../components/JoinGate.vue'
-import { completed, nextExercise, quizMinutes, state, totalMinutes } from '../store'
+import JourneyList from '../components/JourneyList.vue'
+import { completed, coreCompleted, state, totalMinutes } from '../store'
+import type { TakeHomeTrack } from '../api'
+
+const doneIn = (track: TakeHomeTrack) => track.exercises.filter((e) => completed.value.has(e.id)).length
+const minutesIn = (track: TakeHomeTrack) => track.exercises.reduce((sum, e) => sum + e.minutes, 0)
 </script>
 
 <template>
@@ -10,77 +15,50 @@ import { completed, nextExercise, quizMinutes, state, totalMinutes } from '../st
     <header>
       <h1>Exercises</h1>
       <p class="lead">
-        {{ completed.size }} of {{ state.content.exercises.length }} done · about {{ totalMinutes }} minutes in total.
+        {{ coreCompleted.size }} of {{ state.content.exercises.length }} done · about {{ totalMinutes }} minutes in total.
         Work top to bottom: later exercises build on earlier ones.
       </p>
     </header>
 
-    <!-- The course is a real sequence, so it is shown as one numbered line of stops. -->
-    <ol class="journey">
-      <li
-        v-for="(ex, i) in state.content.exercises"
-        :key="ex.id"
-        :class="{ done: completed.has(ex.id), here: nextExercise?.id === ex.id }"
-      >
-        <span class="node" aria-hidden="true">
-          <AppIcon v-if="completed.has(ex.id)" name="check" />
-          <template v-else>{{ i + 1 }}</template>
-        </span>
-        <RouterLink :to="`/exercises/${ex.id}`" class="stop">
-          <span class="stop-head">
-            <strong>{{ ex.title }}</strong>
-            <span v-if="nextExercise?.id === ex.id" class="tag here">You are here</span>
-            <span v-else-if="completed.has(ex.id)" class="sr-only">(done)</span>
-          </span>
-          <span class="muted summary">{{ ex.summary }}</span>
-        </RouterLink>
-        <span class="minutes muted">{{ ex.minutes }} min</span>
-      </li>
-      <li class="finish" :class="{ done: state.progress.quiz?.passed, here: !nextExercise && !state.progress.quiz?.passed }">
-        <span class="node" aria-hidden="true"><AppIcon :name="state.progress.quiz?.passed ? 'check' : 'sparkle'" /></span>
-        <RouterLink to="/quiz" class="stop">
-          <span class="stop-head">
-            <strong>Quiz</strong>
-            <span v-if="!nextExercise && !state.progress.quiz?.passed" class="tag here">You are here</span>
-          </span>
-          <span class="muted summary">
-            {{ state.content.quiz.questionCount }} questions, from easy to reading a full compose file. Each retake asks new ones.
-            <template v-if="state.progress.quiz"> Best so far: {{ state.progress.quiz.bestScore }}/{{ state.progress.quiz.total }}.</template>
-          </span>
-        </RouterLink>
-        <span class="minutes muted">{{ quizMinutes }} min</span>
-      </li>
-    </ol>
+    <JourneyList :exercises="state.content.exercises" :quiz="state.content.quiz" :quiz-progress="state.progress.quiz" quiz-to="/quiz" />
+
+    <section v-if="state.content.takeHome.length" class="take-home" aria-labelledby="take-home-title">
+      <h2 id="take-home-title">Take-home tracks</h2>
+      <p class="muted intro">
+        For after the workshop, at your own pace. Each track uses one app from start to finish, covers the mistakes that
+        only show up later, and ends with its own quiz. Pick the stack you work in.
+      </p>
+      <ul class="tracks">
+        <li v-for="track in state.content.takeHome" :key="track.id">
+          <RouterLink :to="`/take-home/${track.id}`" class="track">
+            <span class="track-head">
+              <strong>{{ track.title }}</strong>
+              <span class="tag">{{ track.label }}</span>
+              <span v-if="doneIn(track) === track.exercises.length" class="tag ok"><AppIcon name="check" />Done</span>
+            </span>
+            <span class="muted summary">{{ track.summary }}</span>
+            <span class="muted meta">
+              {{ track.exercises.length }} exercises · about {{ minutesIn(track) }} minutes · {{ doneIn(track) }} of {{ track.exercises.length }} done
+            </span>
+          </RouterLink>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
 
 <style scoped>
 .page { display: grid; gap: var(--space-6); }
-.journey { list-style: none; margin: 0; padding: 0; }
-.journey li {
-  position: relative; display: grid; grid-template-columns: 2.5rem 1fr auto; gap: var(--space-4); align-items: start;
-  padding-bottom: var(--space-2);
-}
-/* The line joining each stop to the next. */
-.journey li:not(:last-child)::before {
-  content: ''; position: absolute; left: calc(1.25rem - 1px); top: 2.5rem; bottom: 0; width: 2px; background: var(--border);
-}
-.journey li.done:not(:last-child)::before { background: var(--primary); }
-.node {
-  width: 2.5rem; height: 2.5rem; border-radius: 50%; display: grid; place-items: center;
-  font-weight: 750; font-variant-numeric: tabular-nums; color: var(--muted);
-  background: var(--bg); border: 2px solid var(--border-strong);
-}
-.node svg { width: 1.2rem; height: 1.2rem; }
-.done .node { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
-.here .node { background: var(--highlight); border-color: var(--ink); color: var(--highlight-ink); }
-.stop {
-  display: grid; gap: 2px; padding: var(--space-2) var(--space-3); margin: calc(var(--space-1) * -1) 0 var(--space-3);
+.take-home { display: grid; gap: var(--space-3); padding-top: var(--space-5); border-top: 1px solid var(--border); }
+.intro { max-width: 62ch; }
+.tracks { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.track {
+  display: grid; gap: 2px; padding: var(--space-3); margin: 0 calc(var(--space-3) * -1);
   border-radius: var(--radius-md); color: var(--ink); text-decoration: none;
   transition: background-color var(--dur-fast) var(--ease-out);
 }
-.stop:hover { background: var(--panel); }
-.stop-head { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; font-size: var(--text-lg); }
-.summary { font-size: var(--text-sm); max-width: 60ch; }
-.minutes { font-size: var(--text-sm); font-variant-numeric: tabular-nums; padding-top: var(--space-2); white-space: nowrap; }
+.track:hover { background: var(--panel); }
+.track-head { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; font-size: var(--text-lg); }
+.summary { font-size: var(--text-sm); max-width: 62ch; }
+.meta { font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
 </style>

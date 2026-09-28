@@ -1,0 +1,9 @@
+[
+  {
+    "id": "node",
+    "title": "Take-home: Node.js",
+    "label": "Node",
+    "summary": "The mistakes that only show up later, on a Node.js app: floating tags, secrets in images, stop signals, listen addresses, bind mounts, a database that is not ready, and the wrong CPU.",
+    "published": true
+  }
+]

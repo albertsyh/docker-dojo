@@ -1,0 +1,498 @@
+[
+  {
+    "id": "node-naive-dockerfile",
+    "title": "A Dockerfile that works, and why that is the problem",
+    "minutes": 7,
+    "summary": "Build a Node.js app from a typical first Dockerfile. It runs fine, but it floats on \"latest\" and ships a secret. Find both, then fix them.",
+    "steps": [
+      {
+        "text": "Go to your home folder, make a folder for this track, and move into it. Every Node take-home exercise uses it.",
+        "code": "cd ~\nmkdir takehome-node\ncd takehome-node",
+        "label": "terminal"
+      },
+      {
+        "text": "Create package.json. express runs the app. prettier is a development-only tool, which matters in the last exercise.",
+        "code": "{\n  \"name\": \"node-shop\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"scripts\": {\n    \"start\": \"node server.js\"\n  },\n  \"dependencies\": {\n    \"express\": \"^5.1.0\"\n  },\n  \"devDependencies\": {\n    \"prettier\": \"^3.6.0\"\n  }\n}",
+        "label": "package.json"
+      },
+      {
+        "text": "Create server.js. It answers with a greeting, and says whether it can see an API key.",
+        "code": "import express from 'express'\n\nconst app = express()\napp.get('/', (req, res) => {\n  res.json({ message: 'Hello from node-shop', hasKey: Boolean(process.env.API_KEY) })\n})\napp.listen(3000, () => console.log('Listening on port 3000'))",
+        "label": "server.js"
+      },
+      {
+        "text": "Create a Dockerfile the way many first attempts look. It builds and runs, so nothing warns you about the two mistakes in it.",
+        "code": "FROM node:latest\nWORKDIR /app\nCOPY . .\nRUN npm install\nENV API_KEY=sk-live-123\nCMD [\"node\", \"server.js\"]",
+        "label": "Dockerfile",
+        "notes": [
+          {
+            "for": "Windows",
+            "text": "Save it as Dockerfile, not Dockerfile.txt (choose \"All files\" in Notepad), or use VS Code."
+          }
+        ]
+      },
+      {
+        "text": "Build and run it, then open http://localhost:8084. The first build downloads the full node image, which is large.",
+        "code": "docker build -t node-shop .\ndocker run -d --name node-shop -p 8084:3000 node-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "Mistake one: \"latest\" is whatever version was newest on the day you built. Check which Node you got and how big the image is. A teammate who builds next month can get a different major version from the same Dockerfile.",
+        "code": "docker run --rm node-shop node --version\ndocker image ls node-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "Mistake two: the key. ENV values are saved in the image, so anyone who pulls it can read them. The build output even warned you: SecretsUsedInArgOrEnv.",
+        "code": "docker history node-shop\ndocker image inspect node-shop --format '{{.Config.Env}}'",
+        "label": "terminal"
+      },
+      {
+        "text": "Fix both. Pin a small, specific base image, and delete the ENV line.",
+        "code": "FROM node:24-alpine\nWORKDIR /app\nCOPY . .\nRUN npm install\nCMD [\"node\", \"server.js\"]",
+        "label": "Dockerfile"
+      },
+      {
+        "text": "Rebuild and start it again, this time passing the key in with -e when the container starts. The page still says hasKey: true, but the image history no longer has the key, and the image is several hundred MB smaller.",
+        "code": "docker rm -f node-shop\ndocker build -t node-shop .\ndocker run -d --name node-shop -p 8084:3000 -e API_KEY=sk-live-123 node-shop\ndocker history node-shop\ndocker image ls node-shop",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "A value passed with -e is not in the image you push, but anyone who can run docker inspect on that server can still read it. On a real server, keep secrets in an env file only the deploy user can read, or in your platform's secret store."
+          }
+        ]
+      },
+      {
+        "text": "Remove the container. You keep the folder and the image for the next exercise.",
+        "code": "docker rm -f node-shop",
+        "label": "terminal"
+      }
+    ],
+    "expected": "The first image lists ENV API_KEY=sk-live-123 in docker history. The rebuilt one does not, is much smaller, and the page at localhost:8084 still shows \"hasKey\": true.",
+    "files": {
+      "note": "Run every command from inside takehome-node.",
+      "entries": [
+        {
+          "path": "takehome-node/",
+          "note": "your working folder for the whole track"
+        },
+        {
+          "path": "takehome-node/package.json",
+          "note": "step 2"
+        },
+        {
+          "path": "takehome-node/server.js",
+          "note": "step 3"
+        },
+        {
+          "path": "takehome-node/Dockerfile",
+          "note": "step 4, fixed in step 8"
+        }
+      ]
+    }
+  },
+  {
+    "id": "node-stop-signals",
+    "title": "Stop cleanly",
+    "minutes": 5,
+    "summary": "docker stop asks your app to finish up, and Node ignores the request by default. Handle the signal so your app shuts down on time.",
+    "steps": [
+      {
+        "text": "Start the app again from the image you built.",
+        "code": "docker run -d --name node-shop -p 8084:3000 node-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "Stop it and watch how long it takes, then check how it ended. docker stop sends SIGTERM, waits a few seconds, and then kills the container. Exit code 137 means it was killed.",
+        "code": "docker stop node-shop\ndocker ps -a --filter name=node-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "Why: in a container your app is process number 1, and Linux does not apply the usual \"exit on SIGTERM\" to process 1. Node only stops if the code asks it to. A killed app cannot finish requests or close its database connections. Add a handler to server.js.",
+        "code": "import express from 'express'\n\nconst app = express()\napp.get('/', (req, res) => {\n  res.json({ message: 'Hello from node-shop', hasKey: Boolean(process.env.API_KEY) })\n})\nconst server = app.listen(3000, () => console.log('Listening on port 3000'))\n\n// docker stop sends SIGTERM. Finish open requests, then exit.\nprocess.on('SIGTERM', () => {\n  console.log('Stopping')\n  server.close(() => process.exit(0))\n})",
+        "label": "server.js"
+      },
+      {
+        "text": "Rebuild and run it, then open http://localhost:8084 so you know it has started.",
+        "code": "docker rm node-shop\ndocker build -t node-shop .\ndocker run -d --name node-shop -p 8084:3000 node-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "Stop it again. This time it stops at once, with exit code 0, and the log ends with \"Stopping\".",
+        "code": "docker stop node-shop\ndocker ps -a --filter name=node-shop\ndocker logs node-shop",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "For an app you cannot change, docker run --init (or init: true in Compose) puts a tiny process 1 in front of it that passes the signal on. Also write CMD in the [\"node\", \"server.js\"] form: the plain CMD node server.js form can leave a shell as process 1, and shells do not pass the signal on either."
+          }
+        ]
+      },
+      {
+        "text": "Remove the container.",
+        "code": "docker rm node-shop",
+        "label": "terminal"
+      }
+    ],
+    "expected": "Before the fix: Exited (137) after a pause. After the fix: Exited (0) straight away, and \"Stopping\" at the end of docker logs.",
+    "files": {
+      "note": "Still inside takehome-node.",
+      "entries": [
+        {
+          "path": "takehome-node/server.js",
+          "note": "step 3, now handles SIGTERM"
+        },
+        {
+          "path": "takehome-node/Dockerfile"
+        },
+        {
+          "path": "takehome-node/package.json"
+        }
+      ]
+    }
+  },
+  {
+    "id": "node-listen-address",
+    "title": "Who can reach your app",
+    "minutes": 5,
+    "summary": "An app listening on 127.0.0.1 inside a container cannot be reached, even with -p. And a published port can be reached by more people than you think.",
+    "steps": [
+      {
+        "text": "Many dev servers listen on 127.0.0.1 by default. Make yours do the same: add '127.0.0.1' to app.listen.",
+        "code": "import express from 'express'\n\nconst app = express()\napp.get('/', (req, res) => {\n  res.json({ message: 'Hello from node-shop', hasKey: Boolean(process.env.API_KEY) })\n})\nconst server = app.listen(3000, '127.0.0.1', () => console.log('Listening on port 3000'))\n\n// docker stop sends SIGTERM. Finish open requests, then exit.\nprocess.on('SIGTERM', () => {\n  console.log('Stopping')\n  server.close(() => process.exit(0))\n})",
+        "label": "server.js"
+      },
+      {
+        "text": "Rebuild and run it. The log says \"Listening on port 3000\", yet http://localhost:8084 fails with an empty or reset response.",
+        "code": "docker build -t node-shop .\ndocker run -d --name node-shop -p 8084:3000 node-shop\ndocker logs node-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "Why: inside a container, 127.0.0.1 is the container itself. Traffic from -p arrives on the container's network address instead, where nothing is listening. Listen on 0.0.0.0, which means every address.",
+        "code": "import express from 'express'\n\nconst app = express()\napp.get('/', (req, res) => {\n  res.json({ message: 'Hello from node-shop', hasKey: Boolean(process.env.API_KEY) })\n})\nconst server = app.listen(3000, '0.0.0.0', () => console.log('Listening on port 3000'))\n\n// docker stop sends SIGTERM. Finish open requests, then exit.\nprocess.on('SIGTERM', () => {\n  console.log('Stopping')\n  server.close(() => process.exit(0))\n})",
+        "label": "server.js"
+      },
+      {
+        "text": "Rebuild and run. Now localhost:8084 works.",
+        "code": "docker rm -f node-shop\ndocker build -t node-shop .\ndocker run -d --name node-shop -p 8084:3000 node-shop",
+        "label": "terminal"
+      },
+      {
+        "text": "The other side: -p 8084:3000 opens 8084 on every network your machine is on, so anyone on the same Wi-Fi can reach it. On a Linux server it is worse: Docker writes its own firewall rules, so ufw or firewalld do not block a published port. That is how exposed databases get found and wiped. Publish to your own machine only by putting 127.0.0.1 in front. docker ps then shows 127.0.0.1:8084->3000.",
+        "code": "docker rm -f node-shop\ndocker run -d --name node-shop -p 127.0.0.1:8084:3000 node-shop\ndocker ps --filter name=node-shop",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "A database almost never needs a published port. Other containers reach it over the Compose network by service name. Leave ports out of the db service entirely."
+          }
+        ]
+      },
+      {
+        "text": "Remove the container.",
+        "code": "docker rm -f node-shop",
+        "label": "terminal"
+      }
+    ],
+    "expected": "With 127.0.0.1 in app.listen the page does not load. With 0.0.0.0 it does, and docker ps shows 127.0.0.1:8084->3000/tcp for the last container.",
+    "files": {
+      "note": "Still inside takehome-node.",
+      "entries": [
+        {
+          "path": "takehome-node/server.js",
+          "note": "steps 1 and 3"
+        },
+        {
+          "path": "takehome-node/Dockerfile"
+        },
+        {
+          "path": "takehome-node/package.json"
+        }
+      ]
+    }
+  },
+  {
+    "id": "node-bind-mount",
+    "title": "Edit code without rebuilding",
+    "minutes": 7,
+    "summary": "A bind mount puts your folder inside the container, so edits show up at once. It can also hide what the image installed there.",
+    "steps": [
+      {
+        "text": "Create compose.yaml for development. The volumes line mounts this folder over /app in the container, and node --watch restarts the app when a file changes.",
+        "code": "services:\n  app:\n    build: .\n    command: [\"node\", \"--watch\", \"server.js\"]\n    ports:\n      - \"127.0.0.1:8084:3000\"\n    volumes:\n      - ./:/app",
+        "label": "compose.yaml"
+      },
+      {
+        "text": "Start it and read the log. The app crashes: Cannot find package 'express'.",
+        "code": "docker compose up -d --build\ndocker compose logs app",
+        "label": "terminal"
+      },
+      {
+        "text": "Why: the image installed express into /app/node_modules, and the bind mount laid your folder over the whole of /app. Your folder has no node_modules, so the container no longer does either. Add a second volume line for /app/node_modules. It keeps the image's copy visible.",
+        "code": "services:\n  app:\n    build: .\n    command: [\"node\", \"--watch\", \"server.js\"]\n    ports:\n      - \"127.0.0.1:8084:3000\"\n    volumes:\n      - ./:/app\n      - /app/node_modules",
+        "label": "compose.yaml"
+      },
+      {
+        "text": "Start it again and open http://localhost:8084. It works.",
+        "code": "docker compose up -d\ndocker compose logs app",
+        "label": "terminal"
+      },
+      {
+        "text": "Now edit server.js: change \"Hello\" to \"Hi\" and save. Refresh the page. The change shows without a rebuild, because the container reads your file directly.",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "If nothing changes, your editor may save by writing a new file and swapping it in, which the watcher can miss. VS Code saves in place and works."
+          },
+          {
+            "for": "Windows",
+            "text": "Edits may not be noticed, and everything is slower, when the project lives on the Windows drive. Keep projects you bind-mount inside WSL (for example \\\\wsl$\\Ubuntu\\home\\you), and open them in VS Code with the WSL extension."
+          },
+          {
+            "for": "Windows",
+            "text": "Shell scripts saved with Windows line endings (CRLF) fail in a Linux container with a confusing \"no such file or directory\". Add a .gitattributes file with the line *.sh text eol=lf to any repo that has them."
+          },
+          {
+            "for": "Linux",
+            "text": "Files the container creates in a bind mount belong to the container's user, often root. If you get \"permission denied\" on your own files, set user: \"1000:1000\" (your id -u and id -g) on the service."
+          }
+        ]
+      },
+      {
+        "text": "Remember the catch: /app/node_modules is now a volume that Compose keeps. After you change package.json, rebuild and ask for fresh volumes with -V, or the old packages stay. Stop it when you are done.",
+        "code": "docker compose down",
+        "label": "terminal"
+      }
+    ],
+    "expected": "First start: Cannot find package 'express' in the log. With the /app/node_modules line: the page loads, and changing \"Hello\" to \"Hi\" shows up after a refresh, with \"Restarting 'server.js'\" in the log.",
+    "files": {
+      "note": "Still inside takehome-node. Compose looks for compose.yaml in the current folder.",
+      "entries": [
+        {
+          "path": "takehome-node/compose.yaml",
+          "note": "step 1, one line added in step 3"
+        },
+        {
+          "path": "takehome-node/server.js",
+          "note": "edited in step 5"
+        },
+        {
+          "path": "takehome-node/Dockerfile"
+        },
+        {
+          "path": "takehome-node/package.json"
+        }
+      ]
+    }
+  },
+  {
+    "id": "node-compose-ready",
+    "title": "Wait for the database",
+    "minutes": 9,
+    "summary": "Connect the app to Postgres with Compose. Meet two classic crashes, localhost and a database that is not ready yet, and make the stack come back after a crash.",
+    "steps": [
+      {
+        "text": "Add the Postgres client to package.json.",
+        "code": "{\n  \"name\": \"node-shop\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"scripts\": {\n    \"start\": \"node server.js\"\n  },\n  \"dependencies\": {\n    \"express\": \"^5.1.0\",\n    \"pg\": \"^8.16.0\"\n  },\n  \"devDependencies\": {\n    \"prettier\": \"^3.6.0\"\n  }\n}",
+        "label": "package.json"
+      },
+      {
+        "text": "Replace server.js. It connects to the database when it starts, and shows the database's time.",
+        "code": "import express from 'express'\nimport pg from 'pg'\n\n// pg reads PGHOST, PGUSER, PGPASSWORD and PGDATABASE from the environment.\nconst db = new pg.Client()\nawait db.connect()\nconsole.log('Connected to', process.env.PGHOST)\n\nconst app = express()\napp.get('/', async (req, res) => {\n  const { rows } = await db.query('SELECT now() AS time')\n  res.json({ message: 'Hello from node-shop', databaseTime: rows[0].time })\n})\nconst server = app.listen(3000, '0.0.0.0', () => console.log('Listening on port 3000'))\n\nprocess.on('SIGTERM', () => {\n  console.log('Stopping')\n  server.close(() => db.end().then(() => process.exit(0)))\n})",
+        "label": "server.js"
+      },
+      {
+        "text": "Replace compose.yaml. The app finds the database through PGHOST, and depends_on starts db first.",
+        "code": "services:\n  db:\n    image: postgres:17-alpine\n    environment:\n      POSTGRES_PASSWORD: shop\n    volumes:\n      - shopdata:/var/lib/postgresql/data\n\n  app:\n    build: .\n    environment:\n      PGHOST: localhost\n      PGUSER: postgres\n      PGPASSWORD: shop\n    ports:\n      - \"127.0.0.1:8084:3000\"\n    depends_on:\n      - db\n\nvolumes:\n  shopdata:",
+        "label": "compose.yaml"
+      },
+      {
+        "text": "Start it.",
+        "code": "docker compose up -d --build",
+        "label": "terminal"
+      },
+      {
+        "text": "Give it a few seconds, then check. The app has exited, and its log says ECONNREFUSED 127.0.0.1:5432. localhost inside the app container is the app container, and there is no database in it.",
+        "code": "docker compose ps -a\ndocker compose logs app",
+        "label": "terminal"
+      },
+      {
+        "text": "Point PGHOST at the service name instead. Compose gives every service a DNS name on the stack's network.",
+        "code": "services:\n  db:\n    image: postgres:17-alpine\n    environment:\n      POSTGRES_PASSWORD: shop\n    volumes:\n      - shopdata:/var/lib/postgresql/data\n\n  app:\n    build: .\n    environment:\n      PGHOST: db\n      PGUSER: postgres\n      PGPASSWORD: shop\n    ports:\n      - \"127.0.0.1:8084:3000\"\n    depends_on:\n      - db\n\nvolumes:\n  shopdata:",
+        "label": "compose.yaml"
+      },
+      {
+        "text": "Start from scratch, as a fresh server would. This deletes the shopdata volume, which only holds an empty database here. The app crashes again, this time because Postgres was still setting itself up when the app tried to connect. depends_on only waits for the db container to start, not for the database to be ready.",
+        "code": "docker compose down -v\ndocker compose up -d",
+        "label": "terminal"
+      },
+      {
+        "text": "Give it a few seconds, then read the app's log. This time the name worked: the error shows the db container's address, or says the database system is starting up. Postgres just was not ready yet.",
+        "code": "docker compose ps -a\ndocker compose logs app",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "If it happened to connect, run the last two steps again. It is a race, and a new database usually loses it."
+          }
+        ]
+      },
+      {
+        "text": "Fix it properly. The healthcheck asks Postgres whether it accepts connections, and condition: service_healthy makes the app wait for that. restart: unless-stopped brings a container back after a crash or a reboot. The logging limits stop the log file from growing until the disk is full.",
+        "code": "services:\n  db:\n    image: postgres:17-alpine\n    environment:\n      POSTGRES_PASSWORD: shop\n    volumes:\n      - shopdata:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD\", \"pg_isready\", \"-h\", \"127.0.0.1\", \"-U\", \"postgres\"]\n      interval: 2s\n      retries: 15\n    restart: unless-stopped\n\n  app:\n    build: .\n    environment:\n      PGHOST: db\n      PGUSER: postgres\n      PGPASSWORD: shop\n    ports:\n      - \"127.0.0.1:8084:3000\"\n    depends_on:\n      db:\n        condition: service_healthy\n    restart: unless-stopped\n    logging:\n      options:\n        max-size: \"10m\"\n        max-file: \"3\"\n\nvolumes:\n  shopdata:",
+        "label": "compose.yaml"
+      },
+      {
+        "text": "Start from scratch again. This time db shows (healthy) before the app starts, and http://localhost:8084 shows the database's time.",
+        "code": "docker compose down -v\ndocker compose up -d\ndocker compose ps\ndocker compose logs app",
+        "label": "terminal"
+      },
+      {
+        "text": "Crash the app on purpose, then check again. The restart policy starts it again within seconds.",
+        "code": "docker compose exec app kill 1\ndocker compose ps",
+        "label": "terminal"
+      },
+      {
+        "text": "Stop the stack. Plain down keeps the shopdata volume.",
+        "code": "docker compose down",
+        "label": "terminal"
+      }
+    ],
+    "expected": "Two failures first: ECONNREFUSED 127.0.0.1:5432, then a failure on the db container's own address while Postgres was still starting. With the healthcheck: db (healthy), the app connected, the page shows databaseTime, and after kill 1 the app is Up again.",
+    "files": {
+      "note": "Still inside takehome-node.",
+      "entries": [
+        {
+          "path": "takehome-node/package.json",
+          "note": "step 1, adds pg"
+        },
+        {
+          "path": "takehome-node/server.js",
+          "note": "step 2"
+        },
+        {
+          "path": "takehome-node/compose.yaml",
+          "note": "replaced in step 3, then edited in steps 5 and 7"
+        },
+        {
+          "path": "takehome-node/Dockerfile"
+        }
+      ]
+    }
+  },
+  {
+    "id": "node-platform",
+    "title": "Build for the server's CPU",
+    "minutes": 4,
+    "summary": "An image is built for one kind of processor. Build on an Apple Silicon Mac and deploy to a normal server, and it will not start.",
+    "steps": [
+      {
+        "text": "Build the image and ask which CPU it is for. On an Apple Silicon Mac it says arm64. On most Windows and Intel machines it says amd64.",
+        "code": "docker build -t node-shop .\ndocker image inspect node-shop --format '{{.Architecture}}'",
+        "label": "terminal"
+      },
+      {
+        "text": "Most servers are amd64. An arm64 image fails there with \"exec format error\", and nothing else in the message says why. Build for the server's CPU with --platform.",
+        "code": "docker build --platform linux/amd64 -t node-shop:amd64 .\ndocker image inspect node-shop:amd64 --format '{{.Architecture}}'",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "macOS",
+            "text": "On Apple Silicon this build runs under emulation, so it is slower. That is normal."
+          }
+        ]
+      },
+      {
+        "text": "Docker Desktop can even run the other CPU's image, by emulating it. Node reports x64, which is amd64. A plain Linux server cannot do this unless someone set emulation up.",
+        "code": "docker run --rm --platform linux/amd64 node-shop:amd64 node -p process.arch",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "The safest habit: build release images in CI or on the server itself. docker buildx build --platform linux/amd64,linux/arm64 builds both at once, but has to push the result to a registry."
+          }
+        ]
+      },
+      {
+        "text": "Remove the extra image.",
+        "code": "docker image rm node-shop:amd64",
+        "label": "terminal"
+      }
+    ],
+    "expected": "Your own architecture first (arm64 or amd64), then amd64 for node-shop:amd64, and x64 from node -p process.arch."
+  },
+  {
+    "id": "node-production-dockerfile",
+    "title": "Capstone: a Dockerfile fit for production",
+    "minutes": 10,
+    "summary": "Put it all together. Fix the rest of the Dockerfile yourself, compare with a worked answer, then clean up the whole track.",
+    "steps": [
+      {
+        "text": "Your Dockerfile is pinned and has no secret, but three mistakes from the course are still in it. Before you read on, try to name them and fix them yourself. Hints: a code change reinstalls every package; prettier ends up in the image; and the app runs as root."
+      },
+      {
+        "text": "Here is one answer. First, a .dockerignore, so node_modules, secrets and git history never reach the build.",
+        "code": "node_modules\n.env\n.git\n*.log",
+        "label": ".dockerignore",
+        "notes": [
+          {
+            "for": "Windows",
+            "text": "Save it as .dockerignore, not .dockerignore.txt (choose \"All files\" in Notepad), or use VS Code."
+          }
+        ]
+      },
+      {
+        "text": "Then the Dockerfile: dependencies first so they are cached, --omit=dev to leave prettier out, NODE_ENV=production, and USER node so the app does not run as root. This app has no build step, so it needs only one stage. An app with a build step (TypeScript, Vite) builds in one stage and copies the result into a clean final one, as in the course's multi-stage exercise.",
+        "code": "FROM node:24-alpine\nWORKDIR /app\nENV NODE_ENV=production\n\n# Dependencies first, so a code change does not reinstall them.\nCOPY package.json ./\nRUN npm install --omit=dev\n\nCOPY . .\nUSER node\nCMD [\"node\", \"server.js\"]",
+        "label": "Dockerfile"
+      },
+      {
+        "text": "Start the stack with the new image. The page at http://localhost:8084 works as before, whoami answers node, and prettier is not in the image.",
+        "code": "docker compose up -d --build\ndocker compose exec app whoami\ndocker compose exec app ls node_modules/prettier",
+        "label": "terminal"
+      },
+      {
+        "text": "Check what the track cost in disk space. Images, build cache, volumes and logs all add up quietly on a server.",
+        "code": "docker system df",
+        "label": "terminal"
+      },
+      {
+        "text": "Clean up the whole track. This deletes the shopdata volume and its data for good, and removes the track's images.",
+        "code": "docker compose down -v --rmi local\ndocker image rm node-shop",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "The large node:latest from the first exercise is still in the build cache. docker builder prune clears the cache, and docker system prune also clears stopped containers, unused networks and dangling images. Both delete permanently, so read what they list before you say yes."
+          }
+        ]
+      },
+      {
+        "text": "Delete the takehome-node folder when you no longer need it."
+      }
+    ],
+    "expected": "whoami prints node, ls node_modules/prettier fails with \"No such file or directory\", and the page still shows databaseTime. After the cleanup, docker system df shows less in use.",
+    "files": {
+      "note": "Still inside takehome-node.",
+      "entries": [
+        {
+          "path": "takehome-node/.dockerignore",
+          "note": "step 2"
+        },
+        {
+          "path": "takehome-node/Dockerfile",
+          "note": "step 3, the final version"
+        },
+        {
+          "path": "takehome-node/compose.yaml"
+        },
+        {
+          "path": "takehome-node/package.json"
+        },
+        {
+          "path": "takehome-node/server.js"
+        }
+      ]
+    }
+  }
+]

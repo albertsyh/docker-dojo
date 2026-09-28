@@ -1,5 +1,5 @@
 import { computed, reactive } from 'vue'
-import { api, ApiError, type Content, type Progress } from './api'
+import { api, ApiError, type Content, type Exercise, type Progress, type TakeHomeTrack } from './api'
 import { petReact } from './pets'
 
 const STORAGE_KEY = 'docker-dojo:participant'
@@ -28,13 +28,43 @@ export const state = reactive({
   error: '',
 })
 
+/** Completed ids in every track. */
 export const completed = computed(() => new Set(state.progress?.completed ?? []))
 
-/** The first exercise not yet done, or null when every exercise is done. */
+/** Completed workshop exercises only: the header, home page and journey count these. */
+export const coreCompleted = computed(() => {
+  const ids = new Set(state.content?.exercises.map((e) => e.id) ?? [])
+  return new Set([...completed.value].filter((id) => ids.has(id)))
+})
+
+/** The first workshop exercise not yet done, or null when every one is done. */
 export const nextExercise = computed(() => state.content?.exercises.find((e) => !completed.value.has(e.id)) ?? null)
 
 export const quizMinutes = computed(() => state.content?.quiz.minutes ?? 0)
 export const totalMinutes = computed(() => state.content?.exercises.reduce((sum, e) => sum + e.minutes, 0) ?? 0)
+
+export function takeHomeTrack(trackId: string): TakeHomeTrack | null {
+  return state.content?.takeHome.find((t) => t.id === trackId) ?? null
+}
+
+/** Which list an exercise belongs to: the workshop (track null) or a take-home track. */
+export function trackOf(exerciseId: string): { track: TakeHomeTrack | null; list: Exercise[] } | null {
+  if (!state.content) return null
+  if (state.content.exercises.some((e) => e.id === exerciseId)) return { track: null, list: state.content.exercises }
+  const track = state.content.takeHome.find((t) => t.exercises.some((e) => e.id === exerciseId))
+  return track ? { track, list: track.exercises } : null
+}
+
+/** "3. Run a web server" for the workshop, "Node 3. Stop cleanly" for a take-home track. */
+export function exerciseLabel(exerciseId: string): string | null {
+  const place = trackOf(exerciseId)
+  if (!place) return null
+  const i = place.list.findIndex((e) => e.id === exerciseId)
+  return `${place.track ? `${place.track.label} ` : ''}${i + 1}. ${place.list[i].title}`
+}
+
+/** Where a track's quiz lives: /quiz for the workshop, /take-home/<id>/quiz for a track. */
+export const quizRoute = (track: TakeHomeTrack | null) => (track ? `/take-home/${track.id}/quiz` : '/quiz')
 
 export async function boot() {
   try {

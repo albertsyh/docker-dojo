@@ -16,15 +16,18 @@ use Illuminate\Support\Arr;
  *
  * A paper is signed rather than stored: the client sends back the question ids with
  * the signature, and each signature can be submitted once.
+ *
+ * Every track has its own pool: the workshop ("core") and each take-home track
+ * (see Content). Question ids are unique across pools.
  */
 class Quiz
 {
     public const LEVELS = ['easy', 'medium', 'advanced'];
 
     /** What the app shows before a quiz starts. */
-    public static function summary(): array
+    public static function summary(string $track = Content::CORE): array
     {
-        $quiz = Content::quiz();
+        $quiz = Content::quiz($track);
 
         return [
             'passMark' => $quiz['passMark'],
@@ -35,10 +38,10 @@ class Quiz
     }
 
     /** A fresh paper for this participant, without answers. */
-    public static function paper(string $participantId): array
+    public static function paper(string $participantId, string $track = Content::CORE): array
     {
-        $quiz = Content::quiz();
-        $seen = self::seenCounts($participantId);
+        $quiz = Content::quiz($track);
+        $seen = self::seenCounts($participantId, $track);
         $pool = collect($quiz['questions']);
 
         $questions = [];
@@ -67,7 +70,7 @@ class Quiz
         $scenarioIds = array_unique(array_column($advanced, 'scenario'));
 
         return [
-            'token' => self::sign($participantId, $ids),
+            'token' => self::sign($participantId, $ids, $track),
             'questions' => array_map(self::publicQuestion(...), $questions),
             'scenarios' => collect($quiz['scenarios'])
                 ->whereIn('id', $scenarioIds)
@@ -76,9 +79,13 @@ class Quiz
         ];
     }
 
-    public static function sign(string $participantId, array $questionIds): string
+    /** The track is part of the signature, so a paper only counts for the quiz it came from. */
+    public static function sign(string $participantId, array $questionIds, string $track = Content::CORE): string
     {
-        return hash_hmac('sha256', $participantId.'|'.implode(',', $questionIds), (string) config('app.key'));
+        // Core keeps its original format, so papers already open survive a deploy.
+        $prefix = $track === Content::CORE ? '' : $track.'|';
+
+        return hash_hmac('sha256', $prefix.$participantId.'|'.implode(',', $questionIds), (string) config('app.key'));
     }
 
     /**
@@ -86,9 +93,9 @@ class Quiz
      * an option index for multiple choice, a list of strings for blanks.
      * Returns null for an answer that doesn't fit its question.
      */
-    public static function grade(array $questionIds, array $answers): ?array
+    public static function grade(array $questionIds, array $answers, string $track = Content::CORE): ?array
     {
-        $byId = collect(Content::quiz()['questions'])->keyBy('id');
+        $byId = collect(Content::quiz($track)['questions'])->keyBy('id');
         $results = [];
         foreach ($questionIds as $i => $id) {
             $question = $byId[$id] ?? null;
@@ -160,10 +167,10 @@ class Quiz
     }
 
     /** How many times this participant has been asked each question. */
-    private static function seenCounts(string $participantId): array
+    private static function seenCounts(string $participantId, string $track): array
     {
         $seen = [];
-        foreach (QuizAttempt::where('participant_id', $participantId)->pluck('answers') as $answers) {
+        foreach (QuizAttempt::where('participant_id', $participantId)->where('track', $track)->pluck('answers') as $answers) {
             foreach ((array) $answers as $entry) {
                 if (is_array($entry) && isset($entry['id'])) {
                     $seen[$entry['id']] = ($seen[$entry['id']] ?? 0) + 1;

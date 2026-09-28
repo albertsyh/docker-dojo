@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import RichText from './RichText.vue'
 import { chat, CHAT_MAX, deleteChat, postChat, toggleMeToo } from '../chat'
-import { state } from '../store'
+import { exerciseLabel, state } from '../store'
 import type { ChatMessage } from '../api'
 
 /** The chat list and the box to ask in. Used by the /chat page and by the pet's popup. */
@@ -12,10 +12,7 @@ defineProps<{ compact?: boolean }>()
 
 const route = useRoute()
 const exercises = computed(() => state.content?.exercises ?? [])
-const exerciseLabel = (id: string) => {
-  const i = exercises.value.findIndex((e) => e.id === id)
-  return i < 0 ? null : `${i + 1}. ${exercises.value[i].title}`
-}
+const takeHome = computed(() => state.content?.takeHome ?? [])
 
 // Asked from an exercise page? Then it is probably about that exercise.
 const routeExercise = () => (route.path.startsWith('/exercises/') && typeof route.params.id === 'string' ? route.params.id : '')
@@ -147,7 +144,17 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-di
           <span class="muted">About</span>
           <select v-model="about">
             <option value="">Nothing in particular</option>
-            <option v-for="(e, i) in exercises" :key="e.id" :value="e.id">{{ i + 1 }}. {{ e.title }}</option>
+            <template v-if="takeHome.length">
+              <optgroup label="Workshop">
+                <option v-for="(e, i) in exercises" :key="e.id" :value="e.id">{{ i + 1 }}. {{ e.title }}</option>
+              </optgroup>
+              <optgroup v-for="t in takeHome" :key="t.id" :label="t.title">
+                <option v-for="(e, i) in t.exercises" :key="e.id" :value="e.id">{{ t.label }} {{ i + 1 }}. {{ e.title }}</option>
+              </optgroup>
+            </template>
+            <template v-else>
+              <option v-for="(e, i) in exercises" :key="e.id" :value="e.id">{{ i + 1 }}. {{ e.title }}</option>
+            </template>
           </select>
         </label>
         <span v-if="left < 100" class="left" :class="{ over: left < 0 }" aria-live="polite">{{ left }} left</span>
