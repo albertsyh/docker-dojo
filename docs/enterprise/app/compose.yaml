@@ -1,0 +1,125 @@
+# APP instance: the Laravel API (php-fpm), Reverb, and a small nginx "gateway" in front of
+# both. Private subnet, no public IP. Reachable on 8443 from the edge's security group only;
+# it may call out to the data instance on 3306 and nothing else.
+#
+#   docker compose --env-file /etc/dojo/app.env run --rm migrate    # each release, first
+#   docker compose --env-file /etc/dojo/app.env up -d
+#
+# /etc/dojo/app.env (secrets agent, mode 600) holds PRIVATE_IP, API_IMAGE, APP_URL, DB_HOST,
+# APP_KEY, DB_PASSWORD (dojo_app's), REVERB_APP_KEY and REVERB_APP_SECRET.
+# /etc/dojo/migrator.env holds only DB_PASSWORD (dojo_migrator's). See ../README.md.
+name: dojo-app
+
+# Every container: read-only filesystem, no Linux capabilities unless listed, and no way
+# to gain privileges later (setuid binaries do nothing).
+x-hardening: &hardening
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  logging:
+    driver: json-file
+    options: { max-size: 10m, max-file: "3" }
+
+# Settings that aren't secret. Secrets come only from the env_file, never from here.
+x-laravel-env: &laravel-env
+  APP_NAME: Docker Dojo
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_URL: ${APP_URL:?the public https address}
+  LOG_CHANNEL: stderr
+  DB_CONNECTION: mysql
+  DB_HOST: ${DB_HOST:?the data instance's private DNS name, matching its certificate}
+  DB_PORT: "3306"
+  DB_DATABASE: dojo
+  DB_USERNAME: dojo_app
+  # Verify MySQL's certificate against the internal CA (require_secure_transport is on there).
+  MYSQL_ATTR_SSL_CA: /run/tls/internal-ca.crt
+  CACHE_STORE: database
+  SESSION_DRIVER: array
+  QUEUE_CONNECTION: sync
+  DOJO_JOIN_PER_MINUTE: ${DOJO_JOIN_PER_MINUTE:-120}
+  BROADCAST_CONNECTION: reverb
+  REVERB_APP_ID: dojo
+  # api -> reverb stays on this instance's own Docker network.
+  REVERB_HOST: reverb
+  REVERB_PORT: "8080"
+  REVERB_SCHEME: http
+  # Migrations are a separate, deliberate step (the migrate service), never on start.
+  RUN_MIGRATIONS: "false"
+
+x-laravel: &laravel
+  <<: *hardening
+  image: ${API_IMAGE:?e.g. registry.example.com/docker-dojo-api:1.4.0, pulled, never built here}
+  # www-data in the php image. Nothing in these containers runs as root.
+  user: "82:82"
+  env_file: ${SECRETS_FILE:-/etc/dojo/app.env}
+  environment: *laravel-env
+  volumes:
+    - ../certs/internal-ca.crt:/run/tls/internal-ca.crt:ro
+  # The only writable paths: Laravel's config/route cache, built by the entrypoint on start.
+  tmpfs:
+    - /tmp
+    - /var/www/html/bootstrap/cache:uid=82,gid=82
+
+services:
+  gateway:
+    <<: *hardening
+    image: nginx:1.29-alpine
+    # nginx's master process starts as root only to switch to its worker user.
+    cap_add: [CHOWN, SETUID, SETGID]
+    ports:
+      - "${PRIVATE_IP:?the instance's private IP}:8443:8443"
+    volumes:
+      - ./gateway.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../certs/internal-ca.crt:/etc/nginx/tls/internal-ca.crt:ro
+      - ../certs/app.crt:/etc/nginx/tls/app.crt:ro
+      - ../certs/app.key:/etc/nginx/tls/app.key:ro
+    tmpfs: [/var/cache/nginx, /run, /tmp]
+    depends_on:
+      api: { condition: service_healthy }
+      reverb: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 64M }
+
+  api:
+    <<: *laravel
+    command: ["php-fpm"]
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      start_interval: 2s
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 384M }
+
+  reverb:
+    <<: *laravel
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 8080) ? 0 : 1);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+      start_interval: 2s
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  # One-off: `run --rm migrate` before starting a new release. It is the only thing that
+  # uses dojo_migrator, so the running app never holds schema-changing credentials.
+  # In a pipeline, this is a CI/CD job step rather than something run by hand.
+  migrate:
+    <<: *laravel
+    profiles: [migrate]
+    restart: "no"
+    command: ["php", "artisan", "migrate", "--force"]
+    env_file: ${MIGRATOR_SECRETS_FILE:-/etc/dojo/migrator.env}
+    environment:
+      <<: *laravel-env
+      DB_USERNAME: dojo_migrator

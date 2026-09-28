@@ -1,0 +1,8 @@
+# Every TCP connection must use TLS 1.3, with the certificate from the internal CA.
+# (The container's own socket connections are exempt, which is what init scripts use.)
+[mysqld]
+ssl_ca = /etc/mysql/tls/internal-ca.crt
+ssl_cert = /etc/mysql/tls/db.crt
+ssl_key = /etc/mysql/tls/db.key
+require_secure_transport = ON
+tls_version = TLSv1.3

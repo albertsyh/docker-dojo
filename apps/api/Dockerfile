@@ -3,9 +3,13 @@
 # production (the last stage, so the one `docker compose build` ships).
 FROM php:8.4-fpm-alpine AS base
 
+# The memory_limit line: 5 workers (pm.max_children) x 64M stays inside the api container's
+# 384M limit, so one heavy request fails on its own instead of getting the whole container
+# OOM-killed. It applies to php-fpm only; artisan and Reverb keep the CLI default.
 RUN docker-php-ext-install pdo_mysql pcntl opcache \
  && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
- && echo "clear_env = no" >> /usr/local/etc/php-fpm.d/www.conf
+ && echo "clear_env = no" >> /usr/local/etc/php-fpm.d/www.conf \
+ && echo "php_admin_value[memory_limit] = 64M" >> /usr/local/etc/php-fpm.d/www.conf
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

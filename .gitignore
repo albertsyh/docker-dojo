@@ -1,2 +1,5 @@
 .env
 .DS_Store
+
+# Demo certificates from docs/enterprise/dev-certs.sh
+docs/enterprise/certs/

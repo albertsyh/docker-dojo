@@ -5,16 +5,20 @@
 #   db      MySQL 8.4 (not published to the host)
 #
 # Local:  docker compose up -d --build   ->  http://localhost:8000
-# Deploy: copy .env.example to .env and set real secrets first.
+# Deploy: see compose.prod.yaml, which requires real secrets in .env and adds a Cloudflare Tunnel.
 # Limits total 3 CPUs / ~1.5GB, sized from a 150-student load test (see README).
+#
+# `name` pins the project, so a second checkout of this repo on the same host is the SAME
+# project and takes over these containers and this database. Use `-p <other-name>` for one.
 name: docker-dojo
 
 x-laravel-env: &laravel-env
   APP_NAME: Docker Dojo
   APP_ENV: production
   APP_DEBUG: "false"
+  # Empty means the entrypoint generates one into the app-key volume and keeps it.
   APP_KEY: ${APP_KEY:-}
-  APP_URL: ${APP_URL:-http://localhost:8000}
+  APP_URL: ${APP_URL:-http://localhost:${APP_PORT:-8000}}
   LOG_CHANNEL: stderr
   DB_CONNECTION: mysql
   DB_HOST: db
@@ -35,11 +39,18 @@ x-laravel-env: &laravel-env
   REVERB_PORT: "8080"
   REVERB_SCHEME: http
 
+# Docker's default json-file logs never rotate; cap them so a long-lived host can't fill its disk.
+x-logging: &logging
+  driver: json-file
+  options: { max-size: 10m, max-file: "3" }
+
 services:
   db:
     image: mysql:8.4
     restart: unless-stopped
     environment:
+      # Read only when the dbdata volume is first created. Changing DB_PASSWORD later
+      # locks the api out of the existing database (see README, Deploying).
       MYSQL_DATABASE: dojo
       MYSQL_USER: dojo
       MYSQL_PASSWORD: ${DB_PASSWORD:-dojo-local-only}
@@ -53,6 +64,7 @@ services:
       timeout: 5s
       retries: 30
       start_period: 20s
+    logging: *logging
     # Idle ~480MB, mostly MySQL's default buffers; barely moves under load.
     deploy:
       resources:
@@ -60,26 +72,46 @@ services:
 
   api:
     build: ./apps/api
-    image: docker-dojo-api
+    # Tagged per project, so a throwaway copy (scripts/test-stack.sh, `-p other`) builds
+    # its own image instead of retagging the one this stack runs.
+    image: ${COMPOSE_PROJECT_NAME}-api
     restart: unless-stopped
     environment: *laravel-env
+    volumes:
+      - appkey:/var/lib/dojo
     depends_on:
       db:
         condition: service_healthy
-    # php-fpm runs up to 5 workers (~10MB each, 128MB PHP limit per request).
+    # php-fpm only listens once migrations have run, so healthy means ready to serve.
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      start_interval: 2s
+    logging: *logging
+    # php-fpm runs up to 5 workers (~10MB each, 64MB PHP limit per request).
     deploy:
       resources:
         limits: { cpus: "1.0", memory: 384M }
 
   reverb:
     build: ./apps/api          # same Dockerfile as api -> fully cached second build
-    image: docker-dojo-api
+    image: ${COMPOSE_PROJECT_NAME}-api
     restart: unless-stopped
     command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
     environment: *laravel-env
-    depends_on:
-      api:
-        condition: service_started
+    volumes:
+      - appkey:/var/lib/dojo
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 8080) ? 0 : 1);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+      start_interval: 2s
+    logging: *logging
     # One process; ~40MB with 150 live-tracker connections open.
     deploy:
       resources:
@@ -91,11 +123,23 @@ services:
     ports:
       - "${APP_PORT:-8000}:80"
     depends_on:
-      - api
-      - reverb
+      api:
+        condition: service_healthy
+      reverb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 2s
+    logging: *logging
     deploy:
       resources:
         limits: { cpus: "0.5", memory: 64M }
 
 volumes:
   dbdata:
+  # Holds the generated APP_KEY when none is set, so quiz papers survive restarts.
+  appkey:

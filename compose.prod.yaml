@@ -1,0 +1,52 @@
+# Production overrides: a public host behind a Cloudflare Tunnel.
+#
+#   docker compose -f compose.yaml -f compose.prod.yaml up -d --build
+#
+# - Every secret must be set in .env. A missing one stops compose before anything starts,
+#   instead of silently running on the public local-only defaults from compose.yaml.
+# - The host publishes no ports. cloudflared dials out to Cloudflare, and the tunnel's
+#   public hostname (set in the Cloudflare dashboard) forwards to http://web:80.
+# - nginx takes the real client IP from CF-Connecting-IP (deploy/cloudflare-real-ip.conf),
+#   so the per-IP join limit works.
+
+x-secrets: &secrets
+  APP_KEY: ${APP_KEY:?set APP_KEY in .env (see .env.example)}
+  APP_URL: ${APP_URL:?set APP_URL in .env, e.g. https://docker-dojo.example.com}
+  DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+  REVERB_APP_KEY: ${REVERB_APP_KEY:?set REVERB_APP_KEY in .env}
+  REVERB_APP_SECRET: ${REVERB_APP_SECRET:?set REVERB_APP_SECRET in .env}
+
+services:
+  db:
+    environment:
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
+
+  api:
+    environment: *secrets
+
+  reverb:
+    environment: *secrets
+
+  web:
+    # Only cloudflared reaches nginx. Publishing a port here would let anyone skip Cloudflare
+    # and spoof CF-Connecting-IP.
+    ports: !reset []
+    volumes:
+      - ./deploy/cloudflare-real-ip.conf:/etc/nginx/conf.d/real-ip.conf:ro
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.9.3
+    restart: unless-stopped
+    command: ["tunnel", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    depends_on:
+      web:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options: { max-size: 10m, max-file: "3" }
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 128M }

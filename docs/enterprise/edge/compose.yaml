@@ -1,0 +1,52 @@
+# EDGE instance: the only one with a public address. Serves the built Vue app, terminates
+# public TLS, and forwards /api and /app to the app instance over mutual TLS.
+# In many enterprises this role is a managed load balancer + WAF, with the static files on
+# a CDN; this instance is what you run when it isn't.
+#
+#   docker compose --env-file /etc/dojo/edge.env up -d
+#
+# /etc/dojo/edge.env holds WEB_IMAGE, PUBLIC_HOSTNAME and APP_UPSTREAM. No database or
+# Laravel secrets ever reach this instance. See ../README.md.
+name: dojo-edge
+
+services:
+  edge:
+    # The same image the single-host stack builds from apps/web. Only its static files and
+    # nginx are used; the config below replaces its own.
+    image: ${WEB_IMAGE:?e.g. registry.example.com/docker-dojo-web:1.4.0}
+    restart: unless-stopped
+    environment:
+      # Filled into edge.conf.template when the container starts.
+      PUBLIC_HOSTNAME: ${PUBLIC_HOSTNAME:?e.g. docker-dojo.example.com}
+      APP_UPSTREAM: ${APP_UPSTREAM:?the app instance, e.g. app.internal:8443}
+      APP_TLS_NAME: ${APP_TLS_NAME:-app.internal}
+    ports:
+      - "${EDGE_HTTP_PORT:-80}:80"
+      - "${EDGE_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./edge.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ../certs/public.crt:/etc/nginx/tls/public.crt:ro
+      - ../certs/public.key:/etc/nginx/tls/public.key:ro
+      - ../certs/internal-ca.crt:/etc/nginx/tls/internal-ca.crt:ro
+      - ../certs/edge-client.crt:/etc/nginx/tls/edge-client.crt:ro
+      - ../certs/edge-client.key:/etc/nginx/tls/edge-client.key:ro
+    read_only: true
+    # conf.d is where the template is rendered on start; the rest is nginx's own scratch space.
+    tmpfs: [/etc/nginx/conf.d, /var/cache/nginx, /run, /tmp]
+    cap_drop: [ALL]
+    # Starts as root only to bind 80/443 and switch to its worker user.
+    cap_add: [CHOWN, SETUID, SETGID, NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 2s
+    logging:
+      driver: json-file
+      options: { max-size: 10m, max-file: "3" }
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 64M }

@@ -10,6 +10,17 @@ It is an unofficial training app, not affiliated with Docker, Inc.
 - `apps/web`: Vue 3 + Vite + TypeScript SPA, served by nginx, which also forwards `/api`
   to php-fpm and `/app` (websocket) to Reverb.
 - `compose.yaml`: `db`, `api`, `reverb`, `web`. Only `web` publishes a port (`APP_PORT`, default 8000).
+  It must keep working with no `.env` (students run it in the `this-app` exercise).
+- `compose.prod.yaml`: production overrides for a public host behind a Cloudflare Tunnel.
+  It requires every secret (`${VAR:?}`), publishes no ports, adds `cloudflared`, and mounts
+  `deploy/cloudflare-real-ip.conf` so nginx trusts `CF-Connecting-IP`. Never mount that
+  file on a stack whose web port is published. `tests/compose.test.ts` checks both files.
+- `docs/enterprise/`: reference files for splitting edge, app and data onto three instances
+  (mTLS edge to app, TLS to MySQL, separate migrate job, rows-only DB user). Not used by the
+  workshop or tests; keep it in step if the api image's entrypoint or env changes.
+- With no `APP_KEY`, the entrypoint generates one once into the `appkey` volume. It signs
+  quiz papers, so it must survive restarts. `image:` is `${COMPOSE_PROJECT_NAME}-api` so
+  throwaway projects never retag the main stack's image.
 - `PRODUCT.md` and `DESIGN.md`: who this is for, and the "Lab Bench" design system. Read both before UI work.
 
 ## Writing exercises

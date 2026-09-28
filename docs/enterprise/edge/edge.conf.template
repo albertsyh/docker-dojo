@@ -1,0 +1,77 @@
+# Rendered by the nginx image on start: ${PUBLIC_HOSTNAME}, ${APP_UPSTREAM} and
+# ${APP_TLS_NAME} come from the environment. nginx's own $variables are left alone.
+server_tokens off;
+
+server {
+    listen 80;
+    server_name _;
+
+    # For the container healthcheck only. Everything else moves to https.
+    location = /healthz {
+        access_log off;
+        return 200 "ok\n";
+    }
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${PUBLIC_HOSTNAME};
+    root /usr/share/nginx/html;
+    index index.html;
+    client_max_body_size 64k;
+
+    ssl_certificate     /etc/nginx/tls/public.crt;
+    ssl_certificate_key /etc/nginx/tls/public.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    # No X-Frame-Options or CSP frame-ancestors: /live?embed is meant to be framed by other sites.
+
+    # To the app instance: verify its certificate against the internal CA, and present the
+    # edge's client certificate, which the app's gateway requires (mutual TLS).
+    proxy_ssl_trusted_certificate /etc/nginx/tls/internal-ca.crt;
+    proxy_ssl_verify on;
+    proxy_ssl_name ${APP_TLS_NAME};
+    proxy_ssl_server_name on;
+    proxy_ssl_certificate     /etc/nginx/tls/edge-client.crt;
+    proxy_ssl_certificate_key /etc/nginx/tls/edge-client.key;
+    proxy_ssl_protocols TLSv1.3;
+
+    location /api/ {
+        proxy_pass https://${APP_UPSTREAM};
+        proxy_set_header Host $host;
+        # Replace, never append: a client can't smuggle in an address of its own choosing.
+        # (Behind a cloud load balancer, take the address from it with set_real_ip_from first.)
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+
+    location /app/ {
+        proxy_pass https://${APP_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 120s;
+    }
+
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        # add_header in a location drops the server-level ones, so repeat them.
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options nosniff always;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

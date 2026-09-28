@@ -1,0 +1,53 @@
+# DATA instance: MySQL only. Isolated subnet, no public IP, no route to the internet.
+# Reachable on 3306 from the app instance's security group, and from nothing else.
+#
+#   docker compose --env-file /etc/dojo/data.env up -d
+#
+# /etc/dojo/data.env is rendered by your secrets agent (mode 600, never committed). It holds
+# PRIVATE_IP, MYSQL_ROOT_PASSWORD, DOJO_APP_PASSWORD and DOJO_MIGRATOR_PASSWORD, and is read
+# twice: by compose for PRIVATE_IP, and as the container's env_file. See ../README.md.
+name: dojo-data
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    env_file: ${SECRETS_FILE:-/etc/dojo/data.env}
+    environment:
+      MYSQL_DATABASE: dojo
+      # root can only log in from inside this container, never over the network.
+      MYSQL_ROOT_HOST: localhost
+    # Bind to the private interface only. Even a mistaken security group can't expose it
+    # on a public address.
+    ports:
+      - "${PRIVATE_IP:?the instance's private IP}:3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./tls.cnf:/etc/mysql/conf.d/tls.cnf:ro
+      - ./init:/docker-entrypoint-initdb.d:ro
+      - ../certs/internal-ca.crt:/etc/mysql/tls/internal-ca.crt:ro
+      - ../certs/db.crt:/etc/mysql/tls/db.crt:ro
+      - ../certs/db.key:/etc/mysql/tls/db.key:ro
+    read_only: true
+    tmpfs: [/tmp, /run/mysqld, /var/lib/mysql-files]
+    # The image starts as root only to hand the data directory to the mysql user.
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID, DAC_OVERRIDE]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    logging:
+      driver: json-file
+      options: { max-size: 10m, max-file: "3" }
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 768M }
+
+volumes:
+  # On a real instance, put this on an encrypted disk and back it up (snapshots or
+  # mysqldump to a separate account). A managed database (RDS, Cloud SQL) does both.
+  dbdata:

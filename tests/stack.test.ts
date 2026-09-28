@@ -43,17 +43,18 @@ function nextEvent(channel = 'tracker', name = 'stats.updated'): Promise<{ ready
   })
 }
 
-beforeAll(async () => {
-  // The api container migrates on start; wait until it answers.
+/** The api container migrates on start; waits until it answers through nginx. */
+async function waitForApi() {
   for (let i = 0; i < 90; i++) {
     const res = await fetch(`${BASE}/api/content`).catch(() => null)
-    if (res?.ok) {
-      content = (await res.json()) as Content
-      return
-    }
+    if (res?.ok) return (await res.json()) as Content
     await Bun.sleep(1000)
   }
   throw new Error(`The stack at ${BASE} did not come up`)
+}
+
+beforeAll(async () => {
+  content = await waitForApi()
 }, 100_000)
 
 describe('web (nginx)', () => {
@@ -182,6 +183,23 @@ describe('compose', () => {
       expect(published).toEqual([])
     }
   })
+
+  test('api and reverb run an image tagged for this project, not the main stack\'s', () => {
+    for (const service of ['api', 'reverb']) expect(inspect(service).Image).toBe(`${PROJECT}-api`)
+  })
+
+  test('a quiz paper opened before an api restart can still be submitted', async () => {
+    // Papers are signed with APP_KEY. With none set, the key must come back from the
+    // app-key volume, not be regenerated, or every open paper breaks on restart.
+    const id = await join()
+    const paper = (await api('GET', `/participants/${id}/quiz`)).json
+    expect(Bun.spawnSync(['docker', 'restart', inspect('api').ID]).exitCode).toBe(0)
+    await waitForApi()
+
+    const ids = paper.questions.map((q: any) => q.id)
+    const answers = paper.questions.map((q: any) => (q.kind === 'blanks' ? Array(q.blanks).fill('x') : 0))
+    expect((await api('POST', `/participants/${id}/quiz`, { token: paper.token, questions: ids, answers })).status).toBe(200)
+  }, 120_000)
 
   test('every container has CPU and memory limits', () => {
     for (const service of ['db', 'api', 'reverb', 'web']) {

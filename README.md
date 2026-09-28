@@ -45,6 +45,7 @@ browser ──► web (nginx :80, published as :8000)
 | `apps/web` | Vue 3 + Vite + vue-router. Multi-stage Dockerfile: Bun installs, Node builds, nginx serves. |
 | `apps/api` | Laravel API. `resources/content/*.json` holds the exercises, the quiz pool, the glossary and the references. Edit those to change the course (see CLAUDE.md for the formats). |
 | `compose.yaml` | The four services. Every setting has a localhost default. |
+| `compose.prod.yaml` | Production overrides: required secrets, no published ports, a Cloudflare Tunnel. |
 
 - **Identity:** `POST /api/participants` returns an anonymous id like `swift-otter-7f3k9q`,
   stored in the browser's localStorage. Students can type it in on another device to continue.
@@ -67,20 +68,51 @@ and point `REDIS_HOST` at a Redis service, so the instances share messages.
 
 ## Deploying
 
-1. `cp .env.example .env` and set real values for `APP_KEY`, `DB_PASSWORD`,
-   `DB_ROOT_PASSWORD`, `REVERB_APP_KEY` and `REVERB_APP_SECRET`.
-2. Put TLS in front of the `web` port (for example a Caddy or Traefik reverse proxy,
-   or your platform's load balancer). The browser connects its websocket to whatever host
-   and port served the page, so no extra websocket config is needed.
+Production runs behind a [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/):
+the host publishes no ports, and a `cloudflared` container dials out to Cloudflare.
+`compose.prod.yaml` adds it on top of `compose.yaml`.
+
+1. In the Cloudflare dashboard (Zero Trust > Networks > Tunnels), create a tunnel with the
+   Docker connector and copy its token. Add a public hostname (for example
+   `docker-dojo.example.com`) with service `http://web:80`. Cloudflare terminates TLS and
+   carries the websocket too, so nothing else is needed for `/app`.
+2. `cp .env.example .env`, uncomment `COMPOSE_FILE=compose.yaml:compose.prod.yaml`, and set
+   real values for `APP_KEY`, `APP_URL` (the https address), `DB_PASSWORD`,
+   `DB_ROOT_PASSWORD`, `REVERB_APP_KEY`, `REVERB_APP_SECRET` and `CLOUDFLARE_TUNNEL_TOKEN`.
+   Compose stops with a clear error if any of them is missing.
 3. `docker compose up -d --build`
 
-Rate limits: joining is limited per IP (`DOJO_JOIN_PER_MINUTE`, default 120, because a
-classroom often shares one public IP). Everything else is limited per participant id.
+`COMPOSE_FILE` makes every `docker compose` command on the server (`up`, `ps`, `logs`,
+`down`) use both files. Without it you would have to pass
+`-f compose.yaml -f compose.prod.yaml` each time, and a forgotten one falls back to the
+local file, which publishes port 8000.
+
+- **Real client IPs.** nginx takes the client address from Cloudflare's `CF-Connecting-IP`
+  header (`deploy/cloudflare-real-ip.conf`, mounted in prod only). That is safe only because
+  nothing but `cloudflared` can reach nginx. Don't publish `web`'s port on that host.
+- **Rate limits.** Joining is limited per IP (`DOJO_JOIN_PER_MINUTE`, default 120, because a
+  classroom often shares one public IP). Everything else is limited per participant id.
+- **Set the database passwords before the first start.** MySQL reads them only when the
+  `dbdata` volume is created. Changing `DB_PASSWORD` later locks the api out of the existing
+  database. Either change it inside MySQL too (`ALTER USER`), or accept losing all progress
+  and run `down -v`, which permanently deletes the database volume.
+- **Keep `APP_KEY` stable.** It signs quiz papers, so changing it breaks any quiz a student
+  has open. Without an `APP_KEY` (the local setup), the api generates one once and keeps it
+  in the `appkey` volume.
+- **One checkout per host.** `compose.yaml` pins the project name to `docker-dojo`, so a
+  second clone on the same host is the same project and takes over the running stack and
+  its database. Give it its own name with `-p`.
+
+For a layout that splits the frontend, backend and database onto separate instances
+(the shape enterprise security reviews usually ask for), see
+[`docs/enterprise/`](docs/enterprise/README.md). It's a reference; the workshop doesn't use it.
 
 ### Resources
 
 `compose.yaml` caps each container. Together they allow 3 CPUs and about 1.5GB of
-memory, so a 2 vCPU / 2GB VPS is enough for a workshop.
+memory (plus 128MB for `cloudflared` in production), so a 2 vCPU / 2GB VPS is enough for
+a workshop. Each php-fpm request may use up to 64MB, so the api's 5 workers always fit
+inside its 384MB.
 
 | Service | Limit | Idle | Peak in load test |
 |---|---|---|---|
@@ -88,6 +120,7 @@ memory, so a 2 vCPU / 2GB VPS is enough for a workshop.
 | api | 1 CPU, 384MB | ~12MB | 100% CPU, 46MB |
 | reverb | 0.5 CPU, 256MB | ~35MB | 37% CPU, 42MB |
 | web | 0.5 CPU, 64MB | ~9MB | 42% CPU, 16MB |
+| cloudflared (prod) | 0.5 CPU, 128MB | | |
 
 The load test ran 150 students who each joined, finished all 10 exercises and
 submitted the quiz, 30 at a time, with 150 Live-page websockets open. That is 1,800
@@ -114,8 +147,13 @@ docker build --target test apps/web    # Vitest: quiz, tracker, glossary, refere
   ids, required fields, no em-dashes, shell-safe commands, glossary links, and https reference links.
 - **`test-stack.sh`** starts a throwaway copy of the stack as the compose project
   `docker-dojo-test` on port 8099, with its own database volume. It tests through
-  nginx (routing, websockets, published ports, resource limits), then removes the
-  copy. Your normal stack and its data are untouched.
+  nginx (routing, websockets, published ports, resource limits, quiz papers surviving an
+  api restart), then removes the copy. It builds its own `docker-dojo-test-api` image, so
+  your normal stack, its image and its data are untouched.
+- **Compose tests** (`tests/compose.test.ts`) check what `docker compose config` makes of
+  `compose.yaml` and `compose.prod.yaml`, for example that prod refuses to start without a
+  secret and publishes no ports. They run in `test-stack.sh`, or alone with
+  `bun test tests/compose.test.ts`.
 
 ## Developing the frontend
 
