@@ -7,6 +7,8 @@ import PetCompanion from './components/PetCompanion.vue'
 import PetPicker from './components/PetPicker.vue'
 import ChatPopup from './components/ChatPopup.vue'
 import { chat, unread } from './chat'
+import ToastHost from './components/ToastHost.vue'
+import { copyId } from './clipboard'
 import { pet } from './pets'
 import { completed, state } from './store'
 
@@ -46,9 +48,12 @@ const journeyPct = computed(() => {
         <RouterLink to="/glossary">Glossary</RouterLink>
         <RouterLink to="/references">References</RouterLink>
         <RouterLink to="/live" class="live"><i aria-hidden="true" />Live</RouterLink>
-        <p v-if="state.progress" class="nav-id muted">You are <code>{{ state.progress.id }}</code></p>
+        <p v-if="state.progress" class="nav-id muted">
+          You are <button type="button" class="copy-id" :aria-label="`Copy your id, ${state.progress.id}`" @click="copyId(state.progress.id)"><code>{{ state.progress.id }}</code><AppIcon name="copy" /></button>
+        </p>
       </nav>
-      <div v-if="state.progress" class="me" :title="`Your participant id: ${state.progress.id}`">
+      <!-- Your id and progress. Pressing it copies the id (to continue on another device). -->
+      <button v-if="state.progress" type="button" class="me" :title="`Your participant id: ${state.progress.id}. Click to copy.`" :aria-label="`Copy your id, ${state.progress.id}. ${completed.size} of ${exerciseCount} exercises done.`" @click="copyId(state.progress.id)">
         <span class="me-id">{{ state.progress.id }}</span>
         <span class="tag" :class="{ ok: completed.size === exerciseCount }">
           <AppIcon v-if="completed.size === exerciseCount" name="check" class="tag-icon" />{{ completed.size }}/{{ exerciseCount }}
@@ -56,7 +61,7 @@ const journeyPct = computed(() => {
         <span v-if="state.progress.quiz" class="tag quiz-tag" :class="{ ok: state.progress.quiz.passed }">
           Quiz {{ state.progress.quiz.bestScore }}/{{ state.progress.quiz.total }}
         </span>
-      </div>
+      </button>
       <!-- Both labels share one grid cell so the button keeps its width. -->
       <button class="btn small ghost swap menu-btn" type="button" aria-controls="main-nav" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
         <span :aria-hidden="menuOpen"><AppIcon name="menu" />Menu</span>
@@ -99,6 +104,7 @@ const journeyPct = computed(() => {
 
   <PetCompanion v-if="pet.shown && !embed" />
   <PetPicker v-if="pet.pickerOpen" />
+  <ToastHost />
   <ChatPopup v-if="chat.open && pet.shown && !embed && route.path !== '/chat'" />
 </template>
 
@@ -124,7 +130,15 @@ nav a.router-link-active::after {
   font-size: var(--text-xs); font-weight: 800; font-variant-numeric: tabular-nums; color: var(--highlight-ink); background: var(--highlight);
 }
 .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
-.me { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; }
+.me {
+  margin-left: auto; display: flex; gap: var(--space-2); align-items: center;
+  font: inherit; color: inherit; background: none; border: 0; padding: var(--space-1) var(--space-2); margin-right: calc(-1 * var(--space-2));
+  border-radius: var(--radius-md); cursor: copy; transition: background-color var(--dur-fast) var(--ease-out);
+}
+.me:hover { background: var(--panel); }
+.me:focus-visible, .copy-id:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.copy-id { display: inline-flex; align-items: center; gap: var(--space-1); font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: copy; text-align: left; }
+.copy-id svg { flex: none; width: 0.9rem; height: 0.9rem; }
 .me-id { font-family: var(--mono); font-size: var(--text-xs); color: var(--muted); }
 .tag-icon { width: 0.9rem; height: 0.9rem; }
 /* Journey progress along the bottom edge of the header. */

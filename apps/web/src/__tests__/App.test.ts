@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { defineComponent } from 'vue'
 import App from '../App.vue'
@@ -26,6 +26,23 @@ describe('App header', () => {
     const { wrapper } = await renderApp()
     const links = wrapper.findAll('nav[aria-label="Main"] a').map((a) => a.attributes('href'))
     expect(links).toEqual(['/exercises', '/quiz', '/chat', '/glossary', '/references', '/live'])
+    wrapper.unmount()
+  })
+
+  it('your id in the header copies to the clipboard, from the bar and from the menu', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    state.progress = { id: 'brave-otter-k3x9q2', completed: [], quiz: null }
+    const { wrapper } = await renderApp()
+
+    await wrapper.find('button.me').trigger('click')
+    await flushPromises()
+    expect(writeText).toHaveBeenLastCalledWith('brave-otter-k3x9q2')
+    expect(wrapper.find('.toast').text()).toContain('Copied your id: brave-otter-k3x9q2')
+
+    await wrapper.find('.nav-id button.copy-id').trigger('click')
+    expect(writeText).toHaveBeenCalledTimes(2)
+    state.progress = null
     wrapper.unmount()
   })
 

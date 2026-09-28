@@ -203,6 +203,10 @@ than one line, so the JSON stays readable. The three kinds of question:
   `/live?exercise=<id>&count=N` narrows the list to N exercises (default 3) centred on that
   one, shifted in at either end, with the named one highlighted. An unknown id shows them all.
   Keep nginx free of `X-Frame-Options` and `frame-ancestors`, or the embed breaks (the stack test checks).
+- Copying goes through `copyText()` in `src/clipboard.ts`. The Clipboard API is missing on
+  plain-http LAN addresses (a workshop on a laptop's IP), so it falls back to a hidden
+  textarea. `notify()` shows the one-line toast (`ToastHost.vue`). The participant id copies
+  from the header, the phone menu and the home page badge.
 - The pet opens the chat popup (the unread count shows on the pet and on the Chat nav
   link). The popup and the pet picker share the pet's corner, so opening one closes the other.
 - The header folds its nav into a Menu button below 1024px, and hides the id text below 1280px. Check new pages at phone

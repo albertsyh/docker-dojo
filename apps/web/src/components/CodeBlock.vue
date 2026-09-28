@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
 import AppIcon from './AppIcon.vue'
+import { copyText } from '../clipboard'
 
 const props = defineProps<{ code: string; label?: string }>()
 const copied = ref(false)
@@ -11,17 +12,7 @@ const lines = computed(() => props.code.split('\n'))
 let timer: number | undefined
 
 async function copy() {
-  try {
-    await navigator.clipboard.writeText(props.code)
-  } catch {
-    // Clipboard API needs https or localhost; fall back to a hidden textarea.
-    const ta = document.createElement('textarea')
-    ta.value = props.code
-    document.body.appendChild(ta)
-    ta.select()
-    document.execCommand('copy')
-    ta.remove()
-  }
+  await copyText(props.code)
   copied.value = true
   clearTimeout(timer)
   timer = window.setTimeout(() => (copied.value = false), 1500)

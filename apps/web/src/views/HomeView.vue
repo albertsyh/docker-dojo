@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { api, ApiError } from '../api'
 import AppIcon from '../components/AppIcon.vue'
+import { copyId } from '../clipboard'
 import { completed, join, leave, nextExercise, resume, state, totalMinutes } from '../store'
 
 const router = useRouter()
@@ -85,10 +86,11 @@ async function run(fn: () => Promise<void>) {
 
     <!-- Returning student -->
     <section v-if="state.progress" class="start" aria-labelledby="start-title">
-      <div class="badge" aria-hidden="true">
-        <div class="badge-band">Hello, I'm</div>
-        <div class="badge-name">{{ state.progress.id }}</div>
-      </div>
+      <button type="button" class="badge copyable" :aria-label="`Copy your id, ${state.progress.id}`" @click="copyId(state.progress.id)">
+        <span class="badge-band">Hello, I'm</span>
+        <span class="badge-name">{{ state.progress.id }}</span>
+        <span class="badge-hint"><AppIcon name="copy" />Click to copy</span>
+      </button>
       <div class="start-body">
         <h2 id="start-title">Welcome back</h2>
         <p class="muted">
@@ -177,6 +179,14 @@ async function run(fn: () => Promise<void>) {
   padding: var(--space-5) var(--space-3); overflow-wrap: anywhere; transition: opacity var(--dur-base) var(--ease-out);
 }
 .badge.rolling .badge-name { opacity: 0.3; }
+.badge .badge-band, .badge .badge-name { display: block; }
+/* Your own badge is a button: it copies the id, for continuing on another device. */
+.badge.copyable { padding: 0; font: inherit; cursor: copy; transition: transform var(--dur-fast) var(--ease-out); }
+.badge.copyable:hover { transform: rotate(-1deg) translateY(-2px); }
+.badge.copyable:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.badge.copyable .badge-name { padding-bottom: var(--space-2); }
+.badge-hint { display: flex; justify-content: center; align-items: center; gap: var(--space-1); padding-bottom: var(--space-3); font-size: var(--text-xs); color: var(--muted); }
+.badge-hint svg { width: 0.9rem; height: 0.9rem; }
 
 .resume { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border); }
 .resume label { display: block; font-size: var(--text-sm); margin-bottom: var(--space-2); }
