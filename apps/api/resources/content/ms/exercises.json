@@ -324,7 +324,7 @@
       }
     },
     "multi-stage": {
-      "source": "0799f566",
+      "source": "016df2aa",
       "title": "Uji dan hantar dengan multi-stage build",
       "summary": "Satu Dockerfile, dua sasaran: stage ujian dengan semua alat, dan stage production yang ramping yang berjalan sebagai pengguna biasa.",
       "steps": [
@@ -347,10 +347,13 @@
           "text": "Build stage test sekali lagi. Build gagal dan menunjukkan expected dan actual."
         },
         {
+          "text": "Sekarang build image production juga. Ia berjaya, walaupun ujian gagal: tanpa --target, Docker membina stage terakhir, dan melangkau stage yang tidak diperlukannya, seperti test. Jadi ucapan yang rosak itu kini ada di dalam node-app:prod. Build production sahaja tidak pernah menjalankan ujian anda, jadi sentiasa build stage test dahulu."
+        },
+        {
           "text": "Tukar semula kepada \"Hello\"."
         },
         {
-          "text": "Build image production. Tanpa --target, Docker membina stage terakhir, dan melangkau stage yang tidak diperlukannya, seperti test."
+          "text": "Build kedua-duanya sekali lagi. Ujian lulus, dan image production kini mengandungi ucapan yang sudah dibetulkan."
         },
         {
           "text": "Bandingkan kedua-duanya. production lebih kecil: --omit=dev meninggalkan prettier, dan NODE_ENV=production memberitahu library seperti express supaya berjalan dalam mod production."
@@ -362,7 +365,7 @@
           "text": "Buang container itu. Untuk aplikasi Laravel, stage production menjalankan composer install --no-dev --optimize-autoloader dan php artisan optimize. Dockerfile api aplikasi ini sendiri melakukan betul-betul begitu, dengan stage test yang menjalankan php artisan test."
         }
       ],
-      "expected": "Ujian yang rosak menggagalkan build, node-app:prod lebih kecil daripada node-app:test, tiada prettier, dan whoami mencetak node.",
+      "expected": "Ujian yang rosak menggagalkan build test tetapi bukan build production, node-app:prod lebih kecil daripada node-app:test, tiada prettier, dan whoami mencetak node.",
       "files": {
         "note": "Masih di dalam node-app.",
         "entries": [
@@ -376,7 +379,7 @@
             "note": "langkah 3, kini tiga stage"
           },
           {
-            "note": "dikembalikan dalam langkah 1, dirosakkan dalam langkah 5, dibetulkan dalam langkah 7"
+            "note": "dikembalikan dalam langkah 1, dirosakkan dalam langkah 5, dibetulkan dalam langkah 8"
           },
           [],
           [],
@@ -415,9 +418,9 @@
       "expected": "Image anda menunjukkan beberapa isu high, semuanya di dalam npm dari base image, manakala node:18-alpine menunjukkan berpuluh-puluh, termasuk yang critical."
     },
     "volumes": {
-      "source": "d3dbbdc6",
-      "title": "Simpan data dengan volume",
-      "summary": "Gunakan named volume supaya data kekal lebih lama daripada container yang menulisnya.",
+      "source": "f819fd27",
+      "title": "Simpan data dengan volume dan bind mount",
+      "summary": "Gunakan named volume supaya data kekal lebih lama daripada container yang menulisnya, kemudian pasang folder dari komputer anda sendiri.",
       "steps": [
         {
           "text": "Cipta named volume."
@@ -435,9 +438,40 @@
               "text": "Laluan Mountpoint berada di dalam mesin maya Linux Docker Desktop, bukan pada cakera anda sendiri, jadi anda tidak akan menemuinya dalam Finder atau Explorer."
             }
           ]
+        },
+        {
+          "text": "Named volume dijaga oleh Docker. Untuk menggunakan folder di komputer anda sendiri, pasangkannya: itulah bind mount. Kembali ke folder rumah anda, buat folder baharu dengan folder notes di dalamnya, dan masuk ke dalamnya."
+        },
+        {
+          "text": "Cipta fail bernama notes.txt di dalam folder notes, dengan baris ini."
+        },
+        {
+          "text": "Jalankan container yang sama seperti tadi, tetapi pasang ./notes dan bukannya volume itu. Laluan di sebelah kiri (ia bermula dengan ./) menjadikannya bind mount. Jalankannya dua kali.",
+          "notes": [
+            {
+              "text": "Fail yang dicipta oleh container di sini dimiliki oleh root, jadi anda tidak boleh menyuntingnya tanpa sudo. Sebab itulah anda mencipta notes.txt sendiri terlebih dahulu."
+            }
+          ]
+        },
+        {
+          "text": "Buka notes/notes.txt dalam editor anda, atau cetaknya. Baris anda ada di situ, begitu juga dua baris daripada container yang sudah tidak wujud. Gunakan named volume untuk data yang dijaga oleh Docker, seperti pangkalan data. Gunakan bind mount untuk fail yang anda mahu lihat dan sunting sendiri, seperti kod semasa anda mengusahakannya."
         }
       ],
-      "expected": "Dua baris \"hello from <id>\" dengan id container yang berbeza."
+      "expected": "Dua baris \"hello from <id>\" dengan id container yang berbeza dalam volume itu, dan notes.txt dalam bind-demo/notes yang mengandungi baris anda sendiri serta dua baris lagi.",
+      "files": {
+        "note": "Mulai langkah 5, jalankan setiap arahan dari dalam bind-demo.",
+        "entries": [
+          {
+            "note": "folder kerja anda, langkah 5"
+          },
+          {
+            "note": "langkah 5, dipasang ke dalam container di /data"
+          },
+          {
+            "note": "langkah 6"
+          }
+        ]
+      }
     },
     "networks": {
       "source": "1a2485cb",

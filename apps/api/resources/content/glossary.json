@@ -81,7 +81,7 @@
     "terms": [
       { "term": "Volume", "text": "Storage managed by Docker that lives outside any container. Data in it survives when containers are removed.", "seenIn": ["volumes", "compose-up"] },
       { "term": "Named volume", "text": "A volume you give a name, such as `notes`, so any container can mount it with `-v notes:/data`.", "seenIn": ["volumes"] },
-      { "term": "Bind mount", "text": "Mounts a folder from your machine into a container. Changes show up on both sides straight away, which is useful during development.", "seenIn": ["node-bind-mount", "laravel-bind-mount"] },
+      { "term": "Bind mount", "text": "Mounts a folder from your machine into a container. Changes show up on both sides straight away, which is useful during development.", "seenIn": ["volumes", "node-bind-mount", "laravel-bind-mount"] },
       { "term": "Anonymous volume", "aka": "- /app/node_modules", "text": "A volume with no name, created for one path in one container. Used to keep a folder from the image (like node_modules) visible under a bind mount.", "seenIn": ["node-bind-mount", "laravel-bind-mount"] },
       { "term": "Mount", "aka": "-v", "text": "Makes a volume or folder appear at a path inside the container.", "seenIn": ["volumes"] }
     ]

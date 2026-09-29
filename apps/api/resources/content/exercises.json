@@ -508,14 +508,19 @@
         "label": "terminal"
       },
       {
+        "text": "Now build the production image anyway. It succeeds, although the test fails: with no --target, Docker builds the last stage, and skips stages it does not need, like test. So the broken greeting is now inside node-app:prod. A production build on its own never runs your tests, so always build the test stage first.",
+        "code": "docker build -t node-app:prod .",
+        "label": "terminal"
+      },
+      {
         "text": "Change it back to \"Hello\".",
         "code": " export function greet(name) {\n-  return `Helo, ${name}!`\n+  return `Hello, ${name}!`\n }",
         "label": "greet.js",
         "diff": true
       },
       {
-        "text": "Build the production image. With no --target, Docker builds the last stage, and skips stages it does not need, like test.",
-        "code": "docker build -t node-app:prod .",
+        "text": "Build both again. The tests pass, and the production image now has the fixed greeting.",
+        "code": "docker build --target test -t node-app:test .\ndocker build -t node-app:prod .",
         "label": "terminal"
       },
       {
@@ -534,7 +539,7 @@
         "label": "terminal"
       }
     ],
-    "expected": "The broken test fails the build, node-app:prod is smaller than node-app:test, has no prettier, and whoami prints node.",
+    "expected": "The broken test fails the test build but not the production one, node-app:prod is smaller than node-app:test, has no prettier, and whoami prints node.",
     "files": {
       "note": "Still inside node-app.",
       "entries": [
@@ -552,7 +557,7 @@
         },
         {
           "path": "node-app/greet.js",
-          "note": "set back in step 1, broken in step 5, fixed in step 7"
+          "note": "set back in step 1, broken in step 5, fixed in step 8"
         },
         {
           "path": "node-app/.dockerignore"
@@ -612,9 +617,9 @@
   },
   {
     "id": "volumes",
-    "title": "Keep data with volumes",
-    "minutes": 5,
-    "summary": "Use a named volume so data outlives the container that wrote it.",
+    "title": "Keep data with volumes and bind mounts",
+    "minutes": 7,
+    "summary": "Use a named volume so data outlives the container that wrote it, then mount a folder from your own machine instead.",
     "steps": [
       {
         "text": "Create a named volume.",
@@ -623,12 +628,12 @@
       },
       {
         "text": "Run a throwaway container (--rm deletes it on exit) that appends a line to a file in the volume. Run it twice. The single quotes matter: they stop your own shell from filling in $(hostname), so the container does it instead.",
-        "code": "docker run --rm -v notes:/data alpine sh -c 'echo hello from $(hostname) >> /data/notes.txt'",
+        "code": "docker run --rm -v notes:/data alpine:3.20 sh -c 'echo hello from $(hostname) >> /data/notes.txt'",
         "label": "terminal"
       },
       {
         "text": "Read the file from yet another new container. Both lines are there, written by containers that no longer exist.",
-        "code": "docker run --rm -v notes:/data alpine cat /data/notes.txt",
+        "code": "docker run --rm -v notes:/data alpine:3.20 cat /data/notes.txt",
         "label": "terminal"
       },
       {
@@ -641,9 +646,52 @@
             "text": "The Mountpoint path is inside Docker Desktop’s Linux virtual machine, not on your own disk, so you won’t find it in Finder or Explorer."
           }
         ]
+      },
+      {
+        "text": "A named volume is Docker's to look after. To use a folder on your own machine instead, mount it: that is a bind mount. Go back to your home folder, make a new folder with a notes folder inside, and move into it.",
+        "code": "cd ~\nmkdir bind-demo\ncd bind-demo\nmkdir notes",
+        "label": "terminal"
+      },
+      {
+        "text": "Create a file called notes.txt inside the notes folder, with this line.",
+        "code": "written on my machine",
+        "label": "notes/notes.txt"
+      },
+      {
+        "text": "Run the same container as before, but mount ./notes instead of the volume. A path on the left (it starts with ./) makes it a bind mount. Run it twice.",
+        "code": "docker run --rm -v ./notes:/data alpine:3.20 sh -c 'echo hello from $(hostname) >> /data/notes.txt'",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Linux",
+            "text": "Files a container creates here belong to root, so you could not edit them without sudo. That is why you made notes.txt yourself first."
+          }
+        ]
+      },
+      {
+        "text": "Open notes/notes.txt in your editor, or print it. Your line is there, and so are the two from containers that no longer exist. Use a named volume for data Docker looks after, like a database. Use a bind mount for files you want to see and edit yourself, like code while you work on it.",
+        "code": "cat notes/notes.txt",
+        "label": "terminal"
       }
     ],
-    "expected": "Two \"hello from <id>\" lines with different container ids."
+    "expected": "Two \"hello from <id>\" lines with different container ids in the volume, and notes.txt in bind-demo/notes holding your own line plus two more.",
+    "files": {
+      "note": "From step 5, run every command from inside bind-demo.",
+      "entries": [
+        {
+          "path": "bind-demo/",
+          "note": "your working folder, step 5"
+        },
+        {
+          "path": "bind-demo/notes/",
+          "note": "step 5, mounted into the container at /data"
+        },
+        {
+          "path": "bind-demo/notes/notes.txt",
+          "note": "step 6"
+        }
+      ]
+    }
   },
   {
     "id": "networks",
