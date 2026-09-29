@@ -172,7 +172,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString(locale.value, { h
 </template>
 
 <style scoped>
-.chat { display: grid; gap: var(--space-3); min-height: 0; }
+.chat { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); min-height: 0; }
 .messages {
   list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); align-content: start;
   max-height: min(60vh, 40rem); overflow-y: auto; overscroll-behavior: contain;
@@ -195,7 +195,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString(locale.value, { h
 .delete.confirm { color: var(--error); background: var(--error-soft); }
 .small { font-size: var(--text-xs); }
 
-.composer { display: grid; gap: var(--space-2); }
+.composer { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
 textarea {
   width: 100%; min-height: 3.5rem; resize: vertical; padding: var(--space-2) var(--space-3);
   font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius-md);

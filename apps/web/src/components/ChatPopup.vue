@@ -36,7 +36,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 .popup {
   position: fixed; right: var(--space-4); bottom: 136px; z-index: var(--z-popover);
   width: min(400px, calc(100vw - 32px)); max-height: calc(100vh - 160px); overflow-y: auto;
-  padding: var(--space-4); display: grid; gap: var(--space-3);
+  padding: var(--space-4); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3);
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-float);
   animation: rise var(--dur-base) var(--ease-out);
 }
