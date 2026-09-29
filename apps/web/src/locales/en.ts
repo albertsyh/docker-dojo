@@ -114,6 +114,12 @@ export default {
     next: 'Next',
     takeQuiz: 'Take the quiz',
     tip: 'Tip',
+    requires: {
+      title: 'Before you start',
+      lead: 'This exercise carries on from the files you made in these exercises.',
+      finishFirst: 'Finish the ones not done yet first.',
+      notDone: 'Not done yet',
+    },
   },
   track: {
     missing: "That track doesn't exist.",

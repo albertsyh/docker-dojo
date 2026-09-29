@@ -22,6 +22,8 @@ export type Exercise = {
   title: string
   minutes: number
   summary: string
+  /** Earlier exercises in the same track whose files this one carries on from. */
+  requires?: string[]
   steps: Step[]
   expected: string
   /** Files the student creates in their working folder. Omitted when there are none. */

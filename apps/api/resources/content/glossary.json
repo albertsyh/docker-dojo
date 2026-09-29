@@ -51,7 +51,7 @@
       { "term": "docker run", "text": "Creates a container from an image and starts it. Pulls the image first if you do not have it.", "seenIn": ["hello-docker", "first-web-server"] },
       { "term": "Detached mode", "aka": "-d", "text": "Runs the container in the background and gives your terminal back.", "seenIn": ["first-web-server"] },
       { "term": "Port mapping", "aka": "-p", "text": "Connects a port on your machine to a port in the container. `-p 8080:80` means your port 8080 goes to the container's port 80.", "seenIn": ["first-web-server"] },
-      { "term": "Environment variable", "aka": "-e", "text": "A setting passed into the container, such as a password or a mode. Set with `-e NAME=value`, `ENV` in a Dockerfile, or `environment:` in Compose.", "seenIn": ["multi-stage", "compose-up"] },
+      { "term": "Environment variable", "aka": "-e", "text": "A setting passed into the container, such as a password or a mode. Set with `-e NAME=value`, `ENV` in a Dockerfile, or `environment:` in Compose.", "seenIn": ["multi-stage", "networks", "compose-up"] },
       { "term": "docker ps", "text": "Lists running containers. Add `-a` to include stopped ones.", "seenIn": ["first-web-server"] },
       { "term": "docker logs", "text": "Shows what a container printed. Add `-f` to keep following new output.", "seenIn": ["first-web-server"] },
       { "term": "docker exec", "text": "Runs a command inside a running container. `docker exec -it web sh` opens a shell.", "seenIn": ["inside-a-container", "multi-stage"] },

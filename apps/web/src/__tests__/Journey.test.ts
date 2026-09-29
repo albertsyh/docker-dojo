@@ -98,3 +98,37 @@ describe('an embedded exercise (/exercises/<id>?embed)', () => {
     presence.mockRestore()
   })
 })
+
+describe('an exercise that carries on from earlier ones', () => {
+  beforeEach(() => {
+    state.content = structuredClone(content)
+    state.content.exercises.push({ id: 'networks', title: 'Let containers talk', minutes: 8, summary: 'Talk.', requires: ['hello-docker', 'volumes'], steps: [{ text: 'Connect.' }], expected: 'Visits.' })
+    state.progress = { id: 'brave-otter-abc123', completed: ['hello-docker'], quiz: null, trackQuizzes: {} }
+  })
+
+  it('links each one, and says which are not done yet', async () => {
+    const wrapper = mount(ExerciseView, { props: { id: 'networks' }, global: { stubs } })
+    await flushPromises()
+
+    const box = wrapper.find('.requires')
+    expect(box.text()).toContain('Finish the ones not done yet first.')
+    const items = box.findAll('li')
+    expect(items.map((li) => li.findComponent(RouterLinkStub).props('to'))).toEqual(['/exercises/hello-docker', '/exercises/volumes'])
+    expect(items[0].text()).toBe('1. Hello, DockerDone')
+    expect(items[1].text()).toBe('2. Keep data with volumesNot done yet')
+  })
+
+  it('stops asking once they are all done', async () => {
+    state.progress!.completed.push('volumes')
+    const wrapper = mount(ExerciseView, { props: { id: 'networks' }, global: { stubs } })
+    await flushPromises()
+
+    expect(wrapper.find('.requires').text()).not.toContain('Finish the ones not done yet first.')
+    expect(wrapper.find('.requires').text()).not.toContain('Not done yet')
+  })
+
+  it('an exercise without requires, or an embed, shows no box', async () => {
+    expect(mount(ExerciseView, { props: { id: 'volumes' }, global: { stubs } }).find('.requires').exists()).toBe(false)
+    expect(mount(ExerciseView, { props: { id: 'networks', embed: true }, global: { stubs } }).find('.requires').exists()).toBe(false)
+  })
+})

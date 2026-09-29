@@ -116,6 +116,12 @@ const ms: typeof en = {
     next: 'Seterusnya',
     takeQuiz: 'Ambil kuiz',
     tip: 'Petua',
+    requires: {
+      title: 'Sebelum anda mula',
+      lead: 'Latihan ini menyambung daripada fail yang anda buat dalam latihan-latihan ini.',
+      finishFirst: 'Selesaikan yang belum selesai dahulu.',
+      notDone: 'Belum selesai',
+    },
   },
   track: {
     missing: 'Trek itu tidak wujud.',

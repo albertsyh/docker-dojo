@@ -5,7 +5,7 @@ import CodeBlock from '../components/CodeBlock.vue'
 import FilesPanel from '../components/FilesPanel.vue'
 import JoinGate from '../components/JoinGate.vue'
 import { usePresence } from '../presence'
-import { completed, quizRoute, setDone, state, trackOf } from '../store'
+import { completed, exerciseLabel, quizRoute, setDone, state, trackOf } from '../store'
 import { noteFor } from '../i18n'
 import { useI18n } from 'vue-i18n'
 
@@ -24,6 +24,11 @@ const exercise = computed(() => list.value[index.value])
 const prev = computed(() => list.value[index.value - 1])
 const next = computed(() => list.value[index.value + 1])
 const isDone = computed(() => completed.value.has(props.id))
+// Earlier exercises whose files this one needs, each with whether the student marked it done.
+const requires = computed(() =>
+  (exercise.value?.requires ?? []).map((id) => ({ id, label: exerciseLabel(id) ?? id, done: completed.value.has(id) })),
+)
+const allRequiredDone = computed(() => requires.value.every((r) => r.done))
 
 // Counts you on this exercise on the Live page while the page is open. An embed doesn't count.
 usePresence(() => (state.progress && exercise.value && !props.embed ? props.id : null))
@@ -96,6 +101,21 @@ async function toggle() {
     <FilesPanel v-if="exercise.files && !embed" :files="exercise.files" class="side" />
 
     <div class="content">
+      <section v-if="requires.length && !embed" class="callout requires" aria-labelledby="requires-title">
+        <AppIcon name="info" />
+        <div>
+          <h2 id="requires-title">{{ t('exercise.requires.title') }}</h2>
+          <p>{{ t('exercise.requires.lead') }}<template v-if="!allRequiredDone"> {{ t('exercise.requires.finishFirst') }}</template></p>
+          <ul>
+            <li v-for="r in requires" :key="r.id">
+              <RouterLink :to="`/exercises/${r.id}`">{{ r.label }}</RouterLink>
+              <span v-if="r.done" class="tag ok"><AppIcon name="check" />{{ t('common.done') }}</span>
+              <span v-else class="tag">{{ t('exercise.requires.notDone') }}</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <ol class="steps">
         <li v-for="(step, i) in exercise.steps" :key="i" class="step">
           <span class="num" aria-hidden="true">{{ i + 1 }}</span>
@@ -195,6 +215,12 @@ async function toggle() {
 .expected > svg { flex: none; width: 1.4rem; height: 1.4rem; margin-top: 0.1rem; }
 .expected h2 { font-size: var(--text-md); margin-bottom: var(--space-1); }
 .expected p { margin: 0; }
+
+.requires h2 { font-size: var(--text-md); margin-bottom: var(--space-1); }
+.requires p { margin: 0 0 var(--space-2); max-width: 68ch; }
+.requires ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.requires li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.requires .tag svg { width: 0.9rem; height: 0.9rem; }
 
 .actions { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; padding-top: var(--space-5); border-top: 1px solid var(--border); }
 .btn.big { min-height: 2.75rem; padding: 0 var(--space-5); font-size: var(--text-md); }

@@ -19,12 +19,12 @@ completions are stored, and picks the exercise for the Live page's focused view.
 | 8 | `multi-stage` | Test and ship with multi-stage builds | 8 | `/live?embed&exercise=multi-stage` |
 | 9 | `scan-image` | Scan an image for vulnerabilities | 5 | `/live?embed&exercise=scan-image` |
 | 10 | `volumes` | Keep data with volumes and bind mounts | 7 | `/live?embed&exercise=volumes` |
-| 11 | `networks` | Let containers talk | 6 | `/live?embed&exercise=networks` |
+| 11 | `networks` | Let containers talk | 8 | `/live?embed&exercise=networks` |
 | 12 | `compose-up` | Docker Compose: a two-service app | 8 | `/live?embed&exercise=compose-up` |
 | 13 | `this-app` | Read the Dojo’s own compose file | 5 | `/live?embed&exercise=this-app` |
 | 14 | `cleanup` | Clean up | 3 | `/live?embed&exercise=cleanup` |
 
-14 exercises, 78 minutes, plus the quiz.
+14 exercises, 80 minutes, plus the quiz.
 
 ## Take-home tracks
 

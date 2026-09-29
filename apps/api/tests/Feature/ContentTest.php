@@ -114,6 +114,27 @@ class ContentTest extends TestCase
         }
     }
 
+    /**
+     * "requires" lists the exercises whose files this one carries on from. They must come earlier
+     * in the same track, so the exercise page can link back to them.
+     */
+    public function test_requirements_point_at_earlier_exercises_in_the_same_track(): void
+    {
+        foreach ($this->tracks() as $track) {
+            $ids = array_column(Content::trackExercises($track), 'id');
+            foreach (Content::trackExercises($track) as $i => $e) {
+                if (! array_key_exists('requires', $e)) {
+                    continue;
+                }
+                $this->assertIsList($e['requires'], "{$e['id']}: requires is a list of exercise ids.");
+                $this->assertNotEmpty($e['requires'], "{$e['id']}: leave requires out rather than empty.");
+                foreach ($e['requires'] as $id) {
+                    $this->assertContains($id, array_slice($ids, 0, $i), "{$e['id']} requires $id, which is not an earlier exercise in its track.");
+                }
+            }
+        }
+    }
+
     public function test_the_workshop_fits_its_time_budget(): void
     {
         $minutes = array_sum(array_column(Content::exercises(), 'minutes'));

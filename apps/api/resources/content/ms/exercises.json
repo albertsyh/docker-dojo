@@ -474,30 +474,62 @@
       }
     },
     "networks": {
-      "source": "1a2485cb",
+      "source": "561758b8",
       "title": "Biarkan container berhubung",
-      "summary": "Letakkan dua container pada network yang ditentukan pengguna dan hubungi satu daripada yang lain menggunakan nama.",
+      "summary": "Letakkan node-app anda dan Redis pada satu network, dan lihat aplikasi itu mengira lawatan dalam Redis dengan memanggilnya menggunakan nama.",
       "steps": [
         {
-          "text": "Cipta network."
+          "text": "Kembali ke folder node-app anda dan cipta network."
         },
         {
-          "text": "Mulakan Redis pada network itu, bernama \"cache\"."
+          "text": "Mulakan Redis pada network itu, bernama \"cache\". Redis ialah pangkalan data yang kecil dan pantas, sering digunakan untuk menyimpan kiraan dan data cache."
         },
         {
-          "text": "Dari container kedua pada network yang sama, ping Redis menggunakan namanya sahaja. Docker menyediakan DNS untuk nama container."
+          "text": "Tambah pakej redis ke dalam package.json, supaya aplikasi itu boleh berhubung dengan Redis."
         },
         {
-          "text": "Sekarang cuba localhost dan bukannya nama itu. Ia gagal: di dalam container, localhost bermaksud container itu sendiri, dan tiada Redis di dalamnya. Untuk menghubungi container lain, gunakan namanya (dalam Compose, nama service)."
+          "text": "Gantikan server.js dengan ini. Setiap lawatan kini menambah satu pada pembilang yang disimpan dalam Redis. Aplikasi itu membaca alamat Redis daripada REDIS_URL, dan menggunakan localhost jika ia tidak ditetapkan."
         },
         {
-          "text": "Cuba perkara yang sama tanpa flag network. Ia gagal: network bridge lalai tidak mempunyai resolusi nama."
+          "text": "Build stage test, kemudian production. npm install berjalan semula, kerana package.json berubah."
+        },
+        {
+          "text": "Jalankan aplikasi itu pada network, tanpa REDIS_URL. Ia berhenti serta-merta dengan ECONNREFUSED: ia mencari Redis di localhost, dan di dalam container, localhost bermaksud container itu sendiri. Tiada Redis di dalamnya."
+        },
+        {
+          "text": "Sekarang beritahu di mana Redis berada, menggunakan nama container-nya, dan jalankannya di latar belakang. Buka http://localhost:8083 dan muat semula beberapa kali: visits bertambah. Container aplikasi anda sedang berhubung dengan container Redis."
+        },
+        {
+          "text": "Tanya Redis terus untuk nilai pembilang itu. Ia menunjukkan nombor yang sama seperti dalam pelayar anda: kedua-dua container melihat data yang sama."
+        },
+        {
+          "text": "Cuba sekali lagi tanpa flag network. Ia berhenti dengan ENOTFOUND cache: network bridge lalai tidak mempunyai carian nama, jadi nama cache tidak bermakna apa-apa di situ."
         },
         {
           "text": "Bersihkan."
         }
       ],
-      "expected": "PONG pada kali pertama, kemudian \"Connection refused\" untuk localhost, dan ralat \"Could not connect\" / ralat nama tanpa network itu."
+      "expected": "visits bertambah setiap kali anda muat semula, dan redis-cli menunjukkan nombor yang sama. Tanpa REDIS_URL aplikasi itu gagal dengan ECONNREFUSED, dan tanpa network ia gagal dengan ENOTFOUND cache.",
+      "files": {
+        "note": "Jalankan setiap arahan dari dalam node-app.",
+        "entries": [
+          {
+            "note": "daripada latihan 6 hingga 8"
+          },
+          {
+            "note": "langkah 3, redis ditambah"
+          },
+          {
+            "note": "langkah 4, digantikan"
+          },
+          [],
+          [],
+          [],
+          [],
+          [],
+          []
+        ]
+      }
     },
     "compose-up": {
       "source": "ff84e805",

@@ -696,41 +696,102 @@
   {
     "id": "networks",
     "title": "Let containers talk",
-    "minutes": 6,
-    "summary": "Put two containers on a user-defined network and reach one from the other by name.",
+    "minutes": 8,
+    "summary": "Put your node-app and Redis on one network, and watch the app count visits in Redis by calling it by name.",
+    "requires": [
+      "layer-cache",
+      "dockerignore",
+      "multi-stage"
+    ],
     "steps": [
       {
-        "text": "Create a network.",
-        "code": "docker network create dojo-net",
+        "text": "Go back to your node-app folder and create a network.",
+        "code": "cd ~/node-app\ndocker network create dojo-net",
         "label": "terminal"
       },
       {
-        "text": "Start Redis on that network, named \"cache\".",
+        "text": "Start Redis on that network, named \"cache\". Redis is a small, fast database, often used to keep counts and cached data.",
         "code": "docker run -d --name cache --network dojo-net redis:7-alpine",
         "label": "terminal"
       },
       {
-        "text": "From a second container on the same network, ping Redis using just its name. Docker provides DNS for container names.",
-        "code": "docker run --rm --network dojo-net redis:7-alpine redis-cli -h cache ping",
+        "text": "Add the redis package to package.json, so the app can talk to Redis.",
+        "code": "   \"dependencies\": {\n-    \"express\": \"^5.1.0\"\n+    \"express\": \"^5.1.0\",\n+    \"redis\": \"^5.8.0\"\n   },",
+        "label": "package.json",
+        "diff": true
+      },
+      {
+        "text": "Replace server.js with this. Every visit now adds one to a counter stored in Redis. The app reads the Redis address from REDIS_URL, and falls back to localhost when it is not set.",
+        "code": "import express from 'express'\nimport { createClient } from 'redis'\nimport { greet } from './greet.js'\n\n// Where to find Redis. Without REDIS_URL, the app looks on localhost.\nconst redis = createClient({ url: process.env.REDIS_URL ?? 'redis://localhost:6379' })\nawait redis.connect()\n\nconst app = express()\napp.get('/', async (req, res) => {\n  const visits = await redis.incr('visits')\n  res.json({ message: greet('Dojo'), mode: process.env.NODE_ENV ?? 'development', visits })\n})\napp.listen(3000, () => console.log('Listening on port 3000'))",
+        "label": "server.js"
+      },
+      {
+        "text": "Build the test stage, then production. npm install runs again, because package.json changed.",
+        "code": "docker build --target test -t node-app:test .\ndocker build -t node-app:prod .",
         "label": "terminal"
       },
       {
-        "text": "Now try localhost instead of the name. It fails: inside a container, localhost means that container itself, and there is no Redis in it. To reach another container, use its name (in Compose, the service name).",
-        "code": "docker run --rm --network dojo-net redis:7-alpine redis-cli -h localhost ping",
+        "text": "Run the app on the network, without REDIS_URL. It stops straight away with ECONNREFUSED: it looked for Redis on localhost, and inside a container localhost is that container itself. There is no Redis in it.",
+        "code": "docker run --rm --network dojo-net node-app:prod",
         "label": "terminal"
       },
       {
-        "text": "Try the same without the network flag. It fails: the default bridge network has no name resolution.",
-        "code": "docker run --rm redis:7-alpine redis-cli -h cache ping",
+        "text": "Now tell it where Redis is, by its container name, and run it in the background. Open http://localhost:8083 and refresh a few times: visits goes up. Your app container is talking to the Redis container.",
+        "code": "docker run -d --name node-app --network dojo-net -e REDIS_URL=redis://cache:6379 -p 8083:3000 node-app:prod",
+        "label": "terminal"
+      },
+      {
+        "text": "Ask Redis for the counter directly. It shows the same number as your browser: both containers see the same data.",
+        "code": "docker exec cache redis-cli get visits",
+        "label": "terminal"
+      },
+      {
+        "text": "Try once more without the network flag. It stops with ENOTFOUND cache: the default bridge network has no name lookup, so the name cache means nothing there.",
+        "code": "docker run --rm -e REDIS_URL=redis://cache:6379 node-app:prod",
         "label": "terminal"
       },
       {
         "text": "Clean up.",
-        "code": "docker rm -f cache\ndocker network rm dojo-net",
+        "code": "docker rm -f node-app cache\ndocker network rm dojo-net",
         "label": "terminal"
       }
     ],
-    "expected": "PONG the first time, then \"Connection refused\" for localhost, and a \"Could not connect\" / name error without the network."
+    "expected": "visits goes up each time you refresh, and redis-cli shows the same number. Without REDIS_URL the app fails with ECONNREFUSED, and without the network it fails with ENOTFOUND cache.",
+    "files": {
+      "note": "Run every command from inside node-app.",
+      "entries": [
+        {
+          "path": "node-app/",
+          "note": "from exercises 6 to 8"
+        },
+        {
+          "path": "node-app/package.json",
+          "note": "step 3, redis added"
+        },
+        {
+          "path": "node-app/server.js",
+          "note": "step 4, replaced"
+        },
+        {
+          "path": "node-app/.dockerignore"
+        },
+        {
+          "path": "node-app/.env"
+        },
+        {
+          "path": "node-app/debug.log"
+        },
+        {
+          "path": "node-app/Dockerfile"
+        },
+        {
+          "path": "node-app/greet.js"
+        },
+        {
+          "path": "node-app/greet.test.js"
+        }
+      ]
+    }
   },
   {
     "id": "compose-up",
