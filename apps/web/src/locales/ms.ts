@@ -219,6 +219,11 @@ const ms: typeof en = {
     hint: 'Enter untuk menghantar, Shift+Enter untuk baris baharu. Orang lain melihat anda sebagai "{name}".',
     join: '{link} untuk bertanya soalan atau berkata "Saya juga".',
     joinLink: 'Dapatkan lencana nama anda',
+    count: '{n} soalan',
+    live: 'Langsung',
+    reconnecting: 'Menyambung semula',
+    presenterOpen: 'Membuat pembentangan? Buka paparan penyampai',
+    presenterLeave: 'Keluar paparan penyampai',
   },
   pet: {
     open: 'Buka sembang soalan',

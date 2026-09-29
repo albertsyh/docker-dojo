@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import ChatPanel from '../components/ChatPanel.vue'
+import ChatPresenter from '../components/ChatPresenter.vue'
 import { chat, loadChat } from '../chat'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+
+// ?presenter is the trainer's read-only view for the big screen. With ?embed too, it has no header.
+const route = useRoute()
+const presenter = computed(() => route.query.presenter !== undefined)
+const embed = computed(() => route.query.embed !== undefined)
 
 // While this page shows, new messages count as read (and the pet's popup stays closed).
 onMounted(() => {
@@ -16,10 +23,12 @@ onBeforeUnmount(() => (chat.onPage = false))
 </script>
 
 <template>
-  <div class="page">
+  <ChatPresenter v-if="presenter" :embed="embed" />
+  <div v-else class="page">
     <header>
       <h1>{{ t('chat.title') }}</h1>
       <p class="lead">{{ t('chat.lead') }}</p>
+      <RouterLink :to="{ query: { presenter: null } }" class="presenter-link">{{ t('chat.presenterOpen') }}</RouterLink>
     </header>
     <ChatPanel />
   </div>
@@ -27,5 +36,8 @@ onBeforeUnmount(() => (chat.onPage = false))
 
 <style scoped>
 .page { display: grid; gap: var(--space-5); }
+.page > header { display: grid; gap: var(--space-2); }
 .page > header p { margin: 0; }
+.page > header h1 { margin: 0; }
+.presenter-link { justify-self: start; font-size: var(--text-sm); font-weight: 600; }
 </style>

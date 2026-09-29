@@ -217,6 +217,11 @@ export default {
     hint: 'Enter sends, Shift+Enter for a new line. Others see you as "{name}".',
     join: '{link} to ask a question or say "Me too".',
     joinLink: 'Get your name badge',
+    count: '{n} question | {n} questions',
+    live: 'Live',
+    reconnecting: 'Reconnecting',
+    presenterOpen: 'Presenting? Open the presenter view',
+    presenterLeave: 'Leave presenter view',
   },
   pet: {
     open: 'Open the questions chat',

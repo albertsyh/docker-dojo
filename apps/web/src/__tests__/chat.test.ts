@@ -5,6 +5,7 @@ import { defineComponent } from 'vue'
 import { api, type ChatMessage } from '../api'
 import { chat, loadChat, toggleChat, unread } from '../chat'
 import ChatPanel from '../components/ChatPanel.vue'
+import ChatView from '../views/ChatView.vue'
 import PetCompanion from '../components/PetCompanion.vue'
 import { pet } from '../pets'
 import { state } from '../store'
@@ -162,6 +163,54 @@ describe('ChatPanel', () => {
     expect(wrapper.find('textarea').exists()).toBe(false)
     expect(wrapper.find('.me-too').exists()).toBe(false)
     expect(wrapper.find('.join').text()).toContain('Get your name badge')
+  })
+})
+
+describe('Chat presenter view', () => {
+  async function renderChat(path: string) {
+    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/chat', component: ChatView }] })
+    router.push(path)
+    await router.isReady()
+    const wrapper = mount({ template: '<RouterView />' }, { global: { plugins: [router] } })
+    await flushPromises()
+    return { wrapper, router }
+  }
+
+  it('is read-only, newest first, and names everyone, even on a joined browser', async () => {
+    chat.loaded = true
+    chat.messages = [msg(1), msg(2, { author: 'brave otter', mine: true, meTooCount: 3, exercise: 'volumes' })]
+    const { wrapper } = await renderChat('/chat?presenter')
+    expect(wrapper.findAll('.message .meta strong').map((s) => s.text())).toEqual(['brave otter', 'calm panda'])
+    expect(wrapper.find('.message .too').text()).toBe('3 people have this too')
+    expect(wrapper.find('.message .about').text()).toBe('2. Keep data with volumes')
+    expect(wrapper.find('.count').text()).toBe('2 questions')
+    for (const control of ['textarea', '.me-too', '.delete', 'form']) expect(wrapper.find(control).exists()).toBe(false)
+  })
+
+  it('shows a new question at the top as it arrives', async () => {
+    chat.loaded = true
+    chat.messages = [msg(1)]
+    const { wrapper } = await renderChat('/chat?presenter')
+    chat.messages = [msg(1), msg(2, { author: 'quiet heron' })]
+    await flushPromises()
+    expect(wrapper.find('.message .meta strong').text()).toBe('quiet heron')
+  })
+
+  it('opens from the chat page and leaves back to it, except in an embed', async () => {
+    const { wrapper, router } = await renderChat('/chat')
+    await wrapper.find('.presenter-link').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/chat?presenter')
+    expect(wrapper.find('.presenter').exists()).toBe(true)
+
+    await wrapper.find('.leave').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/chat')
+    expect(wrapper.find('.presenter').exists()).toBe(false)
+
+    await router.push('/chat?presenter&embed')
+    await flushPromises()
+    expect(wrapper.find('.leave').exists()).toBe(false)
   })
 })
 

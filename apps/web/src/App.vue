@@ -176,6 +176,8 @@ nav a.router-link-active::after {
 .main.embed { padding-block: var(--space-5); }
 /* The Live page fits itself to the frame, so it gets all of it. */
 .main.embed:has(> .fit) { max-width: none; padding: 0; }
+/* The chat's presenter view spans the whole window, for a projector. */
+.main:has(> .presenter) { max-width: none; }
 .foot { border-top: 1px solid var(--border); background: var(--panel); }
 .foot-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-5); flex-wrap: wrap; padding-block: var(--space-4); }
 .credits { margin: 0; font-size: var(--text-sm); }
