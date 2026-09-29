@@ -38,8 +38,9 @@ export default {
     progress: 'Your progress through the Dojo',
   },
   footer: {
-    credits: 'Docker Dojo · Vibe-coded with AI by {author} · Pets by {pets}',
+    credits: 'Docker Dojo · Vibe-coded with AI and open-sourced at {repo} · Pets by {pets}',
     disclaimer: 'Unofficial. Not affiliated with or endorsed by Docker, Inc. Docker is a trademark of Docker, Inc.',
+    sourceOnGithub: 'Source code on GitHub',
   },
   display: {
     textSize: 'Text size',

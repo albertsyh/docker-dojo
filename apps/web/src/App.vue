@@ -105,7 +105,7 @@ const journeyPct = computed(() => {
     <div class="container foot-inner">
       <p class="credits muted">
         <i18n-t keypath="footer.credits" scope="global">
-          <template #author><a href="https://github.com/albertsyh" target="_blank" rel="noopener">albertsyh</a></template>
+          <template #repo><a href="https://github.com/albertsyh/docker-dojo" target="_blank" rel="noopener">github.com/albertsyh/docker-dojo</a></template>
           <template #pets><a href="https://openpets.dev" target="_blank" rel="noopener">OpenPets</a></template>
         </i18n-t>
         <br />

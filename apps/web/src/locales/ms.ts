@@ -40,8 +40,9 @@ const ms: typeof en = {
     progress: 'Kemajuan anda dalam Dojo',
   },
   footer: {
-    credits: 'Docker Dojo · Dibina dengan bantuan AI oleh {author} · Haiwan peliharaan oleh {pets}',
+    credits: 'Docker Dojo · Dibina dengan bantuan AI dan sumber terbuka di {repo} · Haiwan peliharaan oleh {pets}',
     disclaimer: 'Tidak rasmi. Tidak bergabung dengan atau disokong oleh Docker, Inc. Docker ialah tanda dagangan Docker, Inc.',
+    sourceOnGithub: 'Kod sumber di GitHub',
   },
   display: {
     textSize: 'Saiz teks',
