@@ -575,7 +575,7 @@
       }
     },
     "this-app": {
-      "source": "e5fa36b7",
+      "source": "74120b42",
       "title": "Baca compose file Dojo sendiri",
       "summary": "Aplikasi ini sendiri terdiri daripada empat container. Lihat bagaimana ia disambungkan antara satu sama lain.",
       "steps": [
@@ -586,7 +586,10 @@
           "text": "Perkara untuk diperhatikan: hanya \"web\" yang publish port, jadi pangkalan data tidak boleh dihubungi dari luar. \"condition: service_healthy\" membuat API menunggu sehingga MySQL bersedia, bukan sekadar sudah bermula. Dan satu image memainkan dua peranan: arahan (command) menentukan sama ada ia menjalankan PHP-FPM atau Reverb."
         },
         {
-          "text": "Jika jurulatih anda berkongsi repositori itu, jalankan seluruh Dojo sendiri. --build membina image api dan web daripada kod sumber terlebih dahulu."
+          "text": "Dua lagi. ${DB_PASSWORD:-dojo-local-only} membaca DB_PASSWORD daripada fail .env di sebelah compose.yaml, dan menggunakan nilai selepas :- jika tiada, jadi Dojo berjalan tanpa .env langsung (.env.example dalam repositori menyenaraikan setiap tetapan). Dan &laravel-env menamakan satu blok tetapan yang ditampal masuk oleh *laravel-env, jadi api dan reverb berkongsi satu salinan dan bukannya dua yang boleh berbeza lama-kelamaan."
+        },
+        {
+          "text": "Dojo ialah sumber terbuka. Clone dan jalankan keseluruhannya sendiri. --build membina image api dan web daripada kod sumber terlebih dahulu."
         },
         {
           "text": "Kedua-dua image Dojo menggunakan multi-stage build dengan stage test. Jalankan ujian API dengan cara yang sama anda menjalankan ujian anda."
@@ -597,7 +600,7 @@
       ],
       "expected": "Anda boleh menerangkan mengapa pangkalan data tiada entri ports:, dan apa yang dilakukan oleh service_healthy.",
       "files": {
-        "note": "Hanya jika anda clone repositori itu dalam langkah 3. Paparan ringkas:",
+        "note": "Hanya jika anda clone repositori itu dalam langkah 4. Paparan ringkas:",
         "entries": [
           {
             "note": "folder kerja anda"

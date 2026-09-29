@@ -870,15 +870,18 @@
       {
         "text": "This is (a trimmed version of) the compose.yaml that runs the page you are reading.",
         "label": "compose.yaml (excerpt)",
-        "code": "services:\n  db:\n    image: mysql:8.4\n    volumes: [dbdata:/var/lib/mysql]\n    healthcheck:\n      test: [\"CMD\", \"mysqladmin\", \"ping\", \"-h\", \"127.0.0.1\"]\n\n  api:                           # Laravel on php-fpm\n    build: ./apps/api            # built from a Dockerfile, not pulled\n    image: docker-dojo-api\n    environment:\n      DB_HOST: db                # service name = hostname\n    depends_on:\n      db:\n        condition: service_healthy   # wait until MySQL answers\n\n  reverb:                        # websockets for the live tracker\n    image: docker-dojo-api       # same image as api...\n    command: [\"php\", \"artisan\", \"reverb:start\"]   # ...different command\n\n  web:\n    build: ./apps/web            # multi-stage: bun builds, nginx serves\n    ports: [\"8000:80\"]           # the only port published to your machine\n\nvolumes:\n  dbdata:"
+        "code": "name: docker-dojo\n\nx-laravel-env: &laravel-env      # one block of settings, named laravel-env\n  DB_HOST: db                    # service name = hostname\n  DB_PASSWORD: ${DB_PASSWORD:-dojo-local-only}   # from .env, or this default\n  REVERB_HOST: reverb\n  # ...and about 20 more\n\nservices:\n  db:\n    image: mysql:8.4\n    environment:\n      MYSQL_PASSWORD: ${DB_PASSWORD:-dojo-local-only}\n    volumes:\n      - dbdata:/var/lib/mysql\n    healthcheck:\n      test: [\"CMD\", \"mysqladmin\", \"ping\", \"-h\", \"127.0.0.1\", \"--silent\"]\n\n  api:                           # Laravel on php-fpm\n    build: ./apps/api            # built from a Dockerfile, not pulled\n    image: ${COMPOSE_PROJECT_NAME}-api   # docker-dojo-api\n    environment: *laravel-env    # the block above\n    volumes:\n      - appkey:/var/lib/dojo\n    depends_on:\n      db:\n        condition: service_healthy   # wait until MySQL answers\n\n  reverb:                        # websockets for the live tracker\n    build: ./apps/api\n    image: ${COMPOSE_PROJECT_NAME}-api   # same image as api...\n    command: [\"php\", \"artisan\", \"reverb:start\", \"--host=0.0.0.0\", \"--port=8080\"]   # ...different command\n    environment: *laravel-env    # the same block again\n\n  web:\n    build: ./apps/web            # multi-stage: node builds, nginx serves\n    ports:\n      - \"${APP_PORT:-8000}:80\"   # the only port published to your machine\n    depends_on:\n      api:\n        condition: service_healthy\n\nvolumes:\n  dbdata:\n  appkey:                        # keeps the app's secret key across restarts"
       },
       {
         "text": "Things to notice: only \"web\" publishes a port, so the database is unreachable from outside. \"condition: service_healthy\" makes the API wait until MySQL is ready, not just started. And one image serves two roles: the command decides whether it runs PHP-FPM or Reverb."
       },
       {
-        "text": "If your trainer shared the repository, run the whole Dojo yourself. --build builds the api and web images from source first.",
+        "text": "Two more. ${DB_PASSWORD:-dojo-local-only} reads DB_PASSWORD from a .env file next to compose.yaml, and uses the value after :- when there is none, so the Dojo runs with no .env at all (.env.example in the repository lists every setting). And &laravel-env names a block of settings that *laravel-env pastes in, so api and reverb share one copy instead of two that can drift apart."
+      },
+      {
+        "text": "The Dojo is open source. Clone it and run the whole thing yourself. --build builds the api and web images from source first.",
         "label": "terminal",
-        "code": "cd ~\ngit clone <repo-url-from-your-trainer> docker-dojo\ncd docker-dojo\ndocker compose up -d --build"
+        "code": "cd ~\ngit clone https://github.com/albertsyh/docker-dojo\ncd docker-dojo\ndocker compose up -d --build"
       },
       {
         "text": "Both Dojo images use multi-stage builds with a test stage. Run the API tests the same way you ran yours.",
@@ -892,7 +895,7 @@
     ],
     "expected": "You can explain why the database has no ports: entry, and what service_healthy does.",
     "files": {
-      "note": "Only if you clone the repository in step 3. A trimmed view:",
+      "note": "Only if you clone the repository in step 4. A trimmed view:",
       "entries": [
         {
           "path": "docker-dojo/",

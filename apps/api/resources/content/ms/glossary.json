@@ -325,6 +325,14 @@
     "Dangling image": {
       "source": "c4d38141",
       "text": "Image lama yang sudah tiada tag, biasanya digantikan oleh build yang lebih baharu. Selamat untuk di-prune."
+    },
+    "Variable substitution": {
+      "source": "647ec39f",
+      "text": "Compose mengisi `${NAME}` daripada shell anda atau fail `.env` di sebelah compose.yaml. `${NAME:-default}` menggunakan nilai lalai apabila kedua-duanya tidak menetapkannya."
+    },
+    "YAML anchor": {
+      "source": "c070e1e0",
+      "text": "`&name` melabel satu blok dalam fail YAML dan `*name` menggunakannya semula di tempat lain, jadi dua service boleh berkongsi satu senarai tetapan."
     }
   }
 }

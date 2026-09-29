@@ -3,121 +3,641 @@
     "id": "basics",
     "title": "The basics",
     "terms": [
-      { "term": "Docker", "text": "A tool that packages an app with everything it needs to run, so it runs the same on any machine.", "seenIn": ["hello-docker"] },
-      { "term": "Image", "text": "A read-only template for a container: a filesystem plus settings such as the default command. You build or pull images, then run them.", "seenIn": ["hello-docker", "build-an-image"] },
-      { "term": "Container", "text": "A running (or stopped) instance of an image. It is an isolated process with its own filesystem, network and settings. You can run many containers from one image.", "seenIn": ["hello-docker", "first-web-server"] },
-      { "term": "Docker Engine", "aka": "daemon, dockerd", "text": "The background service that actually builds images and runs containers. The `docker` command talks to it.", "seenIn": ["hello-docker"] },
-      { "term": "Docker CLI", "aka": "client", "text": "The `docker` command you type. `docker version` shows both the client and the engine it is talking to.", "seenIn": ["hello-docker"] },
-      { "term": "Docker Desktop", "text": "An app for macOS, Windows and Linux that runs the Docker Engine inside a small virtual machine, with a GUI and extra tools such as Docker Scout.", "seenIn": ["scan-image"] },
-      { "term": "Registry", "text": "A server that stores images so they can be shared. `docker pull` downloads from one and `docker push` uploads to one." },
-      { "term": "Docker Hub", "text": "The default public registry. `nginx`, `alpine`, `node` and `hello-world` all come from there.", "seenIn": ["hello-docker"] },
-      { "term": "Tag", "text": "A label on an image, written after a colon, such as `nginx:alpine` or `my-site:1.0`. If you leave it out, Docker uses `latest`.", "seenIn": ["build-an-image", "multi-stage", "node-naive-dockerfile", "laravel-naive-dockerfile"] },
-      { "term": "latest", "text": "The tag Docker uses when you leave the tag out. It is not \"the stable one\", just whichever version was pushed last, so it changes under you. Pin a version instead, like `node:24-alpine`.", "seenIn": ["node-naive-dockerfile", "laravel-naive-dockerfile"] }
+      {
+        "term": "Docker",
+        "text": "A tool that packages an app with everything it needs to run, so it runs the same on any machine.",
+        "seenIn": [
+          "hello-docker"
+        ]
+      },
+      {
+        "term": "Image",
+        "text": "A read-only template for a container: a filesystem plus settings such as the default command. You build or pull images, then run them.",
+        "seenIn": [
+          "hello-docker",
+          "build-an-image"
+        ]
+      },
+      {
+        "term": "Container",
+        "text": "A running (or stopped) instance of an image. It is an isolated process with its own filesystem, network and settings. You can run many containers from one image.",
+        "seenIn": [
+          "hello-docker",
+          "first-web-server"
+        ]
+      },
+      {
+        "term": "Docker Engine",
+        "aka": "daemon, dockerd",
+        "text": "The background service that actually builds images and runs containers. The `docker` command talks to it.",
+        "seenIn": [
+          "hello-docker"
+        ]
+      },
+      {
+        "term": "Docker CLI",
+        "aka": "client",
+        "text": "The `docker` command you type. `docker version` shows both the client and the engine it is talking to.",
+        "seenIn": [
+          "hello-docker"
+        ]
+      },
+      {
+        "term": "Docker Desktop",
+        "text": "An app for macOS, Windows and Linux that runs the Docker Engine inside a small virtual machine, with a GUI and extra tools such as Docker Scout.",
+        "seenIn": [
+          "scan-image"
+        ]
+      },
+      {
+        "term": "Registry",
+        "text": "A server that stores images so they can be shared. `docker pull` downloads from one and `docker push` uploads to one."
+      },
+      {
+        "term": "Docker Hub",
+        "text": "The default public registry. `nginx`, `alpine`, `node` and `hello-world` all come from there.",
+        "seenIn": [
+          "hello-docker"
+        ]
+      },
+      {
+        "term": "Tag",
+        "text": "A label on an image, written after a colon, such as `nginx:alpine` or `my-site:1.0`. If you leave it out, Docker uses `latest`.",
+        "seenIn": [
+          "build-an-image",
+          "multi-stage",
+          "node-naive-dockerfile",
+          "laravel-naive-dockerfile"
+        ]
+      },
+      {
+        "term": "latest",
+        "text": "The tag Docker uses when you leave the tag out. It is not \"the stable one\", just whichever version was pushed last, so it changes under you. Pin a version instead, like `node:24-alpine`.",
+        "seenIn": [
+          "node-naive-dockerfile",
+          "laravel-naive-dockerfile"
+        ]
+      }
     ]
   },
   {
     "id": "images",
     "title": "Building images",
     "terms": [
-      { "term": "Dockerfile", "text": "A text file of instructions that describes how to build an image, one step per line.", "seenIn": ["build-an-image", "layer-cache"] },
-      { "term": "FROM", "text": "Picks the base image you build on top of. In a multi-stage build, each FROM starts a new stage.", "seenIn": ["build-an-image", "multi-stage"] },
-      { "term": "COPY", "text": "Copies files from the build context into the image.", "seenIn": ["build-an-image", "layer-cache"] },
-      { "term": "RUN", "text": "Runs a command while building, such as installing packages. The result is saved as a new layer.", "seenIn": ["image-size", "layer-cache"] },
-      { "term": "CMD", "text": "The default command a container runs when it starts. You can override it on `docker run`.", "seenIn": ["layer-cache"] },
-      { "term": "Exec form", "aka": "CMD [\"node\", \"server.js\"]", "text": "Writing CMD or ENTRYPOINT as a JSON list. Docker starts the program directly, so it receives stop signals. The plain form (`CMD node server.js`) can put a shell in between that does not pass them on.", "seenIn": ["node-stop-signals", "laravel-stop-signals"] },
-      { "term": "ENTRYPOINT", "text": "Like CMD, but harder to override. Often a script that prepares things and then starts the main process." },
-      { "term": "EXPOSE", "text": "Documents which port the app listens on. It does not publish the port: you still need `-p`.", "seenIn": ["build-an-image"] },
-      { "term": "WORKDIR", "text": "Sets the folder that later instructions (and the container) run in.", "seenIn": ["layer-cache"] },
-      { "term": "ENV", "text": "Sets an environment variable in the image, such as `NODE_ENV=production`.", "seenIn": ["multi-stage", "node-naive-dockerfile", "laravel-naive-dockerfile"] },
-      { "term": "USER", "text": "Sets which user later steps and the container run as. Running as a normal user instead of root limits the damage if the app is attacked.", "seenIn": ["multi-stage", "node-production-dockerfile", "laravel-production-dockerfile"] },
-      { "term": "Base image", "text": "The image named in FROM. Small ones such as `alpine` keep your image small, and newer ones have fewer known vulnerabilities.", "seenIn": ["build-an-image", "scan-image"] },
-      { "term": "CPU architecture", "aka": "platform, amd64, arm64", "text": "The kind of processor an image is built for. Apple Silicon Macs build arm64, most servers run amd64. Running the wrong one fails with `exec format error`. Pick one with `--platform linux/amd64`.", "seenIn": ["node-platform", "laravel-platform"] },
-      { "term": "Build context", "text": "The folder you pass to `docker build` (the `.` at the end). Only files inside it can be copied into the image.", "seenIn": ["build-an-image", "dockerignore"] },
-      { "term": ".dockerignore", "text": "Lists files to leave out of the build context, such as `.env`, `*.log` or `node_modules`. Secrets stay out of the image and builds get faster.", "seenIn": ["dockerignore", "laravel-naive-dockerfile"] },
-      { "term": "Layer", "text": "Each Dockerfile step adds one read-only layer on top of the last. Layers are shared between images, so they are stored only once. A file deleted in a later layer still takes up space.", "seenIn": ["image-size", "layer-cache"] },
-      { "term": "docker history", "text": "Lists the layers of an image, newest first, with the step that made each one and the size it added.", "seenIn": ["image-size", "node-naive-dockerfile", "laravel-naive-dockerfile"] },
-      { "term": "Image size", "text": "`docker image ls` shows how much disk each image uses. Smaller images pull faster and have less to attack.", "seenIn": ["image-size", "multi-stage"] },
-      { "term": "Build cache", "text": "Docker reuses a layer if its step and inputs have not changed. Once one step changes, every step after it runs again, so put rarely changing steps first.", "seenIn": ["layer-cache"] },
-      { "term": "docker buildx history", "text": "Lists your recent builds, newest first, with how long each took. `docker buildx history ls` shows the list. Older versions of Docker do not have it.", "seenIn": ["layer-cache"] },
-      { "term": "Dependency layer", "text": "Copying only `package.json` (or `composer.json`) and installing before copying the code, so installs stay cached until the dependencies change.", "seenIn": ["layer-cache"] },
-      { "term": "Multi-stage build", "text": "A Dockerfile with several FROM lines. You build or test in one stage and copy or install only what production needs in the final one. This app's own images are built that way.", "seenIn": ["multi-stage", "this-app", "laravel-production-dockerfile"] },
-      { "term": "Build target", "aka": "--target", "text": "Builds one named stage of a multi-stage Dockerfile, such as `docker build --target test .`. Without it, Docker builds the last stage.", "seenIn": ["multi-stage", "this-app"] }
+      {
+        "term": "Dockerfile",
+        "text": "A text file of instructions that describes how to build an image, one step per line.",
+        "seenIn": [
+          "build-an-image",
+          "layer-cache"
+        ]
+      },
+      {
+        "term": "FROM",
+        "text": "Picks the base image you build on top of. In a multi-stage build, each FROM starts a new stage.",
+        "seenIn": [
+          "build-an-image",
+          "multi-stage"
+        ]
+      },
+      {
+        "term": "COPY",
+        "text": "Copies files from the build context into the image.",
+        "seenIn": [
+          "build-an-image",
+          "layer-cache"
+        ]
+      },
+      {
+        "term": "RUN",
+        "text": "Runs a command while building, such as installing packages. The result is saved as a new layer.",
+        "seenIn": [
+          "image-size",
+          "layer-cache"
+        ]
+      },
+      {
+        "term": "CMD",
+        "text": "The default command a container runs when it starts. You can override it on `docker run`.",
+        "seenIn": [
+          "layer-cache"
+        ]
+      },
+      {
+        "term": "Exec form",
+        "aka": "CMD [\"node\", \"server.js\"]",
+        "text": "Writing CMD or ENTRYPOINT as a JSON list. Docker starts the program directly, so it receives stop signals. The plain form (`CMD node server.js`) can put a shell in between that does not pass them on.",
+        "seenIn": [
+          "node-stop-signals",
+          "laravel-stop-signals"
+        ]
+      },
+      {
+        "term": "ENTRYPOINT",
+        "text": "Like CMD, but harder to override. Often a script that prepares things and then starts the main process."
+      },
+      {
+        "term": "EXPOSE",
+        "text": "Documents which port the app listens on. It does not publish the port: you still need `-p`.",
+        "seenIn": [
+          "build-an-image"
+        ]
+      },
+      {
+        "term": "WORKDIR",
+        "text": "Sets the folder that later instructions (and the container) run in.",
+        "seenIn": [
+          "layer-cache"
+        ]
+      },
+      {
+        "term": "ENV",
+        "text": "Sets an environment variable in the image, such as `NODE_ENV=production`.",
+        "seenIn": [
+          "multi-stage",
+          "node-naive-dockerfile",
+          "laravel-naive-dockerfile"
+        ]
+      },
+      {
+        "term": "USER",
+        "text": "Sets which user later steps and the container run as. Running as a normal user instead of root limits the damage if the app is attacked.",
+        "seenIn": [
+          "multi-stage",
+          "node-production-dockerfile",
+          "laravel-production-dockerfile"
+        ]
+      },
+      {
+        "term": "Base image",
+        "text": "The image named in FROM. Small ones such as `alpine` keep your image small, and newer ones have fewer known vulnerabilities.",
+        "seenIn": [
+          "build-an-image",
+          "scan-image"
+        ]
+      },
+      {
+        "term": "CPU architecture",
+        "aka": "platform, amd64, arm64",
+        "text": "The kind of processor an image is built for. Apple Silicon Macs build arm64, most servers run amd64. Running the wrong one fails with `exec format error`. Pick one with `--platform linux/amd64`.",
+        "seenIn": [
+          "node-platform",
+          "laravel-platform"
+        ]
+      },
+      {
+        "term": "Build context",
+        "text": "The folder you pass to `docker build` (the `.` at the end). Only files inside it can be copied into the image.",
+        "seenIn": [
+          "build-an-image",
+          "dockerignore"
+        ]
+      },
+      {
+        "term": ".dockerignore",
+        "text": "Lists files to leave out of the build context, such as `.env`, `*.log` or `node_modules`. Secrets stay out of the image and builds get faster.",
+        "seenIn": [
+          "dockerignore",
+          "laravel-naive-dockerfile"
+        ]
+      },
+      {
+        "term": "Layer",
+        "text": "Each Dockerfile step adds one read-only layer on top of the last. Layers are shared between images, so they are stored only once. A file deleted in a later layer still takes up space.",
+        "seenIn": [
+          "image-size",
+          "layer-cache"
+        ]
+      },
+      {
+        "term": "docker history",
+        "text": "Lists the layers of an image, newest first, with the step that made each one and the size it added.",
+        "seenIn": [
+          "image-size",
+          "node-naive-dockerfile",
+          "laravel-naive-dockerfile"
+        ]
+      },
+      {
+        "term": "Image size",
+        "text": "`docker image ls` shows how much disk each image uses. Smaller images pull faster and have less to attack.",
+        "seenIn": [
+          "image-size",
+          "multi-stage"
+        ]
+      },
+      {
+        "term": "Build cache",
+        "text": "Docker reuses a layer if its step and inputs have not changed. Once one step changes, every step after it runs again, so put rarely changing steps first.",
+        "seenIn": [
+          "layer-cache"
+        ]
+      },
+      {
+        "term": "docker buildx history",
+        "text": "Lists your recent builds, newest first, with how long each took. `docker buildx history ls` shows the list. Older versions of Docker do not have it.",
+        "seenIn": [
+          "layer-cache"
+        ]
+      },
+      {
+        "term": "Dependency layer",
+        "text": "Copying only `package.json` (or `composer.json`) and installing before copying the code, so installs stay cached until the dependencies change.",
+        "seenIn": [
+          "layer-cache"
+        ]
+      },
+      {
+        "term": "Multi-stage build",
+        "text": "A Dockerfile with several FROM lines. You build or test in one stage and copy or install only what production needs in the final one. This app's own images are built that way.",
+        "seenIn": [
+          "multi-stage",
+          "this-app",
+          "laravel-production-dockerfile"
+        ]
+      },
+      {
+        "term": "Build target",
+        "aka": "--target",
+        "text": "Builds one named stage of a multi-stage Dockerfile, such as `docker build --target test .`. Without it, Docker builds the last stage.",
+        "seenIn": [
+          "multi-stage",
+          "this-app"
+        ]
+      }
     ]
   },
   {
     "id": "containers",
     "title": "Running containers",
     "terms": [
-      { "term": "docker run", "text": "Creates a container from an image and starts it. Pulls the image first if you do not have it.", "seenIn": ["hello-docker", "first-web-server"] },
-      { "term": "Detached mode", "aka": "-d", "text": "Runs the container in the background and gives your terminal back.", "seenIn": ["first-web-server"] },
-      { "term": "Port mapping", "aka": "-p", "text": "Connects a port on your machine to a port in the container. `-p 8080:80` means your port 8080 goes to the container's port 80.", "seenIn": ["first-web-server"] },
-      { "term": "Environment variable", "aka": "-e", "text": "A setting passed into the container, such as a password or a mode. Set with `-e NAME=value`, `ENV` in a Dockerfile, or `environment:` in Compose.", "seenIn": ["multi-stage", "networks", "compose-up"] },
-      { "term": "docker ps", "text": "Lists running containers. Add `-a` to include stopped ones.", "seenIn": ["first-web-server"] },
-      { "term": "docker logs", "text": "Shows what a container printed. Add `-f` to keep following new output.", "seenIn": ["first-web-server"] },
-      { "term": "docker exec", "text": "Runs a command inside a running container. `docker exec -it web sh` opens a shell.", "seenIn": ["inside-a-container", "multi-stage"] },
-      { "term": "--rm", "text": "Deletes the container as soon as it exits. Handy for one-off commands.", "seenIn": ["volumes", "dockerignore"] },
-      { "term": "Writable layer", "text": "The thin layer on top of the image where a container keeps its changes. It is deleted with the container, which is why edits vanish.", "seenIn": ["inside-a-container"] },
-      { "term": "Restart policy", "text": "Tells Docker whether to restart a container when it stops or the machine reboots, such as `restart: unless-stopped`.", "seenIn": ["node-compose-ready", "laravel-compose-ready"] },
-      { "term": "SIGTERM", "text": "The polite \"please stop\" signal. `docker stop` sends it, waits a few seconds, then kills the container with SIGKILL. A well-behaved app finishes its requests and exits when it gets SIGTERM.", "seenIn": ["node-stop-signals", "laravel-stop-signals"] },
-      { "term": "Process 1", "aka": "PID 1", "text": "The first program in a container, the one CMD starts. Linux gives it no default \"exit on SIGTERM\", so an app running as process 1 must handle the signal itself, or run behind `--init`.", "seenIn": ["node-stop-signals", "laravel-stop-signals"] },
-      { "term": "Exit code 137", "text": "The container was killed (128 + 9, for SIGKILL). After `docker stop` it usually means the app ignored SIGTERM. Exit code 0 means it stopped cleanly.", "seenIn": ["node-stop-signals", "laravel-stop-signals"] }
+      {
+        "term": "docker run",
+        "text": "Creates a container from an image and starts it. Pulls the image first if you do not have it.",
+        "seenIn": [
+          "hello-docker",
+          "first-web-server"
+        ]
+      },
+      {
+        "term": "Detached mode",
+        "aka": "-d",
+        "text": "Runs the container in the background and gives your terminal back.",
+        "seenIn": [
+          "first-web-server"
+        ]
+      },
+      {
+        "term": "Port mapping",
+        "aka": "-p",
+        "text": "Connects a port on your machine to a port in the container. `-p 8080:80` means your port 8080 goes to the container's port 80.",
+        "seenIn": [
+          "first-web-server"
+        ]
+      },
+      {
+        "term": "Environment variable",
+        "aka": "-e",
+        "text": "A setting passed into the container, such as a password or a mode. Set with `-e NAME=value`, `ENV` in a Dockerfile, or `environment:` in Compose.",
+        "seenIn": [
+          "multi-stage",
+          "networks",
+          "compose-up",
+          "this-app"
+        ]
+      },
+      {
+        "term": "docker ps",
+        "text": "Lists running containers. Add `-a` to include stopped ones.",
+        "seenIn": [
+          "first-web-server"
+        ]
+      },
+      {
+        "term": "docker logs",
+        "text": "Shows what a container printed. Add `-f` to keep following new output.",
+        "seenIn": [
+          "first-web-server"
+        ]
+      },
+      {
+        "term": "docker exec",
+        "text": "Runs a command inside a running container. `docker exec -it web sh` opens a shell.",
+        "seenIn": [
+          "inside-a-container",
+          "multi-stage"
+        ]
+      },
+      {
+        "term": "--rm",
+        "text": "Deletes the container as soon as it exits. Handy for one-off commands.",
+        "seenIn": [
+          "volumes",
+          "dockerignore"
+        ]
+      },
+      {
+        "term": "Writable layer",
+        "text": "The thin layer on top of the image where a container keeps its changes. It is deleted with the container, which is why edits vanish.",
+        "seenIn": [
+          "inside-a-container"
+        ]
+      },
+      {
+        "term": "Restart policy",
+        "text": "Tells Docker whether to restart a container when it stops or the machine reboots, such as `restart: unless-stopped`.",
+        "seenIn": [
+          "node-compose-ready",
+          "laravel-compose-ready"
+        ]
+      },
+      {
+        "term": "SIGTERM",
+        "text": "The polite \"please stop\" signal. `docker stop` sends it, waits a few seconds, then kills the container with SIGKILL. A well-behaved app finishes its requests and exits when it gets SIGTERM.",
+        "seenIn": [
+          "node-stop-signals",
+          "laravel-stop-signals"
+        ]
+      },
+      {
+        "term": "Process 1",
+        "aka": "PID 1",
+        "text": "The first program in a container, the one CMD starts. Linux gives it no default \"exit on SIGTERM\", so an app running as process 1 must handle the signal itself, or run behind `--init`.",
+        "seenIn": [
+          "node-stop-signals",
+          "laravel-stop-signals"
+        ]
+      },
+      {
+        "term": "Exit code 137",
+        "text": "The container was killed (128 + 9, for SIGKILL). After `docker stop` it usually means the app ignored SIGTERM. Exit code 0 means it stopped cleanly.",
+        "seenIn": [
+          "node-stop-signals",
+          "laravel-stop-signals"
+        ]
+      }
     ]
   },
   {
     "id": "production",
     "title": "Production and security",
     "terms": [
-      { "term": "Dev dependencies", "text": "Tools only needed while developing or testing, such as test runners and formatters. `npm install --omit=dev` and `composer install --no-dev` leave them out of production.", "seenIn": ["multi-stage", "node-production-dockerfile", "laravel-production-dockerfile"] },
-      { "term": "NODE_ENV", "text": "An environment variable Node.js libraries read. `production` turns off debug features and turns on caching in libraries like express.", "seenIn": ["multi-stage"] },
-      { "term": "Lock file", "text": "`package-lock.json` or `composer.lock`. It pins the exact version of every package, so every build installs the same thing. Use `npm ci` to install from it.", "seenIn": ["layer-cache"] },
-      { "term": "Vulnerability", "aka": "CVE", "text": "A publicly known security issue in a specific version of a package. Each one gets an id such as CVE-2024-12345 and a severity.", "seenIn": ["scan-image"] },
-      { "term": "Docker Scout", "text": "Docker's image scanner. It lists the packages in an image, matches them against known vulnerabilities, and suggests better base images.", "seenIn": ["scan-image"] },
-      { "term": "Log rotation", "aka": "max-size, max-file", "text": "Starting a new log file when the current one gets big, and deleting the oldest. Docker's default log never rotates, so set `logging.options` in Compose on a server.", "seenIn": ["node-compose-ready", "laravel-compose-ready"] }
+      {
+        "term": "Dev dependencies",
+        "text": "Tools only needed while developing or testing, such as test runners and formatters. `npm install --omit=dev` and `composer install --no-dev` leave them out of production.",
+        "seenIn": [
+          "multi-stage",
+          "node-production-dockerfile",
+          "laravel-production-dockerfile"
+        ]
+      },
+      {
+        "term": "NODE_ENV",
+        "text": "An environment variable Node.js libraries read. `production` turns off debug features and turns on caching in libraries like express.",
+        "seenIn": [
+          "multi-stage"
+        ]
+      },
+      {
+        "term": "Lock file",
+        "text": "`package-lock.json` or `composer.lock`. It pins the exact version of every package, so every build installs the same thing. Use `npm ci` to install from it.",
+        "seenIn": [
+          "layer-cache"
+        ]
+      },
+      {
+        "term": "Vulnerability",
+        "aka": "CVE",
+        "text": "A publicly known security issue in a specific version of a package. Each one gets an id such as CVE-2024-12345 and a severity.",
+        "seenIn": [
+          "scan-image"
+        ]
+      },
+      {
+        "term": "Docker Scout",
+        "text": "Docker's image scanner. It lists the packages in an image, matches them against known vulnerabilities, and suggests better base images.",
+        "seenIn": [
+          "scan-image"
+        ]
+      },
+      {
+        "term": "Log rotation",
+        "aka": "max-size, max-file",
+        "text": "Starting a new log file when the current one gets big, and deleting the oldest. Docker's default log never rotates, so set `logging.options` in Compose on a server.",
+        "seenIn": [
+          "node-compose-ready",
+          "laravel-compose-ready"
+        ]
+      }
     ]
   },
   {
     "id": "storage",
     "title": "Storage",
     "terms": [
-      { "term": "Volume", "text": "Storage managed by Docker that lives outside any container. Data in it survives when containers are removed.", "seenIn": ["volumes", "compose-up"] },
-      { "term": "Named volume", "text": "A volume you give a name, such as `notes`, so any container can mount it with `-v notes:/data`.", "seenIn": ["volumes"] },
-      { "term": "Bind mount", "text": "Mounts a folder from your machine into a container. Changes show up on both sides straight away, which is useful during development.", "seenIn": ["volumes", "node-bind-mount", "laravel-bind-mount"] },
-      { "term": "Anonymous volume", "aka": "- /app/node_modules", "text": "A volume with no name, created for one path in one container. Used to keep a folder from the image (like node_modules) visible under a bind mount.", "seenIn": ["node-bind-mount", "laravel-bind-mount"] },
-      { "term": "Mount", "aka": "-v", "text": "Makes a volume or folder appear at a path inside the container.", "seenIn": ["volumes"] }
+      {
+        "term": "Volume",
+        "text": "Storage managed by Docker that lives outside any container. Data in it survives when containers are removed.",
+        "seenIn": [
+          "volumes",
+          "compose-up"
+        ]
+      },
+      {
+        "term": "Named volume",
+        "text": "A volume you give a name, such as `notes`, so any container can mount it with `-v notes:/data`.",
+        "seenIn": [
+          "volumes"
+        ]
+      },
+      {
+        "term": "Bind mount",
+        "text": "Mounts a folder from your machine into a container. Changes show up on both sides straight away, which is useful during development.",
+        "seenIn": [
+          "volumes",
+          "node-bind-mount",
+          "laravel-bind-mount"
+        ]
+      },
+      {
+        "term": "Anonymous volume",
+        "aka": "- /app/node_modules",
+        "text": "A volume with no name, created for one path in one container. Used to keep a folder from the image (like node_modules) visible under a bind mount.",
+        "seenIn": [
+          "node-bind-mount",
+          "laravel-bind-mount"
+        ]
+      },
+      {
+        "term": "Mount",
+        "aka": "-v",
+        "text": "Makes a volume or folder appear at a path inside the container.",
+        "seenIn": [
+          "volumes"
+        ]
+      }
     ]
   },
   {
     "id": "networking",
     "title": "Networking",
     "terms": [
-      { "term": "Network", "text": "A private network that containers can join so they can talk to each other.", "seenIn": ["networks"] },
-      { "term": "Bridge network", "text": "The default kind of network, on a single machine. The built-in one called `bridge` has no name lookup; ones you create do.", "seenIn": ["networks"] },
-      { "term": "Service discovery", "aka": "DNS", "text": "On a user-created network, containers can reach each other by name, such as `cache` or `db`, instead of by IP address.", "seenIn": ["networks", "compose-up"] },
-      { "term": "localhost in a container", "aka": "127.0.0.1", "text": "Inside a container, localhost is that container itself, not your machine and not other containers. An app listening only on 127.0.0.1 cannot be reached through `-p`. Listen on `0.0.0.0`, and reach other containers by name.", "seenIn": ["networks", "node-listen-address", "node-compose-ready", "laravel-listen-address", "laravel-compose-ready"] },
-      { "term": "Published port", "aka": "-p 127.0.0.1:8084:3000", "text": "A container port opened on your machine. Plain `-p 8084:3000` opens it on every network the machine is on, and on Linux Docker's own firewall rules get past ufw. Put `127.0.0.1:` in front to keep it local.", "seenIn": ["node-listen-address", "laravel-listen-address"] }
+      {
+        "term": "Network",
+        "text": "A private network that containers can join so they can talk to each other.",
+        "seenIn": [
+          "networks"
+        ]
+      },
+      {
+        "term": "Bridge network",
+        "text": "The default kind of network, on a single machine. The built-in one called `bridge` has no name lookup; ones you create do.",
+        "seenIn": [
+          "networks"
+        ]
+      },
+      {
+        "term": "Service discovery",
+        "aka": "DNS",
+        "text": "On a user-created network, containers can reach each other by name, such as `cache` or `db`, instead of by IP address.",
+        "seenIn": [
+          "networks",
+          "compose-up"
+        ]
+      },
+      {
+        "term": "localhost in a container",
+        "aka": "127.0.0.1",
+        "text": "Inside a container, localhost is that container itself, not your machine and not other containers. An app listening only on 127.0.0.1 cannot be reached through `-p`. Listen on `0.0.0.0`, and reach other containers by name.",
+        "seenIn": [
+          "networks",
+          "node-listen-address",
+          "node-compose-ready",
+          "laravel-listen-address",
+          "laravel-compose-ready"
+        ]
+      },
+      {
+        "term": "Published port",
+        "aka": "-p 127.0.0.1:8084:3000",
+        "text": "A container port opened on your machine. Plain `-p 8084:3000` opens it on every network the machine is on, and on Linux Docker's own firewall rules get past ufw. Put `127.0.0.1:` in front to keep it local.",
+        "seenIn": [
+          "node-listen-address",
+          "laravel-listen-address"
+        ]
+      }
     ]
   },
   {
     "id": "compose",
     "title": "Docker Compose",
     "terms": [
-      { "term": "Docker Compose", "text": "A tool that runs a multi-container app from one file, with one command.", "seenIn": ["compose-up", "this-app"] },
-      { "term": "compose.yaml", "text": "The file that describes the services, networks and volumes of a Compose app.", "seenIn": ["compose-up", "this-app"] },
-      { "term": "Service", "text": "One entry under `services:` in compose.yaml. Compose runs one or more containers for each service.", "seenIn": ["compose-up"] },
-      { "term": "Project", "text": "The group of containers, networks and volumes Compose creates. Named after the folder by default.", "seenIn": ["compose-up"] },
-      { "term": "docker compose up", "text": "Creates and starts everything in compose.yaml. Add `-d` to run in the background and `--build` to rebuild images.", "seenIn": ["compose-up", "this-app"] },
-      { "term": "docker compose down", "text": "Stops and removes the containers and network. Volumes are kept unless you add `-v`.", "seenIn": ["compose-up"] },
-      { "term": "depends_on", "text": "Starts one service after another. On its own it does not wait for the other service to be ready.", "seenIn": ["compose-up", "this-app", "node-compose-ready", "laravel-compose-ready"] },
-      { "term": "Healthcheck", "text": "A command Docker runs to check a container is really ready. With `condition: service_healthy`, depends_on waits for it.", "seenIn": ["this-app", "node-compose-ready", "laravel-compose-ready"] }
+      {
+        "term": "Docker Compose",
+        "text": "A tool that runs a multi-container app from one file, with one command.",
+        "seenIn": [
+          "compose-up",
+          "this-app"
+        ]
+      },
+      {
+        "term": "compose.yaml",
+        "text": "The file that describes the services, networks and volumes of a Compose app.",
+        "seenIn": [
+          "compose-up",
+          "this-app"
+        ]
+      },
+      {
+        "term": "Service",
+        "text": "One entry under `services:` in compose.yaml. Compose runs one or more containers for each service.",
+        "seenIn": [
+          "compose-up"
+        ]
+      },
+      {
+        "term": "Project",
+        "text": "The group of containers, networks and volumes Compose creates. Named after the folder by default.",
+        "seenIn": [
+          "compose-up"
+        ]
+      },
+      {
+        "term": "docker compose up",
+        "text": "Creates and starts everything in compose.yaml. Add `-d` to run in the background and `--build` to rebuild images.",
+        "seenIn": [
+          "compose-up",
+          "this-app"
+        ]
+      },
+      {
+        "term": "docker compose down",
+        "text": "Stops and removes the containers and network. Volumes are kept unless you add `-v`.",
+        "seenIn": [
+          "compose-up"
+        ]
+      },
+      {
+        "term": "depends_on",
+        "text": "Starts one service after another. On its own it does not wait for the other service to be ready.",
+        "seenIn": [
+          "compose-up",
+          "this-app",
+          "node-compose-ready",
+          "laravel-compose-ready"
+        ]
+      },
+      {
+        "term": "Healthcheck",
+        "text": "A command Docker runs to check a container is really ready. With `condition: service_healthy`, depends_on waits for it.",
+        "seenIn": [
+          "this-app",
+          "node-compose-ready",
+          "laravel-compose-ready"
+        ]
+      },
+      {
+        "term": "Variable substitution",
+        "aka": "${VAR:-default}",
+        "text": "Compose fills in `${NAME}` from your shell or a `.env` file next to compose.yaml. `${NAME:-default}` uses the default when neither sets it.",
+        "seenIn": [
+          "this-app"
+        ]
+      },
+      {
+        "term": "YAML anchor",
+        "aka": "&name, *name",
+        "text": "`&name` labels a block in a YAML file and `*name` reuses it elsewhere, so two services can share one list of settings.",
+        "seenIn": [
+          "this-app"
+        ]
+      }
     ]
   },
   {
     "id": "housekeeping",
     "title": "Housekeeping",
     "terms": [
-      { "term": "docker system df", "text": "Shows how much disk space images, containers, volumes and the build cache use.", "seenIn": ["cleanup", "node-production-dockerfile", "laravel-production-dockerfile"] },
-      { "term": "Prune", "text": "Removes unused things in one go, such as `docker system prune` or `docker builder prune`. It asks first, and what it deletes is gone for good.", "seenIn": ["cleanup"] },
-      { "term": "Dangling image", "text": "An old image with no tag left, usually replaced by a newer build. Safe to prune." }
+      {
+        "term": "docker system df",
+        "text": "Shows how much disk space images, containers, volumes and the build cache use.",
+        "seenIn": [
+          "cleanup",
+          "node-production-dockerfile",
+          "laravel-production-dockerfile"
+        ]
+      },
+      {
+        "term": "Prune",
+        "text": "Removes unused things in one go, such as `docker system prune` or `docker builder prune`. It asks first, and what it deletes is gone for good.",
+        "seenIn": [
+          "cleanup"
+        ]
+      },
+      {
+        "term": "Dangling image",
+        "text": "An old image with no tag left, usually replaced by a newer build. Safe to prune."
+      }
     ]
   }
 ]
