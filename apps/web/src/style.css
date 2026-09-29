@@ -29,6 +29,11 @@
   --code-text: oklch(0.93 0.01 150);
   --code-muted: oklch(0.68 0.03 150);
   --code-prompt: oklch(0.78 0.13 145);
+  /* Diff lines. Code blocks are dark in both themes, so these are set once. */
+  --code-add: oklch(0.34 0.07 145);
+  --code-add-mark: oklch(0.8 0.14 145);
+  --code-del: oklch(0.32 0.07 27);
+  --code-del-mark: oklch(0.76 0.14 27);
 
   --error: oklch(0.53 0.19 27);
   --error-soft: oklch(0.96 0.025 27);

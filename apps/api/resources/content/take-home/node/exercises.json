@@ -238,25 +238,13 @@
         "label": "terminal"
       },
       {
-        "text": "Now edit server.js: change \"Hello\" to \"Hi\" and save. Refresh the page. The change shows without a rebuild, because the container reads your file directly.",
-        "notes": [
-          {
-            "for": "Tip",
-            "text": "If nothing changes, your editor may save by writing a new file and swapping it in, which the watcher can miss. VS Code saves in place and works."
-          },
-          {
-            "for": "Windows",
-            "text": "Edits may not be noticed, and everything is slower, when the project lives on the Windows drive. Keep projects you bind-mount inside WSL (for example \\\\wsl$\\Ubuntu\\home\\you), and open them in VS Code with the WSL extension."
-          },
-          {
-            "for": "Windows",
-            "text": "Shell scripts saved with Windows line endings (CRLF) fail in a Linux container with a confusing \"no such file or directory\". Add a .gitattributes file with the line *.sh text eol=lf to any repo that has them."
-          },
-          {
-            "for": "Linux",
-            "text": "Files the container creates in a bind mount belong to the container's user, often root. If you get \"permission denied\" on your own files, set user: \"1000:1000\" (your id -u and id -g) on the service."
-          }
-        ]
+        "text": "Now change \"Hello\" to \"Hi\" in server.js and save.",
+        "code": " app.get('/', (req, res) => {\n-  res.json({ message: 'Hello from node-shop', hasKey: Boolean(process.env.API_KEY) })\n+  res.json({ message: 'Hi from node-shop', hasKey: Boolean(process.env.API_KEY) })\n })",
+        "label": "server.js",
+        "diff": true
+      },
+      {
+        "text": "Refresh the page. The change shows without a rebuild, because the container reads your file directly."
       },
       {
         "text": "Remember the catch: /app/node_modules is now a volume that Compose keeps. After you change package.json, rebuild and ask for fresh volumes with -V, or the old packages stay. Stop it when you are done.",

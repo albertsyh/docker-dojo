@@ -150,6 +150,10 @@
       "source": "7bf46fdb",
       "text": "Docker menggunakan semula layer jika langkah dan inputnya tidak berubah. Sebaik sahaja satu langkah berubah, setiap langkah selepasnya dijalankan semula, jadi letakkan langkah yang jarang berubah di hadapan."
     },
+    "docker buildx history": {
+      "source": "fda7fda6",
+      "text": "Menyenaraikan build terkini anda, yang terbaharu dahulu, bersama masa yang diambil oleh setiap satu. `docker buildx history ls` menunjukkan senarai itu. Versi Docker yang lebih lama tiada arahan ini."
+    },
     "Dependency layer": {
       "source": "b1c4a4b1",
       "text": "Menyalin hanya `package.json` (atau `composer.json`) dan memasang dependency sebelum menyalin kod, supaya pemasangan kekal dalam cache sehingga dependency berubah."

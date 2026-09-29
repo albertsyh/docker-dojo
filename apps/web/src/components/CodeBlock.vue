@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-const props = defineProps<{ code: string; label?: string }>()
+const props = defineProps<{ code: string; label?: string; diff?: boolean }>()
 const copied = ref(false)
 
 // Shell commands get a "$" prompt per line. It is drawn with CSS, so it is never copied.
@@ -15,6 +15,11 @@ const copied = ref(false)
 const isShell = computed(() => props.label === 'terminal' || props.label === 'inside the container')
 const shown = computed(() => (props.label ? codeLabel(props.label) : t('code.code')))
 const lines = computed(() => props.code.split('\n'))
+// A diff: removed lines in <del>, added in <ins>. The -, + marker is drawn with CSS, like the prompt.
+// There is nothing sensible to copy, so a diff has no copy button.
+const diffLines = computed(() =>
+  lines.value.map((line) => ({ tag: line[0] === '-' ? 'del' : line[0] === '+' ? 'ins' : 'span', text: line.slice(1) })),
+)
 let timer: number | undefined
 
 async function copy() {
@@ -28,15 +33,15 @@ onBeforeUnmount(() => clearTimeout(timer))
 </script>
 
 <template>
-  <div class="code" :class="{ shell: isShell }">
+  <div class="code" :class="{ shell: isShell, diff }">
     <div class="code-head">
-      <span class="code-label"><AppIcon :name="isShell ? 'terminal' : 'file'" />{{ shown }}</span>
-      <button class="copy swap" type="button" @click="copy" :aria-label="copied ? t('code.copied') : t('code.copyLabel', { label: shown })">
+      <span class="code-label"><AppIcon :name="isShell ? 'terminal' : 'file'" />{{ shown }}<template v-if="diff"> · {{ t('code.change') }}</template></span>
+      <button v-if="!diff" class="copy swap" type="button" @click="copy" :aria-label="copied ? t('code.copied') : t('code.copyLabel', { label: shown })">
         <span :aria-hidden="copied"><AppIcon name="copy" />{{ t('code.copy') }}</span>
         <span :aria-hidden="!copied"><AppIcon name="check" />{{ t('code.copied') }}</span>
       </button>
     </div>
-    <pre><code><template v-if="isShell"><span v-for="(line, i) in lines" :key="i" class="line">{{ line }}</span></template><template v-else>{{ code }}</template></code></pre>
+    <pre><code><template v-if="diff"><component :is="line.tag" v-for="(line, i) in diffLines" :key="i" class="line">{{ line.text }}</component></template><template v-else-if="isShell"><span v-for="(line, i) in lines" :key="i" class="line">{{ line }}</span></template><template v-else>{{ code }}</template></code></pre>
   </div>
 </template>
 
@@ -62,4 +67,14 @@ pre { margin: 0; padding: var(--space-3) var(--space-4) var(--space-4); overflow
 pre code { background: none; padding: 0; border-radius: 0; color: var(--code-text); font-size: var(--text-sm); line-height: 1.7; white-space: pre; }
 .line { display: block; }
 .line::before { content: '$ '; color: var(--code-prompt); user-select: none; }
+/* Same height with or without the copy button. */
+.code-head { min-height: calc(1.9rem + 2 * var(--space-1) + 1px); }
+/* Each diff line's colour runs the full width of the block. */
+.diff pre code { display: block; min-width: fit-content; }
+.diff .line { margin-inline: calc(-1 * var(--space-4)); padding-inline: var(--space-4); text-decoration: none; }
+.diff .line::before { content: '  '; }
+.diff del.line { background: var(--code-del); }
+.diff del.line::before { content: '- '; color: var(--code-del-mark); }
+.diff ins.line { background: var(--code-add); }
+.diff ins.line::before { content: '+ '; color: var(--code-add-mark); }
 </style>

@@ -74,7 +74,13 @@
       {
         "text": "Start nginx again.",
         "code": "docker run -d --name web -p 8080:80 nginx:alpine",
-        "label": "terminal"
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "If this says the name \"/web\" is already in use, the web container from the last exercise is still there. Run docker start web to make sure it is running, then go on to step 2."
+          }
+        ]
       },
       {
         "text": "Open an interactive shell inside it.",
@@ -140,7 +146,13 @@
         "label": "terminal"
       },
       {
-        "text": "Change the heading in index.html, then rebuild as 1.1. Notice the FROM layer comes from cache. Only the COPY layer is rebuilt.",
+        "text": "Change the heading in index.html to \"Built with my own Dockerfile, version 1.1\" and save.",
+        "code": " <!doctype html>\n-<h1>Built with my own Dockerfile</h1>\n+<h1>Built with my own Dockerfile, version 1.1</h1>",
+        "label": "index.html",
+        "diff": true
+      },
+      {
+        "text": "Rebuild as 1.1 and run it, then refresh http://localhost:8081 to see the new heading. Notice the FROM layer comes from cache. Only the COPY layer is rebuilt.",
         "code": "docker build -t my-site:1.1 .\ndocker rm -f my-site\ndocker run -d --name my-site -p 8081:80 my-site:1.1",
         "label": "terminal"
       },
@@ -160,7 +172,7 @@
         },
         {
           "path": "my-site/index.html",
-          "note": "step 2"
+          "note": "step 2, edited in step 6"
         },
         {
           "path": "my-site/Dockerfile",
@@ -280,7 +292,13 @@
         "label": "terminal"
       },
       {
-        "text": "Change \"Hello\" to \"Hi\" in greet.js, save, and build again. npm install runs again, although package.json did not change. COPY . . saw a changed file, so every step after it rebuilt.",
+        "text": "Change \"Hello\" to \"Hi\" in greet.js and save.",
+        "code": " export function greet(name) {\n-  return `Hello, ${name}!`\n+  return `Hi, ${name}!`\n }",
+        "label": "greet.js",
+        "diff": true
+      },
+      {
+        "text": "Build again. npm install runs again, although package.json did not change. COPY . . saw a changed file, so every step after it rebuilt.",
         "code": "docker build -t node-app .",
         "label": "terminal"
       },
@@ -290,9 +308,31 @@
         "label": "Dockerfile"
       },
       {
-        "text": "Build once (it installs again, because the steps changed). Then change \"Hi\" to \"Hey\" in greet.js and build again. This time npm install says CACHED and only the last COPY runs.",
-        "code": "docker build -t node-app .\ndocker build -t node-app .",
+        "text": "Build once. It installs again, because the steps changed.",
+        "code": "docker build -t node-app .",
         "label": "terminal"
+      },
+      {
+        "text": "Now change \"Hi\" to \"Hey\" in greet.js and save.",
+        "code": " export function greet(name) {\n-  return `Hi, ${name}!`\n+  return `Hey, ${name}!`\n }",
+        "label": "greet.js",
+        "diff": true
+      },
+      {
+        "text": "Build again. This time npm install says CACHED and only the last COPY runs.",
+        "code": "docker build -t node-app .",
+        "label": "terminal"
+      },
+      {
+        "text": "List your recent builds, newest first, with how long each one took. The one you just ran took under a second. The ones below it, where npm install ran again, took a few seconds or more.",
+        "code": "docker buildx history ls",
+        "label": "terminal",
+        "notes": [
+          {
+            "for": "Tip",
+            "text": "Older versions of Docker do not have this command and show an error. Read the time on the RUN npm install line of each build instead. Docker Desktop also lists your builds and their times under Builds, in the left sidebar."
+          }
+        ]
       },
       {
         "text": "Run it and open http://localhost:8083. Then remove the container.",
@@ -328,7 +368,7 @@
         },
         {
           "path": "node-app/Dockerfile",
-          "note": "step 5, reordered in step 8"
+          "note": "step 5, reordered in step 9"
         }
       ]
     }
@@ -382,9 +422,15 @@
         "label": "Dockerfile"
       },
       {
-        "text": "Build it and read the image history. The key is right there, and anyone who pulls the image can read it the same way. Pass secrets in when the container starts, never in the Dockerfile. Delete the ENV line again before you go on.",
+        "text": "Build it and read the image history. The key is right there, and anyone who pulls the image can read it the same way. Pass secrets in when the container starts, never in the Dockerfile.",
         "code": "docker build -t node-app .\ndocker history node-app",
         "label": "terminal"
+      },
+      {
+        "text": "Delete the ENV line again before you go on.",
+        "code": " FROM node:24-alpine\n WORKDIR /app\n COPY package.json ./\n RUN npm install\n COPY . .\n-ENV API_KEY=do-not-ship-me\n CMD [\"node\", \"server.js\"]",
+        "label": "Dockerfile",
+        "diff": true
       }
     ],
     "expected": "The second listing has no .env and no debug.log. docker history shows ENV API_KEY=do-not-ship-me.",
@@ -408,7 +454,8 @@
           "note": "step 4"
         },
         {
-          "path": "node-app/Dockerfile"
+          "path": "node-app/Dockerfile",
+          "note": "secret added in step 6, removed in step 8"
         },
         {
           "path": "node-app/greet.js"
@@ -429,7 +476,13 @@
     "summary": "One Dockerfile, two targets: a test stage with every tool, and a lean production stage that runs as a normal user.",
     "steps": [
       {
-        "text": "Stay in node-app. Set greet.js back to \"Hello\", then add a test for it. node --test finds files ending in .test.js.",
+        "text": "Stay in node-app. Set greet.js back to \"Hello\".",
+        "code": " export function greet(name) {\n-  return `Hey, ${name}!`\n+  return `Hello, ${name}!`\n }",
+        "label": "greet.js",
+        "diff": true
+      },
+      {
+        "text": "Add a test for it. node --test finds files ending in .test.js.",
         "code": "import { test } from 'node:test'\nimport assert from 'node:assert/strict'\nimport { greet } from './greet.js'\n\ntest('greets by name', () => {\n  assert.equal(greet('Dojo'), 'Hello, Dojo!')\n})",
         "label": "greet.test.js"
       },
@@ -444,9 +497,21 @@
         "label": "terminal"
       },
       {
-        "text": "Break the test: change \"Hello\" to \"Helo\" in greet.js and build the test stage again. The build fails and shows expected and actual. Change it back afterwards.",
+        "text": "Break the test: change \"Hello\" to \"Helo\" in greet.js and save.",
+        "code": " export function greet(name) {\n-  return `Hello, ${name}!`\n+  return `Helo, ${name}!`\n }",
+        "label": "greet.js",
+        "diff": true
+      },
+      {
+        "text": "Build the test stage again. The build fails and shows expected and actual.",
         "code": "docker build --target test -t node-app:test .",
         "label": "terminal"
+      },
+      {
+        "text": "Change it back to \"Hello\".",
+        "code": " export function greet(name) {\n-  return `Helo, ${name}!`\n+  return `Hello, ${name}!`\n }",
+        "label": "greet.js",
+        "diff": true
       },
       {
         "text": "Build the production image. With no --target, Docker builds the last stage, and skips stages it does not need, like test.",
@@ -479,15 +544,15 @@
         },
         {
           "path": "node-app/greet.test.js",
-          "note": "step 1"
+          "note": "step 2"
         },
         {
           "path": "node-app/Dockerfile",
-          "note": "step 2, now three stages"
+          "note": "step 3, now three stages"
         },
         {
           "path": "node-app/greet.js",
-          "note": "broken and fixed in step 4"
+          "note": "set back in step 1, broken in step 5, fixed in step 7"
         },
         {
           "path": "node-app/.dockerignore"

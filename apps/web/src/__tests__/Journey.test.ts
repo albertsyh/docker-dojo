@@ -1,5 +1,6 @@
-import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { enableAutoUnmount, flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { api } from '../api'
 import ExercisesView from '../views/ExercisesView.vue'
 import ExerciseView from '../views/ExerciseView.vue'
 import TrackView from '../views/TrackView.vue'
@@ -7,6 +8,8 @@ import { state } from '../store'
 import { content } from './content'
 
 const stubs = { RouterLink: RouterLinkStub }
+// Views left mounted would keep sending presence when a later test changes state.progress.
+enableAutoUnmount(afterEach)
 const links = (wrapper: ReturnType<typeof mount>) => wrapper.findAllComponents(RouterLinkStub).map((l) => String(l.props('to')))
 
 describe('take-home tracks in the journey', () => {
@@ -64,5 +67,34 @@ describe('take-home tracks in the journey', () => {
     expect(wrapper.findAll('.stepper .seg')).toHaveLength(2)
     expect(links(wrapper)).toContain('/quiz')
     expect(links(wrapper)).not.toContain('/take-home/node/quiz')
+  })
+})
+
+describe('an embedded exercise (/exercises/<id>?embed)', () => {
+  beforeEach(() => {
+    state.content = structuredClone(content)
+    state.content.exercises[0].files = { entries: [{ path: 'my-site/Dockerfile' }] }
+  })
+
+  it('shows only the steps, without joining', async () => {
+    state.progress = null
+    const wrapper = mount(ExerciseView, { props: { id: 'hello-docker', embed: true }, global: { stubs } })
+    await flushPromises()
+
+    expect(wrapper.find('.steps').text()).toContain('Run it.')
+    expect(wrapper.find('.steps').text()).toContain('docker version')
+    expect(wrapper.find('.gate').exists()).toBe(false)
+    for (const gone of ['.intro', '.side', '.expected', '.actions']) expect(wrapper.find(gone).exists()).toBe(false)
+    expect(links(wrapper)).toEqual([])
+  })
+
+  it("doesn't count a joined student as here now", async () => {
+    const presence = vi.spyOn(api, 'presence').mockResolvedValue({ exercise: null })
+    state.progress = { id: 'brave-otter-abc123', completed: [], quiz: null, trackQuizzes: {} }
+    mount(ExerciseView, { props: { id: 'hello-docker', embed: true }, global: { stubs } })
+    await flushPromises()
+
+    expect(presence).not.toHaveBeenCalled()
+    presence.mockRestore()
   })
 })

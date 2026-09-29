@@ -71,6 +71,12 @@ and a production Dockerfile.
       "code": "docker build -t my-site:1.0 .",  // optional, copy-paste ready
       "label": "terminal",                    // "terminal" and "inside the container" get a $ prompt; else a filename
       "notes": [{ "for": "Windows", "text": "OS-specific gotcha" }]  // optional
+    },
+    {
+      "text": "Change \"Hello\" to \"Hi\" in greet.js and save.",
+      "code": " export function greet(name) {\n-  return `Hello, ${name}!`\n+  return `Hi, ${name}!`\n }",
+      "label": "greet.js",                    // the file it changes
+      "diff": true                            // optional: lines start with -, + or a space; drawn red/green, no copy button
     }
   ],
   "expected": "What success looks like, shown in the highlighted 'You should see' box.",
@@ -261,6 +267,8 @@ workflow and progress are in `docs/translation-ms.md`. Docker terms, commands an
   change width.
 - `?embed` on any route (used as `/live?embed`) hides the header, footer and pet, for an
   iframe on another site. On `/live` it also drops the quiz and shows exercise progress only.
+  On `/exercises/<id>` it shows only the steps, needs no participant, and doesn't
+  count toward "Here now" (the router passes `embed` to `ExerciseView` as a prop).
   `/live?exercise=<id>&count=N` narrows the list to N exercises (default 3) centred on that
   one, shifted in at either end, with the named one highlighted. A take-home id narrows that
   track's own list instead. An unknown id shows them all. `exercise` and `count` also work after

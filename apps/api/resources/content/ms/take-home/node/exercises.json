@@ -148,7 +148,7 @@
       }
     },
     "node-bind-mount": {
-      "source": "e8a5735d",
+      "source": "3a8d828f",
       "title": "Sunting kod tanpa build semula",
       "summary": "Bind mount meletakkan folder anda di dalam container, jadi suntingan muncul serta-merta. Ia juga boleh menyembunyikan apa yang dipasang oleh image di situ.",
       "steps": [
@@ -165,21 +165,10 @@
           "text": "Mulakannya semula dan buka http://localhost:8084. Ia berfungsi."
         },
         {
-          "text": "Sekarang sunting server.js: tukar \"Hello\" kepada \"Hi\" dan simpan. Muat semula halaman itu. Perubahan itu muncul tanpa build semula, kerana container membaca fail anda secara terus.",
-          "notes": [
-            {
-              "text": "Jika tiada apa-apa yang berubah, editor anda mungkin menyimpan dengan menulis fail baharu dan menukarnya, yang boleh terlepas daripada pemerhati fail. VS Code menyimpan di tempat yang sama dan berfungsi."
-            },
-            {
-              "text": "Suntingan mungkin tidak dikesan, dan semuanya lebih perlahan, apabila projek berada pada pemacu Windows. Simpan projek yang anda bind-mount di dalam WSL (contohnya \\\\wsl$\\Ubuntu\\home\\you), dan bukanya dalam VS Code dengan sambungan WSL."
-            },
-            {
-              "text": "Skrip shell yang disimpan dengan hujung baris Windows (CRLF) gagal dalam container Linux dengan mesej \"no such file or directory\" yang mengelirukan. Tambah fail .gitattributes dengan baris *.sh text eol=lf pada mana-mana repo yang mempunyainya."
-            },
-            {
-              "text": "Fail yang dicipta oleh container dalam bind mount dimiliki oleh pengguna container itu, selalunya root. Jika anda mendapat \"permission denied\" pada fail anda sendiri, tetapkan user: \"1000:1000\" (id -u dan id -g anda) pada service itu."
-            }
-          ]
+          "text": "Sekarang tukar \"Hello\" kepada \"Hi\" dalam server.js, dan simpan."
+        },
+        {
+          "text": "Muat semula halaman itu. Perubahan itu muncul tanpa build semula, kerana container membaca fail anda secara terus."
         },
         {
           "text": "Ingat perangkapnya: /app/node_modules kini ialah volume yang disimpan oleh Compose. Selepas anda mengubah package.json, build semula dan minta volume baharu dengan -V, atau pakej lama akan kekal. Hentikannya apabila anda selesai."

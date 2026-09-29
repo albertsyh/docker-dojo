@@ -49,12 +49,17 @@
       "expected": "Halaman sambutan nginx di localhost:8080, dan satu baris permintaan GET dalam docker logs."
     },
     "inside-a-container": {
-      "source": "9f8bed8b",
+      "source": "e63b3972",
       "title": "Lihat ke dalam container",
       "summary": "Buka shell di dalam container yang sedang berjalan dan ubah satu fail, kemudian lihat perubahan itu hilang bersama container.",
       "steps": [
         {
-          "text": "Mulakan nginx sekali lagi."
+          "text": "Mulakan nginx sekali lagi.",
+          "notes": [
+            {
+              "text": "Jika arahan ini mengatakan nama \"/web\" sudah digunakan, container web dari latihan sebelumnya masih ada. Jalankan docker start web untuk memastikan ia sedang berjalan, kemudian teruskan ke langkah 2."
+            }
+          ]
         },
         {
           "text": "Buka shell interaktif di dalamnya."
@@ -75,7 +80,7 @@
       "expected": "Tajuk yang anda tulis muncul, kemudian hilang selepas container dicipta semula."
     },
     "build-an-image": {
-      "source": "aec005f1",
+      "source": "56402cfc",
       "title": "Build image anda sendiri",
       "summary": "Tulis Dockerfile, build image daripadanya, dan jalankannya.",
       "steps": [
@@ -100,7 +105,10 @@
           "text": "Jalankan image anda dan buka http://localhost:8081."
         },
         {
-          "text": "Ubah tajuk dalam index.html, kemudian build semula sebagai 1.1. Perhatikan layer FROM datang dari cache. Hanya layer COPY yang dibina semula."
+          "text": "Tukar tajuk dalam index.html kepada \"Built with my own Dockerfile, version 1.1\", dan simpan."
+        },
+        {
+          "text": "Build semula sebagai 1.1 dan jalankannya, kemudian muat semula http://localhost:8081 untuk melihat tajuk baharu. Perhatikan layer FROM datang dari cache. Hanya layer COPY yang dibina semula."
         },
         {
           "text": "Bersihkan container itu (simpan image buat masa ini)."
@@ -114,7 +122,7 @@
             "note": "folder kerja anda, langkah 1"
           },
           {
-            "note": "langkah 2"
+            "note": "langkah 2, disunting dalam langkah 6"
           },
           {
             "note": "langkah 3, tanpa sambungan"
@@ -171,7 +179,7 @@
       }
     },
     "layer-cache": {
-      "source": "3838d56f",
+      "source": "e603f588",
       "title": "Cache dependency anda",
       "summary": "Susun Dockerfile Node.js supaya npm install hanya berjalan semula apabila dependency anda berubah, bukan pada setiap perubahan kod.",
       "steps": [
@@ -188,24 +196,36 @@
           "text": "Cipta server.js. Ia menjawab setiap permintaan dengan ucapan dalam JSON."
         },
         {
-          "text": "Cipta Dockerfile dengan cara mudah: salin semuanya, kemudian pasang. Anda tidak memerlukan Node.js di komputer anda: npm berjalan di dalam build.",
-          "notes": [
-            {
-              "text": "Simpan sebagai Dockerfile, bukan Dockerfile.txt (pilih \"All files\" dalam Notepad), atau gunakan VS Code."
-            }
-          ]
+          "text": "Cipta Dockerfile dengan cara mudah: salin semuanya, kemudian pasang. Anda tidak memerlukan Node.js di komputer anda: npm berjalan di dalam build."
         },
         {
           "text": "Build image itu. Langkah npm install memuat turun kira-kira 70 pakej."
         },
         {
-          "text": "Tukar \"Hello\" kepada \"Hi\" dalam greet.js, simpan, dan build semula. npm install berjalan semula, walaupun package.json tidak berubah. COPY . . nampak satu fail berubah, jadi setiap langkah selepasnya dibina semula."
+          "text": "Tukar \"Hello\" kepada \"Hi\" dalam greet.js, dan simpan."
+        },
+        {
+          "text": "Build semula. npm install berjalan semula, walaupun package.json tidak berubah. COPY . . nampak satu fail berubah, jadi setiap langkah selepasnya dibina semula."
         },
         {
           "text": "Betulkannya: salin package.json sahaja dahulu, pasang, kemudian salin kod yang selebihnya."
         },
         {
-          "text": "Build sekali (ia memasang semula, kerana langkah-langkahnya berubah). Kemudian tukar \"Hi\" kepada \"Hey\" dalam greet.js dan build semula. Kali ini npm install menunjukkan CACHED dan hanya COPY yang terakhir berjalan."
+          "text": "Build sekali. Ia memasang semula, kerana langkah-langkahnya berubah."
+        },
+        {
+          "text": "Sekarang tukar \"Hi\" kepada \"Hey\" dalam greet.js, dan simpan."
+        },
+        {
+          "text": "Build semula. Kali ini npm install menunjukkan CACHED dan hanya COPY yang terakhir berjalan."
+        },
+        {
+          "text": "Senaraikan build terkini anda, yang terbaharu dahulu, bersama masa yang diambil oleh setiap satu. Build yang baru anda jalankan mengambil kurang daripada satu saat. Build di bawahnya, di mana npm install berjalan semula, mengambil beberapa saat atau lebih.",
+          "notes": [
+            {
+              "text": "Versi Docker yang lebih lama tiada arahan ini dan akan menunjukkan ralat. Sebaliknya, baca masa pada baris RUN npm install bagi setiap build. Docker Desktop juga menyenaraikan build anda dan masanya di bawah Builds, di bar sisi kiri."
+            }
+          ]
         },
         {
           "text": "Jalankannya dan buka http://localhost:8083. Kemudian buang container itu.",
@@ -233,13 +253,13 @@
             "note": "langkah 4"
           },
           {
-            "note": "langkah 5, disusun semula dalam langkah 8"
+            "note": "langkah 5, disusun semula dalam langkah 9"
           }
         ]
       }
     },
     "dockerignore": {
-      "source": "9b847079",
+      "source": "dae0e5b7",
       "title": "Asingkan fail dengan .dockerignore",
       "summary": "COPY . . menyalin semuanya, termasuk rahsia. Gunakan .dockerignore untuk menentukan apa yang sampai ke build.",
       "steps": [
@@ -272,7 +292,10 @@
           "text": ".dockerignore tidak dapat membantu jika rahsia ditulis dalam Dockerfile itu sendiri. Tambah baris ENV dengan kunci olok-olok, betul-betul di atas CMD."
         },
         {
-          "text": "Build image itu dan baca sejarah image. Kunci itu ada di situ, dan sesiapa yang pull image itu boleh membacanya dengan cara yang sama. Hantar rahsia semasa container bermula, jangan sekali-kali dalam Dockerfile. Padam semula baris ENV itu sebelum anda meneruskan."
+          "text": "Build image itu dan baca sejarah image. Kunci itu ada di situ, dan sesiapa yang pull image itu boleh membacanya dengan cara yang sama. Hantar rahsia semasa container bermula, jangan sekali-kali dalam Dockerfile."
+        },
+        {
+          "text": "Padam semula baris ENV itu sebelum anda meneruskan."
         }
       ],
       "expected": "Senarai kedua tiada .env dan tiada debug.log. docker history menunjukkan ENV API_KEY=do-not-ship-me.",
@@ -291,7 +314,9 @@
           {
             "note": "langkah 4"
           },
-          [],
+          {
+            "note": "rahsia ditambah dalam langkah 6, dibuang dalam langkah 8"
+          },
           [],
           [],
           []
@@ -299,12 +324,15 @@
       }
     },
     "multi-stage": {
-      "source": "95dcce7f",
+      "source": "0799f566",
       "title": "Uji dan hantar dengan multi-stage build",
       "summary": "Satu Dockerfile, dua sasaran: stage ujian dengan semua alat, dan stage production yang ramping yang berjalan sebagai pengguna biasa.",
       "steps": [
         {
-          "text": "Kekal dalam node-app. Kembalikan greet.js kepada \"Hello\", kemudian tambah ujian untuknya. node --test mencari fail yang berakhir dengan .test.js."
+          "text": "Kekal dalam node-app. Kembalikan greet.js kepada \"Hello\"."
+        },
+        {
+          "text": "Tambah ujian untuknya. node --test mencari fail yang berakhir dengan .test.js."
         },
         {
           "text": "Gantikan Dockerfile dengan tiga stage. Setiap FROM memulakan satu stage, dan AS memberinya nama. test dan production kedua-duanya bermula daripada base."
@@ -313,7 +341,13 @@
           "text": "Build stage test sahaja dengan --target. Ujian berjalan semasa build, dan build berhenti jika mana-mana ujian gagal."
         },
         {
-          "text": "Rosakkan ujian itu: tukar \"Hello\" kepada \"Helo\" dalam greet.js dan build stage test sekali lagi. Build gagal dan menunjukkan expected dan actual. Tukar semula selepas itu."
+          "text": "Rosakkan ujian itu: tukar \"Hello\" kepada \"Helo\" dalam greet.js, dan simpan."
+        },
+        {
+          "text": "Build stage test sekali lagi. Build gagal dan menunjukkan expected dan actual."
+        },
+        {
+          "text": "Tukar semula kepada \"Hello\"."
         },
         {
           "text": "Build image production. Tanpa --target, Docker membina stage terakhir, dan melangkau stage yang tidak diperlukannya, seperti test."
@@ -336,13 +370,13 @@
             "note": "dari latihan-latihan sebelumnya"
           },
           {
-            "note": "langkah 1"
+            "note": "langkah 2"
           },
           {
-            "note": "langkah 2, kini tiga stage"
+            "note": "langkah 3, kini tiga stage"
           },
           {
-            "note": "dirosakkan dan dibetulkan dalam langkah 4"
+            "note": "dikembalikan dalam langkah 1, dirosakkan dalam langkah 5, dibetulkan dalam langkah 7"
           },
           [],
           [],

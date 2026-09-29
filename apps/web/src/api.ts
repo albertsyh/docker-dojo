@@ -5,6 +5,8 @@ export type Step = {
   text: string
   code?: string
   label?: string
+  /** code is a change to the file named in label: each line starts with -, + or a space. */
+  diff?: boolean
   /** Platform-specific gotchas, e.g. { for: 'Windows', text: '…' }. */
   notes?: { for: string; text: string }[]
 }

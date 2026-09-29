@@ -147,7 +147,7 @@
       "expected": "Tanpa --host, log menyebut 127.0.0.1:8000 dan halaman tidak dimuatkan. Dengan CMD image itu sendiri ia dimuatkan, dan docker ps menunjukkan 127.0.0.1:8085->8000/tcp."
     },
     "laravel-bind-mount": {
-      "source": "24ed0833",
+      "source": "8245c3b8",
       "title": "Sunting kod tanpa build semula",
       "summary": "Bind mount meletakkan folder anda di dalam container, jadi suntingan muncul serta-merta. Ia juga boleh menyembunyikan folder vendor yang dipasang oleh image, dan itulah yang dialami oleh rakan sepasukan yang baru membuat clone.",
       "steps": [
@@ -178,7 +178,10 @@
           ]
         },
         {
-          "text": "Sekarang bahagian yang menarik. Tambah route pada routes/web.php, simpan, dan buka http://localhost:8085/hello. Ia berfungsi tanpa build semula atau mula semula. Tukar mesejnya, simpan, dan muat semula: mesej baharu dipaparkan."
+          "text": "Sekarang bahagian yang menarik. Tambah route pada routes/web.php, simpan, dan buka http://localhost:8085/hello. Ia berfungsi tanpa build semula atau mula semula."
+        },
+        {
+          "text": "Tukar mesejnya kepada \"Hi from laravel-shop\", simpan, dan muat semula: mesej baharu dipaparkan."
         },
         {
           "text": "Ingat kelemahannya: /app/vendor kini volume yang disimpan oleh Compose. Selepas anda mengubah composer.json, build semula dan minta volume baharu dengan -V, jika tidak pakej lama kekal. Hentikannya, dan kembalikan folder vendor anda."
@@ -192,10 +195,10 @@
             "note": "langkah 1, satu baris ditambah dalam langkah 4"
           },
           {
-            "note": "langkah 6"
+            "note": "langkah 6, disunting dalam langkah 7"
           },
           {
-            "note": "dinamakan semula kepada vendor-off dalam langkah 2, dikembalikan dalam langkah 7"
+            "note": "dinamakan semula kepada vendor-off dalam langkah 2, dikembalikan dalam langkah 8"
           },
           []
         ]

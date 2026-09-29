@@ -91,6 +91,29 @@ class ContentTest extends TestCase
         }
     }
 
+    /**
+     * A step with "diff": true shows a change to one file: its label is the file name, and every
+     * line of its code starts with "-" (removed), "+" (added) or a space (unchanged).
+     */
+    public function test_diff_steps_are_well_formed(): void
+    {
+        foreach ($this->allExercises() as $e) {
+            foreach ($e['steps'] as $i => $step) {
+                if (! array_key_exists('diff', $step)) {
+                    continue;
+                }
+                $where = "{$e['id']} step ".($i + 1);
+                $this->assertTrue($step['diff'], "$where: diff is true or left out.");
+                $this->assertNotContains($step['label'] ?? null, [null, 'terminal', 'inside the container'], "$where: a diff's label is the file it changes.");
+                $lines = explode("\n", $step['code'] ?? '');
+                foreach ($lines as $line) {
+                    $this->assertMatchesRegularExpression('/^[-+ ]/', $line, "$where: every diff line starts with -, + or a space.");
+                }
+                $this->assertNotEmpty(preg_grep('/^[-+]/', $lines), "$where: a diff changes at least one line.");
+            }
+        }
+    }
+
     public function test_the_workshop_fits_its_time_budget(): void
     {
         $minutes = array_sum(array_column(Content::exercises(), 'minutes'));

@@ -130,6 +130,7 @@ const ms: typeof en = {
     terminal: 'terminal',
     insideContainer: 'di dalam container',
     excerpt: 'petikan',
+    change: 'perubahan',
     copy: 'Salin',
     copied: 'Disalin',
     copyLabel: 'Salin {label} ke papan klip',

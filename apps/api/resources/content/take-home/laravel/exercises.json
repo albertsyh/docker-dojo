@@ -251,9 +251,15 @@
         ]
       },
       {
-        "text": "Now the good part. Add a route to routes/web.php, save, and open http://localhost:8085/hello. It works without a rebuild or a restart. Change the message, save, and reload: the new one shows.",
+        "text": "Now the good part. Add a route to routes/web.php, save, and open http://localhost:8085/hello. It works without a rebuild or a restart.",
         "code": "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::get('/', function () {\n    return view('welcome');\n});\n\nRoute::get('/hello', fn () => ['message' => 'Hello from laravel-shop']);",
         "label": "routes/web.php"
+      },
+      {
+        "text": "Change the message to \"Hi from laravel-shop\", save, and reload: the new one shows.",
+        "code": "-Route::get('/hello', fn () => ['message' => 'Hello from laravel-shop']);\n+Route::get('/hello', fn () => ['message' => 'Hi from laravel-shop']);",
+        "label": "routes/web.php",
+        "diff": true
       },
       {
         "text": "Remember the catch: /app/vendor is now a volume that Compose keeps. After you change composer.json, rebuild and ask for fresh volumes with -V, or the old packages stay. Stop it, and put your vendor folder back.",
@@ -271,11 +277,11 @@
         },
         {
           "path": "takehome-laravel/routes/web.php",
-          "note": "step 6"
+          "note": "step 6, edited in step 7"
         },
         {
           "path": "takehome-laravel/vendor/",
-          "note": "renamed to vendor-off in step 2, back in step 7"
+          "note": "renamed to vendor-off in step 2, back in step 8"
         },
         {
           "path": "takehome-laravel/Dockerfile"

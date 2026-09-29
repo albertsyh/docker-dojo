@@ -128,6 +128,7 @@ export default {
     terminal: 'terminal',
     insideContainer: 'inside the container',
     excerpt: 'excerpt',
+    change: 'change',
     copy: 'Copy',
     copied: 'Copied',
     copyLabel: 'Copy {label} to clipboard',

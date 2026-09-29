@@ -11,7 +11,8 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-const props = defineProps<{ id: string }>()
+// embed (/exercises/<id>?embed): the steps only, readable without joining.
+const props = defineProps<{ id: string; embed?: boolean }>()
 
 // Stepper, numbering and Previous/Next stay inside the exercise's own track.
 const place = computed(() => trackOf(props.id))
@@ -24,8 +25,8 @@ const prev = computed(() => list.value[index.value - 1])
 const next = computed(() => list.value[index.value + 1])
 const isDone = computed(() => completed.value.has(props.id))
 
-// Counts you on this exercise on the Live page while the page is open.
-usePresence(() => (state.progress && exercise.value ? props.id : null))
+// Counts you on this exercise on the Live page while the page is open. An embed doesn't count.
+usePresence(() => (state.progress && exercise.value && !props.embed ? props.id : null))
 
 const busy = ref(false)
 const error = ref('')
@@ -44,13 +45,13 @@ async function toggle() {
 </script>
 
 <template>
-  <JoinGate v-if="!state.progress" />
+  <JoinGate v-if="!state.progress && !embed" />
   <div v-else-if="!exercise" class="callout">
     <AppIcon name="info" />
-    <span>{{ t('exercise.missing') }} <RouterLink to="/exercises">{{ t('exercise.backToList') }}</RouterLink></span>
+    <span>{{ t('exercise.missing') }} <RouterLink v-if="!embed" to="/exercises">{{ t('exercise.backToList') }}</RouterLink></span>
   </div>
-  <article v-else class="layout" :class="{ 'has-files': exercise.files }">
-    <header class="intro">
+  <article v-else class="layout" :class="{ 'has-files': exercise.files && !embed }">
+    <header v-if="!embed" class="intro">
       <RouterLink :to="backTo" class="back"><AppIcon name="arrow-left" />{{ track ? track.title : t('common.allExercises') }}</RouterLink>
       <!-- Where you are in the course: one segment per exercise, each a shortcut. -->
       <nav class="stepper" :aria-label="t('exercise.stepper')">
@@ -72,7 +73,7 @@ async function toggle() {
       <p class="lead">{{ exercise.summary }}</p>
     </header>
 
-    <FilesPanel v-if="exercise.files" :files="exercise.files" class="side" />
+    <FilesPanel v-if="exercise.files && !embed" :files="exercise.files" class="side" />
 
     <div class="content">
       <ol class="steps">
@@ -84,13 +85,13 @@ async function toggle() {
               <span class="tag">{{ noteFor(note.for) }}</span>
               <span>{{ note.text }}</span>
             </p>
-            <CodeBlock v-if="step.code" :code="step.code" :label="step.label" />
+            <CodeBlock v-if="step.code" :code="step.code" :label="step.label" :diff="step.diff" />
           </div>
         </li>
       </ol>
 
       <!-- Styled like a highlighted line on a printed handout. -->
-      <section class="expected" aria-labelledby="expected-title">
+      <section v-if="!embed" class="expected" aria-labelledby="expected-title">
         <AppIcon name="eye" />
         <div>
           <h2 id="expected-title">{{ t('exercise.expected') }}</h2>
@@ -98,7 +99,7 @@ async function toggle() {
         </div>
       </section>
 
-      <div class="actions">
+      <div v-if="!embed" class="actions">
         <button class="btn swap big" :class="isDone ? 'done' : 'primary'" type="button" :disabled="busy" :aria-pressed="isDone" @click="toggle">
           <span :aria-hidden="isDone"><AppIcon name="check" />{{ t('exercise.markDone') }}</span>
           <span :aria-hidden="!isDone"><AppIcon name="check" />{{ t('exercise.doneUndo') }}</span>

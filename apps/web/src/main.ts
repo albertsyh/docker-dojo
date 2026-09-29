@@ -22,7 +22,8 @@ const router = createRouter({
   routes: [
     { path: '/', component: HomeView },
     { path: '/exercises', component: ExercisesView },
-    { path: '/exercises/:id', component: ExerciseView, props: true },
+    // ?embed shows only the instructions, for an iframe on another site.
+    { path: '/exercises/:id', component: ExerciseView, props: (r) => ({ id: r.params.id, embed: r.query.embed !== undefined }) },
     { path: '/quiz', component: QuizView },
     { path: '/take-home/:track', component: TrackView, props: true },
     { path: '/take-home/:track/quiz', component: QuizView, props: true },

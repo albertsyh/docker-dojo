@@ -9,6 +9,7 @@ import { prefs, setLang } from '../prefs'
 import { state } from '../store'
 import QuizView from '../views/QuizView.vue'
 import TrackerView from '../views/TrackerView.vue'
+import ExerciseView from '../views/ExerciseView.vue'
 import { content } from './content'
 
 vi.mock('../realtime', () => ({
@@ -23,13 +24,17 @@ const Blank = defineComponent({ template: '<p>page</p>' })
 const malay: Content = {
   ...structuredClone(content),
   language: 'ms',
-  exercises: content.exercises.map((e) => ({ ...e, title: `MS ${e.title}` })),
+  exercises: content.exercises.map((e) => ({ ...e, title: `MS ${e.title}`, steps: e.steps.map((st) => ({ ...st, text: `MS ${st.text}` })) })),
 }
 
 async function renderApp(path = '/') {
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: ['/', '/exercises', '/quiz', '/chat', '/glossary', '/references', '/live'].map((p) => ({ path: p, component: Blank })),
+    routes: [
+      ...['/', '/exercises', '/quiz', '/chat', '/glossary', '/references', '/live'].map((p) => ({ path: p, component: Blank })),
+      // As in main.ts.
+      { path: '/exercises/:id', component: ExerciseView, props: (r) => ({ id: r.params.id, embed: r.query.embed !== undefined }) },
+    ],
   })
   router.push(path)
   await router.isReady()
@@ -95,6 +100,22 @@ describe('language', () => {
     await router.push('/live?embed')
     await flushPromises()
     expect(prefs.lang).toBe('en')
+    wrapper.unmount()
+  })
+
+  it('an embedded exercise follows lang= after the #, like the Live page', async () => {
+    // On a real first load prefs.ts reads lang= from the address bar, before the first request.
+    // Here the host page changes only the part after the #, which switches the frame without reloading it.
+    const { wrapper, router } = await renderApp('/exercises/hello-docker?embed')
+    await router.push('/exercises/hello-docker?embed#lang=ms')
+    await flushPromises()
+    expect(wrapper.find('.steps').text()).toContain('MS Run it.')
+
+    await router.push('/exercises/hello-docker?embed#lang=en')
+    await flushPromises()
+    expect(wrapper.find('.steps').text()).toContain('Run it.')
+    expect(wrapper.find('.steps').text()).not.toContain('MS ')
+    expect(localStorage.getItem('docker-dojo:lang')).toBeNull()
     wrapper.unmount()
   })
 
