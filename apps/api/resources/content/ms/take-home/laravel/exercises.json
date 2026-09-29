@@ -122,7 +122,7 @@
       }
     },
     "laravel-listen-address": {
-      "source": "7fc66f61",
+      "source": "e0c756ff",
       "title": "Siapa yang boleh menghubungi aplikasi anda",
       "summary": "php artisan serve mendengar pada 127.0.0.1 melainkan diberitahu sebaliknya, dan di dalam container tiada sesiapa yang boleh menghubunginya. Port yang di-publish juga boleh dihubungi oleh lebih ramai orang daripada yang anda sangka.",
       "steps": [
@@ -141,7 +141,10 @@
           ]
         },
         {
-          "text": "Buka http://localhost:8085 untuk menyemak ia berfungsi, kemudian buang container itu."
+          "text": "Buka http://localhost:8085 untuk menyemak ia berfungsi."
+        },
+        {
+          "text": "Buang container itu."
         }
       ],
       "expected": "Tanpa --host, log menyebut 127.0.0.1:8000 dan halaman tidak dimuatkan. Dengan CMD image itu sendiri ia dimuatkan, dan docker ps menunjukkan 127.0.0.1:8085->8000/tcp."

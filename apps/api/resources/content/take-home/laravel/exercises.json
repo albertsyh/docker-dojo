@@ -35,7 +35,8 @@
       {
         "text": "Build and run it, then open http://localhost:8085. You see the Laravel welcome page. The first build downloads the full php image, which is large.",
         "code": "docker build -t laravel-shop .\ndocker run -d --name laravel-shop -p 8085:8000 laravel-shop",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8085"
       },
       {
         "text": "Mistake one: \"latest\" is whatever PHP was newest on the day you built. Check which one you got and how big the image is. A teammate who builds next month can get a different PHP from the same Dockerfile.",
@@ -67,6 +68,7 @@
         "text": "Rebuild, and pass .env in when the container starts with --env-file. The welcome page still works, the history has no password, the image has no .env, and it is several hundred MB smaller.",
         "code": "docker rm -f laravel-shop\ndocker build -t laravel-shop .\ndocker run -d --name laravel-shop -p 8085:8000 --env-file .env laravel-shop\ndocker history laravel-shop\ndocker run --rm laravel-shop ls -a\ndocker image ls laravel-shop",
         "label": "terminal",
+        "open": "http://localhost:8085",
         "notes": [
           {
             "for": "Tip",
@@ -112,7 +114,8 @@
       {
         "text": "Start the app again, and open http://localhost:8085 so you know it has started.",
         "code": "docker run -d --name laravel-shop -p 8085:8000 --env-file .env laravel-shop",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8085"
       },
       {
         "text": "Stop it and check how it ended. docker stop sends SIGTERM, waits a few seconds, and then kills the container. Exit code 137 means it was killed.",
@@ -179,7 +182,8 @@
       {
         "text": "Run the image with its command replaced by plain php artisan serve, without --host. Anything after the image name replaces the CMD. The log says the server is running, yet http://localhost:8085 fails.",
         "code": "docker run -d --init --name laravel-shop -p 8085:8000 --env-file .env laravel-shop php artisan serve --port=8000\ndocker logs laravel-shop",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8085"
       },
       {
         "text": "Why: the log says 127.0.0.1:8000. Inside a container, 127.0.0.1 is the container itself. Traffic from -p arrives on the container's network address instead, where nothing is listening. That is why the Dockerfile says --host=0.0.0.0, which means every address.",
@@ -198,7 +202,11 @@
         ]
       },
       {
-        "text": "Open http://localhost:8085 to check it works, then remove the container.",
+        "text": "Open http://localhost:8085 to check it works.",
+        "open": "http://localhost:8085"
+      },
+      {
+        "text": "Remove the container.",
         "code": "docker rm -f laravel-shop",
         "label": "terminal"
       }
@@ -235,6 +243,7 @@
         "text": "Start it again and open http://localhost:8085. It works, with no vendor folder on your machine.",
         "code": "docker compose up -d",
         "label": "terminal",
+        "open": "http://localhost:8085",
         "notes": [
           {
             "for": "Linux",
@@ -253,13 +262,15 @@
       {
         "text": "Now the good part. Add a route to routes/web.php, save, and open http://localhost:8085/hello. It works without a rebuild or a restart.",
         "code": "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::get('/', function () {\n    return view('welcome');\n});\n\nRoute::get('/hello', fn () => ['message' => 'Hello from laravel-shop']);",
-        "label": "routes/web.php"
+        "label": "routes/web.php",
+        "open": "http://localhost:8085/hello"
       },
       {
         "text": "Change the message to \"Hi from laravel-shop\", save, and reload: the new one shows.",
         "code": "-Route::get('/hello', fn () => ['message' => 'Hello from laravel-shop']);\n+Route::get('/hello', fn () => ['message' => 'Hi from laravel-shop']);",
         "label": "routes/web.php",
-        "diff": true
+        "diff": true,
+        "open": "http://localhost:8085/hello"
       },
       {
         "text": "Remember the catch: /app/vendor is now a volume that Compose keeps. After you change composer.json, rebuild and ask for fresh volumes with -V, or the old packages stay. Stop it, and put your vendor folder back.",
@@ -343,7 +354,8 @@
       {
         "text": "Give it a few seconds, then check. db shows (healthy), the app log shows the migrations running, and http://localhost:8085 works.",
         "code": "docker compose ps\ndocker compose logs app",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8085"
       },
       {
         "text": "Crash the app on purpose, then check again. The restart policy starts it again within seconds.",
@@ -439,6 +451,7 @@
         "text": "Start the stack with the new image. The page at http://localhost:8085 works as before, whoami answers www-data, and phpunit is not in the image.",
         "code": "docker compose up -d --build\ndocker compose exec app whoami\ndocker compose exec app ls vendor/phpunit",
         "label": "terminal",
+        "open": "http://localhost:8085",
         "notes": [
           {
             "for": "Tip",

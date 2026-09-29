@@ -179,7 +179,7 @@
       }
     },
     "layer-cache": {
-      "source": "e603f588",
+      "source": "56c4b973",
       "title": "Cache dependency anda",
       "summary": "Susun Dockerfile Node.js supaya npm install hanya berjalan semula apabila dependency anda berubah, bukan pada setiap perubahan kod.",
       "steps": [
@@ -228,12 +228,15 @@
           ]
         },
         {
-          "text": "Jalankannya dan buka http://localhost:8083. Kemudian buang container itu.",
+          "text": "Jalankannya dan buka http://localhost:8083.",
           "notes": [
             {
               "text": "Projek sebenar juga menyalin fail lock (package-lock.json) dalam COPY pertama itu dan menggunakan npm ci. PHP berfungsi dengan cara yang sama: salin composer.json dan composer.lock, jalankan composer install, kemudian salin kodnya."
             }
           ]
+        },
+        {
+          "text": "Buang container itu."
         }
       ],
       "expected": "Selepas dibetulkan, perubahan pada kod sahaja dibina semula dalam kira-kira satu saat, dengan RUN npm install ditandakan CACHED.",

@@ -115,6 +115,51 @@ class ContentTest extends TestCase
     }
 
     /**
+     * A step that sends the student to a page on their machine shows it as a browser block
+     * ("open"), so it is as hard to miss as a command. A URL in the text needs one.
+     */
+    public function test_steps_that_open_a_page_have_a_browser_block(): void
+    {
+        foreach ($this->allExercises() as $e) {
+            foreach ($e['steps'] as $i => $step) {
+                $where = "{$e['id']} step ".($i + 1);
+                preg_match_all('#http://localhost:\d+(?:/[\w/-]*)?#', $step['text'], $m);
+                if ($m[0] !== []) {
+                    $this->assertArrayHasKey('open', $step, "$where sends the student to {$m[0][0]}, so it needs \"open\".");
+                    $this->assertContains($step['open'], $m[0], "$where: open is one of the URLs in its text.");
+                }
+                if (array_key_exists('open', $step)) {
+                    $this->assertMatchesRegularExpression('#^http://localhost:\d+(/\S*)?$#', $step['open'], "$where: open is a page on the student's machine.");
+                }
+            }
+        }
+    }
+
+    /**
+     * Pasting a block that starts a container and then removes it removes it before the student
+     * can look at it. The removal goes in a step of its own.
+     */
+    public function test_no_code_block_starts_a_container_and_then_removes_it(): void
+    {
+        foreach ($this->allExercises() as $e) {
+            foreach ($e['steps'] as $i => $step) {
+                if (($step['label'] ?? null) !== 'terminal' || ! isset($step['code'])) {
+                    continue;
+                }
+                $started = false;
+                foreach (explode("\n", $step['code']) as $line) {
+                    if (preg_match('/^docker (run\b.*\s(-d|--detach)\b|start\b|compose up\b)/', $line)) {
+                        $started = true;
+                    } elseif ($started && preg_match('/^docker (rm|stop|kill|compose (down|stop|rm))\b/', $line)) {
+                        $this->fail("{$e['id']} step ".($i + 1).": \"$line\" removes what the block just started. Put it in its own step.");
+                    }
+                }
+            }
+        }
+        $this->addToAssertionCount(1);
+    }
+
+    /**
      * "requires" lists the exercises whose files this one carries on from. They must come earlier
      * in the same track, so the exercise page can link back to them.
      */

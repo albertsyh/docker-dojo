@@ -148,10 +148,10 @@ nav a {
   transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
 }
 nav a:hover { color: var(--ink); background: var(--panel); }
-/* Current page: ink text with a short green underline, not a filled pill. */
+/* Current page: ink text with a yellow ("you are here") marker along the header's bottom edge, not a filled pill. */
 nav a.router-link-active { color: var(--ink); }
 nav a.router-link-active::after {
-  content: ''; position: absolute; left: var(--space-3); right: var(--space-3); bottom: 2px; height: 2px; border-radius: 2px; background: var(--primary);
+  content: ''; position: absolute; left: var(--space-3); right: var(--space-3); bottom: 0; height: 3px; border-radius: 2px 2px 0 0; background: var(--highlight);
 }
 .unread {
   min-width: 1.25rem; height: 1.25rem; padding: 0 0.3rem; display: inline-grid; place-items: center; border-radius: 999px;
@@ -189,6 +189,23 @@ nav a.router-link-active::after {
 .nav-id { display: none; }
 /* The footer has the language switch; on small screens the menu has it too, since the footer is far down. */
 .nav-lang { display: none; }
+
+/* Wide screens: the links fill the header's height, so the current page's marker sits on the
+   header's bottom edge, right on top of the progress rail. The hover pill is drawn by ::before
+   so it keeps its size. */
+@media (min-width: 1024px) {
+  nav { align-self: stretch; margin-block: calc(-1 * var(--space-2)); }
+  nav a { isolation: isolate; }
+  nav a, nav a:hover { background: none; }
+  nav a::before {
+    content: ''; position: absolute; z-index: -1; left: 0; right: 0; top: 50%; translate: 0 -50%;
+    height: calc(1.6em + 2 * var(--space-2)); border-radius: var(--radius-md);
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  nav a:hover::before { background: var(--panel); }
+  /* The rail covers the header's border and 2px above it. */
+  .top:has(.rail) nav a.router-link-active::after { bottom: 2px; }
+}
 
 /* Six links, the brand and your tags fit one row from about 1024px. Below 1280px the id
    text goes first (your tags stay); it is on the start page and in the menu. */

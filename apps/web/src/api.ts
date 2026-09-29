@@ -7,6 +7,8 @@ export type Step = {
   label?: string
   /** code is a change to the file named in label: each line starts with -, + or a space. */
   diff?: boolean
+  /** A page on the student's machine to look at after the code runs, shown as a browser block. */
+  open?: string
   /** Platform-specific gotchas, e.g. { for: 'Windows', text: '…' }. */
   notes?: { for: string; text: string }[]
 }

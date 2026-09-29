@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
 import CodeBlock from '../components/CodeBlock.vue'
+import BrowserBlock from '../components/BrowserBlock.vue'
 import FilesPanel from '../components/FilesPanel.vue'
 import JoinGate from '../components/JoinGate.vue'
 import { usePresence } from '../presence'
@@ -126,6 +127,7 @@ async function toggle() {
               <span>{{ note.text }}</span>
             </p>
             <CodeBlock v-if="step.code" :code="step.code" :label="step.label" :diff="step.diff" />
+            <BrowserBlock v-if="step.open" :url="step.open" />
           </div>
         </li>
       </ol>

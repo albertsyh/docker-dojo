@@ -45,7 +45,8 @@
         "label": "terminal"
       },
       {
-        "text": "Open http://localhost:8080 in your browser. You should see \"Welcome to nginx!\"."
+        "text": "Open http://localhost:8080 in your browser. You should see \"Welcome to nginx!\".",
+        "open": "http://localhost:8080"
       },
       {
         "text": "List running containers. Note the PORTS column.",
@@ -93,7 +94,8 @@
         "label": "inside the container"
       },
       {
-        "text": "Refresh http://localhost:8080. Your edit is live."
+        "text": "Refresh http://localhost:8080. Your edit is live.",
+        "open": "http://localhost:8080"
       },
       {
         "text": "Now remove the container and start a fresh one. Your edit is gone: container filesystems are disposable.",
@@ -143,7 +145,8 @@
       {
         "text": "Run your image and open http://localhost:8081.",
         "code": "docker run -d --name my-site -p 8081:80 my-site:1.0",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8081"
       },
       {
         "text": "Change the heading in index.html to \"Built with my own Dockerfile, version 1.1\" and save.",
@@ -154,7 +157,8 @@
       {
         "text": "Rebuild as 1.1 and run it, then refresh http://localhost:8081 to see the new heading. Notice the FROM layer comes from cache. Only the COPY layer is rebuilt.",
         "code": "docker build -t my-site:1.1 .\ndocker rm -f my-site\ndocker run -d --name my-site -p 8081:80 my-site:1.1",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8081"
       },
       {
         "text": "Clean up the container (keep the images for now).",
@@ -335,15 +339,21 @@
         ]
       },
       {
-        "text": "Run it and open http://localhost:8083. Then remove the container.",
-        "code": "docker run -d --name node-app -p 8083:3000 node-app\ndocker rm -f node-app",
+        "text": "Run it and open http://localhost:8083.",
+        "code": "docker run -d --name node-app -p 8083:3000 node-app",
         "label": "terminal",
+        "open": "http://localhost:8083",
         "notes": [
           {
             "for": "Tip",
             "text": "Real projects also copy the lock file (package-lock.json) in that first COPY and use npm ci. PHP works the same way: copy composer.json and composer.lock, run composer install, then copy the code."
           }
         ]
+      },
+      {
+        "text": "Remove the container.",
+        "code": "docker rm -f node-app",
+        "label": "terminal"
       }
     ],
     "expected": "After the fix, a code-only change rebuilds in about a second, with RUN npm install marked CACHED.",
@@ -531,7 +541,8 @@
       {
         "text": "Run production and open http://localhost:8083. The response says \"mode\": \"production\". USER node means the app does not run as root.",
         "code": "docker run -d --name node-app -p 8083:3000 node-app:prod\ndocker exec node-app whoami",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8083"
       },
       {
         "text": "Remove the container. For a Laravel app the production stage runs composer install --no-dev --optimize-autoloader and php artisan optimize instead. This app's own api Dockerfile does exactly that, with a test stage that runs php artisan test.",
@@ -738,7 +749,8 @@
       {
         "text": "Now tell it where Redis is, by its container name, and run it in the background. Open http://localhost:8083 and refresh a few times: visits goes up. Your app container is talking to the Redis container.",
         "code": "docker run -d --name node-app --network dojo-net -e REDIS_URL=redis://cache:6379 -p 8083:3000 node-app:prod",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8083"
       },
       {
         "text": "Ask Redis for the counter directly. It shows the same number as your browser: both containers see the same data.",
@@ -820,7 +832,8 @@
         "label": "terminal"
       },
       {
-        "text": "Open http://localhost:8082 and log in: System \"PostgreSQL\", Server \"db\", Username \"dojo\", Password \"dojo\", Database \"dojo\". Create any table. The server name \"db\" works because Compose gives each service a DNS name."
+        "text": "Open http://localhost:8082 and log in: System \"PostgreSQL\", Server \"db\", Username \"dojo\", Password \"dojo\", Database \"dojo\". Create any table. The server name \"db\" works because Compose gives each service a DNS name.",
+        "open": "http://localhost:8082"
       },
       {
         "text": "Tear down and bring it back. Your table survives because it lives in the pgdata volume.",
@@ -873,7 +886,8 @@
         "label": "terminal"
       },
       {
-        "text": "Open http://localhost:8000 to see your own copy. When you're finished, run: docker compose down"
+        "text": "Open http://localhost:8000 to see your own copy. When you're finished, run: docker compose down",
+        "open": "http://localhost:8000"
       }
     ],
     "expected": "You can explain why the database has no ports: entry, and what service_healthy does.",

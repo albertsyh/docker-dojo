@@ -70,6 +70,8 @@ and a production Dockerfile.
       "text": "What to do and why, in one or two sentences.",
       "code": "docker build -t my-site:1.0 .",  // optional, copy-paste ready
       "label": "terminal",                    // "terminal" and "inside the container" get a $ prompt; else a filename
+      "open": "http://localhost:8081",        // optional: a page to look at, drawn as a browser block under the code.
+                                              // Required when the text names a localhost URL (a content test checks).
       "notes": [{ "for": "Windows", "text": "OS-specific gotcha" }]  // optional
     },
     {
@@ -114,6 +116,8 @@ and a production Dockerfile.
   re-running an exercise never hits "name already in use". Anything kept for later must
   be removed in `cleanup`. Keep `cleanup` in sync.
 - Warn before anything that deletes data (volumes, `down -v`, `prune`).
+- Never start a container and remove it in the same code block: a paste removes it before the
+  student can look. Removing goes in its own step (a content test checks).
 - Actually run each new or changed command on macOS/Linux, and think through PowerShell,
   before shipping. Quoting bugs have happened here before.
 

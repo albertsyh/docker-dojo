@@ -34,7 +34,8 @@
       {
         "text": "Build and run it, then open http://localhost:8084. The first build downloads the full node image, which is large.",
         "code": "docker build -t node-shop .\ndocker run -d --name node-shop -p 8084:3000 node-shop",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8084"
       },
       {
         "text": "Mistake one: \"latest\" is whatever version was newest on the day you built. Check which Node you got and how big the image is. A teammate who builds next month can get a different major version from the same Dockerfile.",
@@ -55,6 +56,7 @@
         "text": "Rebuild and start it again, this time passing the key in with -e when the container starts. The page still says hasKey: true, but the image history no longer has the key, and the image is several hundred MB smaller.",
         "code": "docker rm -f node-shop\ndocker build -t node-shop .\ndocker run -d --name node-shop -p 8084:3000 -e API_KEY=sk-live-123 node-shop\ndocker history node-shop\ndocker image ls node-shop",
         "label": "terminal",
+        "open": "http://localhost:8084",
         "notes": [
           {
             "for": "Tip",
@@ -115,7 +117,8 @@
       {
         "text": "Rebuild and run it, then open http://localhost:8084 so you know it has started.",
         "code": "docker rm node-shop\ndocker build -t node-shop .\ndocker run -d --name node-shop -p 8084:3000 node-shop",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8084"
       },
       {
         "text": "Stop it again. This time it stops at once, with exit code 0, and the log ends with \"Stopping\".",
@@ -165,7 +168,8 @@
       {
         "text": "Rebuild and run it. The log says \"Listening on port 3000\", yet http://localhost:8084 fails with an empty or reset response.",
         "code": "docker build -t node-shop .\ndocker run -d --name node-shop -p 8084:3000 node-shop\ndocker logs node-shop",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8084"
       },
       {
         "text": "Why: inside a container, 127.0.0.1 is the container itself. Traffic from -p arrives on the container's network address instead, where nothing is listening. Listen on 0.0.0.0, which means every address.",
@@ -175,7 +179,8 @@
       {
         "text": "Rebuild and run. Now localhost:8084 works.",
         "code": "docker rm -f node-shop\ndocker build -t node-shop .\ndocker run -d --name node-shop -p 8084:3000 node-shop",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8084"
       },
       {
         "text": "The other side: -p 8084:3000 opens 8084 on every network your machine is on, so anyone on the same Wi-Fi can reach it. On a Linux server it is worse: Docker writes its own firewall rules, so ufw or firewalld do not block a published port. That is how exposed databases get found and wiped. Publish to your own machine only by putting 127.0.0.1 in front. docker ps then shows 127.0.0.1:8084->3000.",
@@ -235,7 +240,8 @@
       {
         "text": "Start it again and open http://localhost:8084. It works.",
         "code": "docker compose up -d\ndocker compose logs app",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8084"
       },
       {
         "text": "Now change \"Hello\" to \"Hi\" in server.js and save.",
@@ -244,7 +250,8 @@
         "diff": true
       },
       {
-        "text": "Refresh the page. The change shows without a rebuild, because the container reads your file directly."
+        "text": "Refresh the page. The change shows without a rebuild, because the container reads your file directly.",
+        "open": "http://localhost:8084"
       },
       {
         "text": "Remember the catch: /app/node_modules is now a volume that Compose keeps. After you change package.json, rebuild and ask for fresh volumes with -V, or the old packages stay. Stop it when you are done.",
@@ -333,7 +340,8 @@
       {
         "text": "Start from scratch again. This time db shows (healthy) before the app starts, and http://localhost:8084 shows the database's time.",
         "code": "docker compose down -v\ndocker compose up -d\ndocker compose ps\ndocker compose logs app",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8084"
       },
       {
         "text": "Crash the app on purpose, then check again. The restart policy starts it again within seconds.",
@@ -437,7 +445,8 @@
       {
         "text": "Start the stack with the new image. The page at http://localhost:8084 works as before, whoami answers node, and prettier is not in the image.",
         "code": "docker compose up -d --build\ndocker compose exec app whoami\ndocker compose exec app ls node_modules/prettier",
-        "label": "terminal"
+        "label": "terminal",
+        "open": "http://localhost:8084"
       },
       {
         "text": "Check what the track cost in disk space. Images, build cache, volumes and logs all add up quietly on a server.",
