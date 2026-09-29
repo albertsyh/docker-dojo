@@ -46,21 +46,21 @@ onBeforeUnmount(() => clearTimeout(timer))
 </template>
 
 <style scoped>
-.code { background: var(--code); border-radius: var(--radius-md); overflow: hidden; }
+.code { background: var(--code); border: 1px solid var(--code-edge); border-radius: var(--radius-md); overflow: hidden; }
 .code-head {
   display: flex; justify-content: space-between; align-items: center; gap: var(--space-3);
   padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
-  border-bottom: 1px solid oklch(1 0 0 / 0.08);
+  border-bottom: 1px solid var(--code-rule);
 }
 .code-label { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--mono); font-size: var(--text-xs); color: var(--code-muted); }
 .code-label svg { width: 0.95rem; height: 0.95rem; }
 .copy {
   font: inherit; font-size: var(--text-xs); font-weight: 650; color: var(--code-text); cursor: pointer;
   min-height: 1.9rem; padding: 0 var(--space-3); border-radius: var(--radius-sm);
-  background: oklch(1 0 0 / 0.06); border: 1px solid oklch(1 0 0 / 0.12);
+  background: var(--code-button); border: 1px solid var(--code-button-edge);
   transition: background-color var(--dur-fast) var(--ease-out);
 }
-.copy:hover { background: oklch(1 0 0 / 0.14); }
+.copy:hover { background: var(--code-button-hover); }
 .copy:focus-visible { outline-color: var(--code-prompt); }
 .copy svg { width: 0.95rem; height: 0.95rem; }
 pre { margin: 0; padding: var(--space-3) var(--space-4) var(--space-4); overflow-x: auto; }

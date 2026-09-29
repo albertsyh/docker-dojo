@@ -58,11 +58,11 @@ const width = (value: string) => `${Math.max(7, value.length + 2)}ch`
 </template>
 
 <style scoped>
-.code { background: var(--code); border-radius: var(--radius-md); overflow: hidden; }
+.code { background: var(--code); border: 1px solid var(--code-edge); border-radius: var(--radius-md); overflow: hidden; }
 .code-head {
   display: flex; justify-content: space-between; align-items: center; gap: var(--space-3);
   min-height: 2.4rem; padding: var(--space-1) var(--space-3);
-  border-bottom: 1px solid oklch(1 0 0 / 0.08);
+  border-bottom: 1px solid var(--code-rule);
 }
 .code-label { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--mono); font-size: var(--text-xs); color: var(--code-muted); }
 .code-label svg { width: 0.95rem; height: 0.95rem; }
@@ -73,11 +73,11 @@ pre code { background: none; padding: 0; border-radius: 0; color: var(--code-tex
 /* The gap: a dashed slot in the highlighter colour, so it reads as "write here". */
 .blank {
   font: inherit; color: var(--code-text); min-width: 7ch; max-width: 40ch; padding: 0 0.4ch; margin: 0 0.2ch;
-  background: oklch(1 0 0 / 0.08); border: 0; border-bottom: 2px dashed var(--highlight); border-radius: 3px 3px 0 0;
+  background: var(--code-slot); border: 0; border-bottom: 2px dashed var(--code-slot-line); border-radius: 3px 3px 0 0;
   vertical-align: baseline;
 }
-.blank:focus-visible { outline: 2px solid var(--highlight); outline-offset: 1px; background: oklch(1 0 0 / 0.14); }
-.blank.ok { border-bottom: 2px solid var(--code-prompt); background: oklch(0.78 0.13 145 / 0.16); }
-.blank.bad { border-bottom: 2px solid oklch(0.72 0.16 27); background: oklch(0.72 0.16 27 / 0.18); }
+.blank:focus-visible { outline: 2px solid var(--code-slot-line); outline-offset: 1px; background: var(--code-slot-focus); }
+.blank.ok { border-bottom: 2px solid var(--code-prompt); background: var(--code-ok-wash); }
+.blank.bad { border-bottom: 2px solid var(--code-bad-line); background: var(--code-bad-wash); }
 .blank:disabled { cursor: default; }
 </style>

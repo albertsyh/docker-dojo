@@ -15,6 +15,10 @@ colors:
   rule-strong: "#7e8a80"
   ink: "#141d16"
   ink-muted: "#535e55"
+  code-panel: "#eef6ef"
+  code-text: "#141d16"
+  code-muted: "#505b52"
+  code-prompt: "#226929"
   terminal: "#131a15"
   terminal-text: "#e3eae4"
   terminal-muted: "#8c9e8f"
@@ -100,8 +104,8 @@ components:
     rounded: "{rounded.sm}"
     padding: "5px 8px"
   code-block:
-    backgroundColor: "{colors.terminal}"
-    textColor: "{colors.terminal-text}"
+    backgroundColor: "{colors.code-panel}"
+    textColor: "{colors.code-text}"
     typography: "{typography.code}"
     rounded: "{rounded.md}"
     padding: "12px 16px 16px"
@@ -141,7 +145,7 @@ Docker blue, no whale or container-block marks).
 
 **Key Characteristics:**
 - White bench, chalkboard-green actions, highlighter yellow only for "you are here" and celebrations.
-- Near-black terminal code blocks with a green `$` prompt that is never copied.
+- Code blocks on a pale bench panel (near-black terminal in the dark theme), with a green `$` prompt that is never copied.
 - One sans (Figtree) for everything, JetBrains Mono for commands and ids.
 - Flat by default: tinted panels and hairline rules, shadows only on floating things.
 - Progress is always visible: header rail, exercise stepper, journey list.
@@ -168,7 +172,8 @@ sRGB equivalent. Every text pairing passes WCAG AA in both themes.
 - **Bench Panel** (#f3f8f4) and **Bench Panel 2** (#e9f1ea): side panels, footer, tags, track backgrounds.
 - **Rule** (#d9e0da): dividers. **Rule Strong** (#7e8a80): control borders (3.6:1, meets 3:1 for UI).
 - **Ink** (#141d16): all body text and headings. **Ink Muted** (#535e55): secondary text, 6.8:1.
-- **Terminal** (#131a15), **Terminal Text** (#e3eae4), **Terminal Muted** (#8c9e8f), **Terminal Prompt** (#80cd82): code blocks only.
+- **Code Panel** (#eef6ef) with a **Rule** border, **Code Text** (#141d16), **Code Muted** (#505b52), **Code Prompt** (#226929): code blocks only, light theme.
+- **Terminal** (#131a15), **Terminal Text** (#e3eae4), **Terminal Muted** (#8c9e8f), **Terminal Prompt** (#80cd82): code blocks in the dark theme.
 - **Error Red** (#c22826) on **Error Wash** (#ffece8): wrong answers and failures.
 
 The dark theme keeps the same roles: bench becomes oklch(0.17 0.012 150), the green lifts to
@@ -231,7 +236,7 @@ float, it doesn't cast.
   their width never changes.
 
 ### Code Blocks (signature)
-- Terminal background, a header row with a mono label and icon (terminal or file), and a
+- Code Panel background (Terminal in the dark theme), a header row with a mono label and icon (terminal or file), and a
   Copy button that swaps to "Copied" at the same width.
 - Shell blocks show a green `$` per line, drawn in CSS so copying never includes it.
 
@@ -263,7 +268,7 @@ float, it doesn't cast.
 ## 6. Do's and Don'ts
 
 ### Do:
-- **Do** keep commands the most legible thing on screen: terminal blocks, JetBrains Mono, a Copy button on every one.
+- **Do** keep commands the most legible thing on screen: code blocks, JetBrains Mono, a Copy button on every one.
 - **Do** show where the student is at all times: header rail, stepper, "You are here".
 - **Do** pair every status colour with an icon or a word (check plus "Done", x plus "Your answer").
 - **Do** write short, plain copy with no em-dashes.
