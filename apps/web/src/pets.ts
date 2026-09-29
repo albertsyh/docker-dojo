@@ -17,7 +17,7 @@ export const FRAME_W = 96
 export const FRAME_H = 104
 
 /** Row numbers in every OpenPets sheet. Rows 1-2 walk right/left; 6-8 are extra moods. */
-const ROW = { idle: 0, wave: 3, jump: 4, sad: 5 } as const
+export const ROW = { idle: 0, wave: 3, jump: 4, sad: 5 } as const
 
 export type Reaction = 'wave' | 'jump' | 'sad'
 

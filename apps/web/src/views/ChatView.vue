@@ -8,10 +8,10 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-// ?presenter is the trainer's read-only view for the big screen. With ?embed too, it has no header.
+// ?presenter is the trainer's read-only view for the big screen: only the conversation.
+// ?embed shows the same, so a chat on another screen or site is for reading.
 const route = useRoute()
-const presenter = computed(() => route.query.presenter !== undefined)
-const embed = computed(() => route.query.embed !== undefined)
+const presenter = computed(() => route.query.presenter !== undefined || route.query.embed !== undefined)
 
 // While this page shows, new messages count as read (and the pet's popup stays closed).
 onMounted(() => {
@@ -23,7 +23,7 @@ onBeforeUnmount(() => (chat.onPage = false))
 </script>
 
 <template>
-  <ChatPresenter v-if="presenter" :embed="embed" />
+  <ChatPresenter v-if="presenter" />
   <div v-else class="page">
     <header>
       <h1>{{ t('chat.title') }}</h1>

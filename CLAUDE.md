@@ -241,8 +241,9 @@ workflow and progress are in `docs/translation-ms.md`. Docker terms, commands an
     assert on the raw JSON; keep it that way if you add fields.
   - `ChatUpdated` on the public `chat` channel carries no messages, only "changed".
     Every browser then refetches its own view (`src/chat.ts`). Don't put messages in the event.
-  - `/chat?presenter` is the trainer's big-screen view (`ChatPresenter.vue`): read-only whoever is signed in,
-    newest first, large text across the full width, live from the same listener. Add `&embed` to drop the header.
+  - `/chat?presenter` is the trainer's big-screen view (`ChatPresenter.vue`): only the conversation, read-only
+    whoever is signed in, newest first, large text across the full width, live from the same listener, and a sad
+    Nori while there are no questions. `/chat?embed` shows the same view without the site header.
   - Deleting is a hard delete of your own message (someone else's is a 404). Nothing is pruned automatically.
 - Redis is not needed. It only becomes necessary with more than one Reverb instance.
 - The container entrypoint caches config and routes and runs migrations, so env changes

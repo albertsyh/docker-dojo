@@ -1,38 +1,40 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import AppIcon from './AppIcon.vue'
 import RichText from './RichText.vue'
 import { chat } from '../chat'
 import { exerciseLabel } from '../store'
+import { IDLE_FRAME_MS, PETS, ROW } from '../pets'
 import { useI18n } from 'vue-i18n'
 
 const { t, locale } = useI18n()
 
 /**
- * The chat for the trainer's screen: read-only, newest first, large text across the full width.
- * It shows the same messages as the rest of the app, kept live by the app-wide listener in
- * chat.ts. Nothing here depends on who is signed in, so it reads the same on any browser.
+ * The chat for the trainer's screen: only the conversation, read-only, newest first, in large text
+ * across the full width. It shows the same messages as the rest of the app, kept live by the
+ * app-wide listener in chat.ts. Nothing here depends on who is signed in.
  */
-defineProps<{ embed?: boolean }>()
-
 const newestFirst = computed(() => [...chat.messages].reverse())
 const time = (iso: string) => new Date(iso).toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' })
+
+// No questions yet: Nori, looking sad about it, whichever pet this browser picked.
+const nori = PETS.find((p) => p.id === 'nori') ?? PETS[0]
+const sadFrames = nori.rows[ROW.sad]
+const sadStyle = {
+  backgroundImage: `url(${nori.sheet})`,
+  '--row': ROW.sad,
+  '--frames': sadFrames,
+  '--duration': `${sadFrames * IDLE_FRAME_MS}ms`,
+}
 </script>
 
 <template>
   <div class="presenter wide-page">
-    <header class="head">
-      <h1>{{ t('chat.list') }}</h1>
-      <span v-if="chat.loaded" class="count muted">{{ t('chat.count', chat.messages.length) }}</span>
-      <!-- Both labels share one grid cell so the badge keeps its width. -->
-      <span class="status swap" :class="{ on: chat.connected }" role="status">
-        <span :aria-hidden="!chat.connected"><i aria-hidden="true" />{{ t('chat.live') }}</span>
-        <span :aria-hidden="chat.connected"><i aria-hidden="true" />{{ t('chat.reconnecting') }}</span>
-      </span>
-      <RouterLink v-if="!embed" :to="{ query: {} }" class="btn small ghost leave"><AppIcon name="x" />{{ t('chat.presenterLeave') }}</RouterLink>
-    </header>
-
-    <p v-if="chat.loaded && !chat.messages.length" class="empty muted">{{ t('chat.empty') }}</p>
+    <!-- Nori is from OpenPets (openpets.dev), credited in the footer and README. -->
+    <div v-if="chat.loaded && !chat.messages.length" class="empty">
+      <span class="sprite" :style="sadStyle" aria-hidden="true" />
+      <p class="empty-title">{{ t('chat.presenterEmpty') }}</p>
+      <p class="muted">{{ t('chat.presenterEmptyHint') }}</p>
+    </div>
     <TransitionGroup tag="ol" name="arrive" class="messages" :aria-label="t('chat.list')" aria-live="polite">
       <li v-for="m in newestFirst" :key="m.id" class="message">
         <p class="meta">
@@ -48,17 +50,29 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString(locale.value, { h
 </template>
 
 <style scoped>
-.presenter { display: grid; gap: var(--space-5); width: 100%; }
-.head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-4); }
-.head h1 { margin: 0; }
-.count { font-size: var(--text-lg); font-variant-numeric: tabular-nums; }
-.status { font-size: var(--text-sm); font-weight: 650; color: var(--muted); }
-.status > span { display: inline-flex; align-items: center; gap: var(--space-2); }
-.status i { width: 10px; height: 10px; border-radius: 50%; background: var(--border-strong); }
-.status.on { color: var(--ink); }
-.status.on i { background: var(--primary); }
-.leave { margin-left: auto; align-self: center; }
-.empty { margin: 0; font-size: var(--text-xl); }
+.presenter { display: grid; width: 100%; }
+
+.empty {
+  display: grid; justify-items: center; gap: var(--space-2); text-align: center;
+  padding: var(--space-7) var(--space-5); border: 1px dashed var(--border-strong); border-radius: var(--radius-md);
+}
+.empty p { margin: 0; }
+.empty-title { font-size: var(--text-2xl); font-weight: 700; }
+.empty .muted { font-size: var(--text-lg); }
+/* The sheet is 8 x 9 frames of 96x104 (FRAME_W / FRAME_H in pets.ts), drawn here at double size. */
+.sprite {
+  display: block; width: 192px; height: 208px; margin-bottom: var(--space-2);
+  background-size: 1536px 1872px; background-position: 0 calc(var(--row) * -208px);
+  image-rendering: pixelated;
+  animation: play var(--duration) steps(var(--frames)) infinite;
+}
+@keyframes play {
+  from { background-position-x: 0; }
+  to { background-position-x: calc(var(--frames) * -192px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sprite { animation: none; }
+}
 
 .messages { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
 .message { display: grid; gap: var(--space-2); padding: var(--space-4) var(--space-5); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); }

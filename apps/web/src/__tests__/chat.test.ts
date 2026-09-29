@@ -176,15 +176,14 @@ describe('Chat presenter view', () => {
     return { wrapper, router }
   }
 
-  it('is read-only, newest first, and names everyone, even on a joined browser', async () => {
+  it('shows only the conversation: read-only, newest first, with names, even on a joined browser', async () => {
     chat.loaded = true
     chat.messages = [msg(1), msg(2, { author: 'brave otter', mine: true, meTooCount: 3, exercise: 'volumes' })]
     const { wrapper } = await renderChat('/chat?presenter')
     expect(wrapper.findAll('.message .meta strong').map((s) => s.text())).toEqual(['brave otter', 'calm panda'])
     expect(wrapper.find('.message .too').text()).toBe('3 people have this too')
     expect(wrapper.find('.message .about').text()).toBe('2. Keep data with volumes')
-    expect(wrapper.find('.count').text()).toBe('2 questions')
-    for (const control of ['textarea', '.me-too', '.delete', 'form']) expect(wrapper.find(control).exists()).toBe(false)
+    for (const extra of ['h1', 'textarea', 'form', '.me-too', '.delete', '.empty']) expect(wrapper.find(extra).exists()).toBe(false)
   })
 
   it('shows a new question at the top as it arrives', async () => {
@@ -196,21 +195,28 @@ describe('Chat presenter view', () => {
     expect(wrapper.find('.message .meta strong').text()).toBe('quiet heron')
   })
 
-  it('opens from the chat page and leaves back to it, except in an embed', async () => {
+  it('shows a sad Nori until the first question, then only the question', async () => {
+    chat.loaded = true
+    const { wrapper } = await renderChat('/chat?presenter')
+    expect(wrapper.find('.empty').text()).toContain('No questions yet')
+    expect(wrapper.find('.empty .sprite').attributes('style')).toContain('--row: 5')
+    chat.messages = [msg(1)]
+    await flushPromises()
+    expect(wrapper.find('.empty').exists()).toBe(false)
+  })
+
+  it('opens from the chat page, and an embed of the chat shows the same view', async () => {
     const { wrapper, router } = await renderChat('/chat')
+    expect(wrapper.find('h1').exists()).toBe(true)
     await wrapper.find('.presenter-link').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/chat?presenter')
     expect(wrapper.find('.presenter').exists()).toBe(true)
 
-    await wrapper.find('.leave').trigger('click')
+    await router.push('/chat?embed')
     await flushPromises()
-    expect(router.currentRoute.value.fullPath).toBe('/chat')
-    expect(wrapper.find('.presenter').exists()).toBe(false)
-
-    await router.push('/chat?presenter&embed')
-    await flushPromises()
-    expect(wrapper.find('.leave').exists()).toBe(false)
+    expect(wrapper.find('.presenter').exists()).toBe(true)
+    expect(wrapper.find('textarea').exists()).toBe(false)
   })
 })
 
