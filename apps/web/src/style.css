@@ -65,6 +65,8 @@
 
   /* Layers: sticky chrome < floating pet < popover */
   --z-sticky: 10;
+  /* Height of the sticky site header, set by App.vue. */
+  --header-h: 0px;
   --z-float: 20;
   --z-popover: 30;
 

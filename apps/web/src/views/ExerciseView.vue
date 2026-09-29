@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
 import CodeBlock from '../components/CodeBlock.vue'
 import FilesPanel from '../components/FilesPanel.vue'
@@ -28,6 +28,26 @@ const isDone = computed(() => completed.value.has(props.id))
 // Counts you on this exercise on the Live page while the page is open. An embed doesn't count.
 usePresence(() => (state.progress && exercise.value && !props.embed ? props.id : null))
 
+// The title block sticks under the site header on roomy screens. Once it is stuck, a divider shows
+// where the steps scroll under it; at rest there is none, so the summary follows the title as usual.
+const intro = ref<HTMLElement | null>(null)
+const stuck = ref(false)
+function checkStuck() {
+  const el = intro.value
+  if (!el) return
+  const style = getComputedStyle(el)
+  stuck.value = style.position === 'sticky' && window.scrollY > 0 && el.getBoundingClientRect().top <= parseFloat(style.top) + 0.5
+}
+onMounted(() => {
+  window.addEventListener('scroll', checkStuck, { passive: true })
+  window.addEventListener('resize', checkStuck)
+  checkStuck()
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', checkStuck)
+  window.removeEventListener('resize', checkStuck)
+})
+
 const busy = ref(false)
 const error = ref('')
 
@@ -51,7 +71,7 @@ async function toggle() {
     <span>{{ t('exercise.missing') }} <RouterLink v-if="!embed" to="/exercises">{{ t('exercise.backToList') }}</RouterLink></span>
   </div>
   <article v-else class="layout" :class="{ 'has-files': exercise.files && !embed }">
-    <header v-if="!embed" class="intro">
+    <header v-if="!embed" ref="intro" class="intro" :class="{ stuck }">
       <RouterLink :to="backTo" class="back"><AppIcon name="arrow-left" />{{ track ? track.title : t('common.allExercises') }}</RouterLink>
       <!-- Where you are in the course: one segment per exercise, each a shortcut. -->
       <nav class="stepper" :aria-label="t('exercise.stepper')">
@@ -70,8 +90,8 @@ async function toggle() {
         {{ t('exercise.meta', { n: index + 1, total: list.length, minutes: exercise.minutes }) }}
       </p>
       <h1>{{ exercise.title }}</h1>
-      <p class="lead">{{ exercise.summary }}</p>
     </header>
+    <p v-if="!embed" class="lead summary">{{ exercise.summary }}</p>
 
     <FilesPanel v-if="exercise.files && !embed" :files="exercise.files" class="side" />
 
@@ -120,10 +140,10 @@ async function toggle() {
    The steps column is the same width with or without the panel. */
 @media (min-width: 900px) {
   .layout.has-files { grid-template-columns: minmax(0, var(--content)) 300px; column-gap: var(--space-6); align-items: start; }
-  .intro { grid-column: 1; }
+  .intro, .summary { grid-column: 1; }
   .content { grid-column: 1; }
   /* 120px at the bottom leaves room for the pet. */
-  .side { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: 6rem; max-height: calc(100vh - 7.5rem - 120px); overflow-y: auto; }
+  .side { grid-column: 2; grid-row: 1 / span 3; position: sticky; top: 6rem; max-height: calc(100vh - 7.5rem - 120px); overflow-y: auto; }
 }
 
 .back {
@@ -140,7 +160,19 @@ async function toggle() {
 /* Current exercise: highlighter yellow with an ink outline, so it holds 3:1 on white. */
 .seg.current { background: var(--highlight); box-shadow: 0 0 0 1.5px var(--ink); }
 .meta { font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-1); display: flex; align-items: center; gap: var(--space-2); }
-.intro h1 { margin-bottom: var(--space-2); }
+.intro { padding-bottom: var(--space-2); }
+.intro h1 { margin-bottom: 0; }
+/* Right under the title, as if it were still inside the header. */
+.summary { margin: calc(-1 * var(--space-5)) 0 0; }
+/* Sticky only where there is room for it: the steps keep most of the screen.
+   The padding gives it air under the site header; the margin cancels it at rest. */
+@media (min-width: 900px) and (min-height: 640px) {
+  .intro {
+    position: sticky; top: var(--header-h); z-index: 1; background: var(--bg);
+    padding-top: var(--space-4); margin-top: calc(-1 * var(--space-4));
+  }
+  .intro.stuck { box-shadow: 0 1px 0 var(--border); }
+}
 
 /* minmax(0, 1fr): without it the column grows to the longest code line and overflows into the panel. */
 .content { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }

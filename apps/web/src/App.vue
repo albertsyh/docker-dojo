@@ -35,6 +35,21 @@ watch(() => routeParam(route, 'theme'), setUrlTheme, { immediate: true })
 // lang=en|ms, the same way. prefs.ts reads it before the first request, so this only follows changes.
 watch(() => routeParam(route, 'lang'), setUrlLang)
 
+// The sticky header's height, as --header-h, so things that stick below it (the exercise title)
+// sit right under it however it wraps. 0 in an embed, which has no header.
+const topBar = ref<HTMLElement | null>(null)
+let topBarSize: ResizeObserver | undefined
+const setHeaderHeight = (px: number) => document.documentElement.style.setProperty('--header-h', `${px}px`)
+watch(topBar, (el) => {
+  topBarSize?.disconnect()
+  if (!el) return setHeaderHeight(0)
+  setHeaderHeight(el.offsetHeight)
+  if (typeof ResizeObserver === 'undefined') return
+  topBarSize = new ResizeObserver(() => setHeaderHeight(el.offsetHeight))
+  topBarSize.observe(el)
+}, { flush: 'post' })
+onBeforeUnmount(() => topBarSize?.disconnect())
+
 const exerciseCount = computed(() => state.content?.exercises.length ?? 0)
 // The quiz counts as one more step on the journey, done once it's passed.
 const journeyPct = computed(() => {
@@ -45,7 +60,7 @@ const journeyPct = computed(() => {
 </script>
 
 <template>
-  <header v-if="!embed" class="top">
+  <header v-if="!embed" ref="topBar" class="top">
     <div class="container top-inner">
       <RouterLink to="/" class="brand">
         <img src="/favicon.svg" alt="" width="28" height="28" />

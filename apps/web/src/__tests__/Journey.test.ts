@@ -84,7 +84,7 @@ describe('an embedded exercise (/exercises/<id>?embed)', () => {
     expect(wrapper.find('.steps').text()).toContain('Run it.')
     expect(wrapper.find('.steps').text()).toContain('docker version')
     expect(wrapper.find('.gate').exists()).toBe(false)
-    for (const gone of ['.intro', '.side', '.expected', '.actions']) expect(wrapper.find(gone).exists()).toBe(false)
+    for (const gone of ['.intro', '.summary', '.side', '.expected', '.actions']) expect(wrapper.find(gone).exists()).toBe(false)
     expect(links(wrapper)).toEqual([])
   })
 
