@@ -102,6 +102,7 @@ const ms: typeof en = {
     quiz: 'Kuiz',
     quizSummary: '{count} soalan, daripada yang mudah hingga membaca fail compose yang lengkap. Setiap cubaan semula memberi soalan baharu.',
     best: 'Markah terbaik setakat ini: {score}/{total}.',
+    doneRun: '{n} latihan selesai',
   },
   exercise: {
     missing: 'Latihan itu tidak wujud.',

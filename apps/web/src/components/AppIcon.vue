@@ -24,6 +24,7 @@ const PATHS = {
   trash: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
   send: 'M4 12l16-8-6 16-3-7zM11 13l9-9',
   external: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+  'chevron-down': 'M6 9l6 6 6-6',
 } as const
 
 export type IconName = keyof typeof PATHS

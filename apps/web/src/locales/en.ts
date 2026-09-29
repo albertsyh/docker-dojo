@@ -100,6 +100,7 @@ export default {
     quiz: 'Quiz',
     quizSummary: '{count} questions, from easy to reading a full compose file. Each retake asks new ones.',
     best: 'Best so far: {score}/{total}.',
+    doneRun: '{n} exercises done',
   },
   exercise: {
     missing: "That exercise doesn't exist.",

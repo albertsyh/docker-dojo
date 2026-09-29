@@ -132,3 +132,50 @@ describe('an exercise that carries on from earlier ones', () => {
     expect(mount(ExerciseView, { props: { id: 'networks', embed: true }, global: { stubs } }).find('.requires').exists()).toBe(false)
   })
 })
+
+describe('the done exercises at the top fold away', () => {
+  const ids = ['one', 'two', 'three', 'four', 'five', 'six']
+  beforeEach(() => {
+    localStorage.clear()
+    state.content = structuredClone(content)
+    state.content.exercises = ids.map((id) => ({ id, title: `Exercise ${id}`, minutes: 5, summary: '.', steps: [{ text: '.' }], expected: '.' }))
+    // four done in a row, five not yet, six done out of order
+    state.progress = { id: 'brave-otter-abc123', completed: ['one', 'two', 'three', 'four', 'six'], quiz: null, trackQuizzes: {} }
+  })
+  const titles = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('.stop strong').map((s) => s.text())
+
+  it('folds the leading run into a stack of three ticks and a count, keeping one done out of order', async () => {
+    const wrapper = mount(ExercisesView, { global: { stubs } })
+    await flushPromises()
+
+    const fold = wrapper.find('.fold-toggle')
+    expect(fold.attributes('aria-expanded')).toBe('false')
+    expect(fold.text()).toContain('4 exercises done')
+    expect(fold.findAll('.stack .node')).toHaveLength(3)
+    expect(fold.find('.more').text()).toBe('+1')
+    expect(titles(wrapper)).toEqual(['Exercise five', 'Exercise six', 'Quiz'])
+  })
+
+  it('opens and closes from the same button, and remembers it', async () => {
+    const wrapper = mount(ExercisesView, { global: { stubs } })
+    await flushPromises()
+
+    await wrapper.find('.fold-toggle').trigger('click')
+    expect(wrapper.find('.fold-toggle').attributes('aria-expanded')).toBe('true')
+    expect(titles(wrapper)).toEqual([...ids.map((id) => `Exercise ${id}`), 'Quiz'])
+    expect(localStorage.getItem('docker-dojo:journey-open')).toBe('1')
+
+    await wrapper.find('.fold-toggle').trigger('click')
+    expect(titles(wrapper)).toEqual(['Exercise five', 'Exercise six', 'Quiz'])
+    expect(localStorage.getItem('docker-dojo:journey-open')).toBe('0')
+  })
+
+  it('does not fold fewer than three', async () => {
+    state.progress!.completed = ['one', 'two']
+    const wrapper = mount(ExercisesView, { global: { stubs } })
+    await flushPromises()
+
+    expect(wrapper.find('.fold').exists()).toBe(false)
+    expect(titles(wrapper)).toHaveLength(ids.length + 1)
+  })
+})
